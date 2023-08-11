@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 from loguru import logger
+import torch
 
 
 class Model(pl.LightningModule):
@@ -20,6 +21,7 @@ class Model(pl.LightningModule):
         return y_hat, y
 
     def training_step(self, batch, batch_idx):
+        # logger.debug(torch.cuda.memory_summary())
         y_hat, y = self.infer_batch(batch)
         loss = self.criterion(y_hat, y)
         self.log("train_loss", loss, prog_bar=True)

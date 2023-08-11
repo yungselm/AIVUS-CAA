@@ -38,6 +38,7 @@ from segmentation.model import Model
 class UNetSegmentation:
     def __init__(self, config) -> None:
         torch.backends.cudnn.benchmark = True
+        # os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
         self.cuda = torch.cuda.is_available()
         # self.cuda = False
         self.device = torch.device("cuda" if self.cuda else "cpu")
@@ -66,7 +67,7 @@ class UNetSegmentation:
             train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=self.cuda
         )
         val_loader = DataLoader(
-            val_dataset, batch_size=64, shuffle=False, num_workers=self.num_workers, pin_memory=self.cuda
+            val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=self.cuda
         )
         net = UNet(
             spatial_dims=2,
@@ -89,7 +90,6 @@ class UNetSegmentation:
             max_epochs=self.max_epochs,
             log_every_n_steps=2,
         )
-
         start = datetime.now()
         logger.info(f'Training started at {start}')
         trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
