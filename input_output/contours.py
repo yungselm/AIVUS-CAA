@@ -227,7 +227,7 @@ def contoursToMask(images, contoured_frames, lumen, plaque):
 def computeMetrics(window, masks):
     """Measures lumen area, plaque area and plaque burden"""
 
-    lumen, plaque = 1, 2
+    lumen, plaque = 2, 1
     lumen_area = np.sum(masks == lumen, axis=(1, 2)) * window.resolution**2
     plaque_area = np.sum(masks == plaque, axis=(1, 2)) * window.resolution**2
     plaque_burden = (plaque_area / (lumen_area + plaque_area)) * 100
