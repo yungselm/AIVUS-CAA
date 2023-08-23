@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 from loguru import logger
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage
 
@@ -60,27 +60,19 @@ class Display(QGraphicsView):
     def findItem(self, item, eventPos):
         """Sets the active point for interaction"""
 
-        min_dist = 10
-
         pos = item.mapFromScene(self.mapToScene(eventPos))
-
         dist = item.select_point(pos)
-
-        if dist < min_dist:
-            item.updateColor()
-            self.enable_drag = True
-            self.activePoint = item
-        else:
-            self.activePoint = None
-            print("No active point")
+        item.updateColor()
+        self.enable_drag = True
+        self.activePoint = item
 
     def mousePressEvent(self, event):
         super(Display, self).mousePressEvent(event)
 
         # if event.button() == Qt.RightButton and self.drawPoints:
         #     self.drawPoints.pop()
-        
-        if self.draw: 
+
+        if self.draw:
             pos = self.mapToScene(event.pos())
             self.addManualSpline(pos)
         else:
@@ -90,7 +82,6 @@ class Display(QGraphicsView):
                 if item in self.innerPoint:
                     # Convert mouse position to item position https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
                     self.pointIdx = [i for i, checkItem in enumerate(self.innerPoint) if item == checkItem][0]
-                    # print(self.pointIdx, 'Item found')
                     self.activeContour = 1
                     self.findItem(item, event.pos())
                 elif item in self.outerPoint:

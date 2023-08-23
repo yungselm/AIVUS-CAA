@@ -12,14 +12,15 @@ class Point(QGraphicsEllipseItem):
     def __init__(self, pos, color):
         super(Point, self).__init__()
         if color == 'y':
-            self.defaultColor = QPen(Qt.yellow, 5)
+            self.defaultColor = QPen(Qt.yellow, 3)
         elif color == 'r':
-            self.defaultColor = QPen(Qt.red, 5)
+            self.defaultColor = QPen(Qt.red, 3)
         else:
-            self.defaultColor = QPen(Qt.blue, 5)
+            self.defaultColor = QPen(Qt.blue, 3)
 
         self.setPen(self.defaultColor)
-        self.setRect(pos[0], pos[1], 3, 3)
+        self.radius = 10
+        self.setRect(pos[0], pos[1], self.radius, self.radius)
 
     def select_point(self, pos):
         """Identifies what point has been selected with the mouse"""
@@ -40,7 +41,7 @@ class Point(QGraphicsEllipseItem):
     def update(self, pos):
         """Updates the Point position"""
 
-        self.setRect(pos.x(), pos.y(), 3, 3)
+        self.setRect(pos.x(), pos.y(), self.radius, self.radius)
 
         return self.rect()
 
