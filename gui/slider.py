@@ -28,8 +28,8 @@ class Slider(QSlider):
         sizePolicy.setHorizontalPolicy(QSizePolicy.Fixed)
         sizePolicy.setVerticalPolicy(QSizePolicy.Fixed)
         self.setSizePolicy(sizePolicy)
-        self.setMinimumSize(QSize(800, 25))
-        self.setMaximumSize(QSize(800, 25))
+        self.setMinimumSize(QSize(400, 25))
+        self.setMaximumSize(QSize(1000, 25))
         self.gatedFrames = []
 
     def keyPressEvent(self, event):

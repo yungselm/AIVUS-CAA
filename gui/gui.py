@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QMenuBar,
     QMenu,
     QStatusBar,
+    QSizePolicy
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
@@ -59,7 +60,7 @@ class Master(QMainWindow):
         self.initGUI()
 
     def initGUI(self):
-        spacing = 10
+        spacing = 5
         self.setGeometry(spacing, spacing, 1200, 1200)
         self.display_size = 800
         self.addToolBar("MY Window")
@@ -116,7 +117,7 @@ class Master(QMainWindow):
         self.infoTable.setHorizontalHeader(hideHeader2)
         self.infoTable.horizontalHeader().setStretchLastSection(True)
 
-        autoSaveInterval = 10000
+        autoSaveInterval = 10000  # milliseconds
         self.shortcutInfo = QLabel()
         self.shortcutInfo.setText(
             (
@@ -145,19 +146,24 @@ class Master(QMainWindow):
         self.playIcon = self.style().standardIcon(pixmapi1)
         self.pauseIcon = self.style().standardIcon(pixmapi2)
         self.playButton.setIcon(self.playIcon)
+        self.playButton.setMaximumWidth(30)
         self.playButton.clicked.connect(self.play)
         self.paused = True
 
         self.slider = Slider(Qt.Horizontal)
         self.slider.valueChanged[int].connect(self.changeValue)
 
+        max_box_width = 130
         self.diastolicFrameBox = QCheckBox('Diastolic Frame')
+        self.diastolicFrameBox.setMaximumWidth(max_box_width)
         self.diastolicFrameBox.setChecked(False)
         self.diastolicFrameBox.stateChanged[int].connect(self.toggleDiastolicFrame)
         self.systolicFrameBox = QCheckBox('Systolic Frame')
+        self.systolicFrameBox.setMaximumWidth(max_box_width)
         self.systolicFrameBox.setChecked(False)
         self.systolicFrameBox.stateChanged[int].connect(self.toggleSystolicFrame)
         self.plaqueFrameBox = QCheckBox('Plaque')
+        self.plaqueFrameBox.setMaximumWidth(max_box_width)
         self.plaqueFrameBox.setChecked(False)
         self.plaqueFrameBox.stateChanged[int].connect(self.togglePlaqueFrame)
 
