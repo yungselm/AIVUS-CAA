@@ -109,7 +109,7 @@ def get_contours(preds, levels, image_shape):
     return x, y, lumen_pred, plaque_pred
 
 
-def write_xml(x, y, dims, resolution, speed, phases, out_path):
+def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
     """Write an xml file of contour data
 
     Args:
@@ -194,7 +194,12 @@ def write_xml(x, y, dims, resolution, speed, phases, out_path):
         fm = et.SubElement(framestate, 'Fm')
         num = et.SubElement(fm, 'Num')
         num.text = str(frame)
+        plaque = et.SubElement(fm, 'Plaque')
         phase = et.SubElement(fm, 'Phase')
+        try:
+            plaque.text = plaque_frames[frame]
+        except IndexError:  # old contour files may not have phases attr
+            plaque.text = '0'
         try:
             phase.text = phases[frame]
         except IndexError:  # old contour files may not have phases attr

@@ -30,20 +30,17 @@ def report(window):
 
     f = open(os.path.splitext(window.file_name)[0] + "_report.txt", "w")
     f.write(
-        "Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})\tPlaque area (mm\N{SUPERSCRIPT TWO})\t"
-        "Vessel area (mm\N{SUPERSCRIPT TWO})\tPlaque burden (%)\tPhenotype\tPhase\n"
+        "Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})\t"
+        "Plaque\tPhase\n"
     )
 
     for index, frame in enumerate(contoured_frames):
         f.write(
-            "{}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{}\t{}\n".format(
+            "{}\t{:.2f}\t{:.2f}\t{}\t{}\n".format(
                 frame,
                 window.pullbackLength[frame],
                 lumen_area[index],
-                plaque_area[index],
-                vessel_area[index],
-                plaque_burden[index],
-                phenotype[index],
+                window.plaque_frames[frame],
                 window.phases[frame],
             )
         )

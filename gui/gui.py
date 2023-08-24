@@ -54,6 +54,7 @@ class Master(QMainWindow):
         self.gated_frames_dia = []
         self.gated_frames_sys = []
         self.distance_frames = []
+        self.plaque_frames = []
         self.phases = []
         self.initGUI()
 
@@ -156,6 +157,9 @@ class Master(QMainWindow):
         self.systolicFrameBox = QCheckBox('Systolic Frame')
         self.systolicFrameBox.setChecked(False)
         self.systolicFrameBox.stateChanged[int].connect(self.toggleSystolicFrame)
+        self.plaqueFrameBox = QCheckBox('Plaque')
+        self.plaqueFrameBox.setChecked(False)
+        self.plaqueFrameBox.stateChanged[int].connect(self.togglePlaqueFrame)
 
         self.hideBox = QCheckBox('&Hide Contours')
         self.hideBox.setChecked(True)
@@ -181,6 +185,7 @@ class Master(QMainWindow):
         vbox1hbox1.addWidget(self.slider)
         vbox1hbox1.addWidget(self.diastolicFrameBox)
         vbox1hbox1.addWidget(self.systolicFrameBox)
+        vbox1hbox1.addWidget(self.plaqueFrameBox)
         vbox1.addLayout(vbox1hbox1)
         vbox1.addWidget(self.text)
 
@@ -322,6 +327,14 @@ class Master(QMainWindow):
         self.wid.run()
         self.text.setText("Frame {}".format(value + 1))
         try:
+            if self.plaque_frames[value] == '1':
+                self.plaqueFrameBox.setChecked(True)
+            else:
+                self.plaqueFrameBox.setChecked(False)
+        except IndexError:
+            pass
+
+        try:
             if value in self.gated_frames_dia:
                 self.diastolicFrameBox.setChecked(True)
             else:
@@ -364,7 +377,7 @@ class Master(QMainWindow):
                     self.systolicFrameBox.setChecked(False)
                 except ValueError:
                     pass
-            elif not state_true:
+            else:
                 try:
                     self.gated_frames_dia.remove(frame)
                     self.phases[frame] = '-'
@@ -382,12 +395,20 @@ class Master(QMainWindow):
                     self.diastolicFrameBox.setChecked(False)
                 except ValueError:
                     pass
-            elif not state_true:
+            else:
                 try:
                     self.gated_frames_sys.remove(frame)
                     self.phases[frame] = '-'
                 except ValueError:
                     pass
+
+    def togglePlaqueFrame(self, state_true):
+        if self.image:
+            frame = self.slider.value()
+            if state_true:
+                self.plaque_frames[frame] = '1'
+            else:
+                self.plaque_frames[frame] = '0'
 
     def errorMessage(self):
         """Helper function for errors"""

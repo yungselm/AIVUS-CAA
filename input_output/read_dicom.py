@@ -88,9 +88,8 @@ def readDICOM(window):
             window.gated_frames = window.gated_frames_dia
             window.slider.addGatedFrames(window.gated_frames)
         except FileNotFoundError:
+            window.plaque_frames = ['0'] * window.numberOfFrames
             window.phases = ['-'] * window.numberOfFrames
-            pass
-
     window.status_bar.showMessage('Waiting for user input')
 
 

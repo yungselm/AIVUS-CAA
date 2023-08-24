@@ -1,16 +1,18 @@
 import xml.etree.ElementTree as ET
 from loguru import logger
 
+
 def splitxy(points):
     """Splits comma separated points into separate x and y lists"""
 
     pointsX = []
     pointsY = []
     for i in range(0, len(points)):
-        pointsX.append(map(lambda x:int(x.split(',')[0]), points[i]))
-        pointsY.append(map(lambda x:int(x.split(',')[1]), points[i]))
+        pointsX.append(map(lambda x: int(x.split(',')[0]), points[i]))
+        pointsY.append(map(lambda x: int(x.split(',')[1]), points[i]))
 
     return pointsX, pointsY
+
 
 def read(path, frames=[]):
     """Reads xml file from the specified path.
@@ -25,7 +27,6 @@ def read(path, frames=[]):
         [xres, yres]: list, x and y pixel spacing
         framelist: list, frames with contours
     """
-
     tree = ET.parse(path)
     root = tree.getroot()
     # print(root.tag)
@@ -36,20 +37,21 @@ def read(path, frames=[]):
     stent_points = []
     no_points = []
     framelist = []
-    phases=[]
-    lumen={}
-    vessel={}
-    stent={}
+    plaque_frames = []
+    phases = []
+    lumen = {}
+    vessel = {}
+    stent = {}
 
     for child in root:
         # use text to see the values in the tags
-        #print(child.tag, child.text)
+        # print(child.tag, child.text)
         for imageState in child.iter('ImageState'):
             xdim = imageState.find('Xdim').text
             ydim = imageState.find('Ydim').text
             zdim = imageState.find('NumberOfFrames').text
             if not frames:
-                frames=range(int(zdim))
+                frames = range(int(zdim))
 
         for imageCalibration in child.iter('ImageCalibration'):
             xres = imageCalibration.find('XCalibration').text
@@ -69,6 +71,10 @@ def read(path, frames=[]):
                 stent_subpoints = []
                 if frameNo in frames:
                     try:
+                        plaque_frames.append(frame.find('Plaque').text)
+                    except AttributeError:  # old contour files may not have plaque attribute
+                        plaque_frames.append('0')
+                    try:
                         phase = frame.find('Phase').text
                         phase = '-' if phase is None else phase
                     except AttributeError:  # old contour files may not have phase attribute
@@ -77,16 +83,16 @@ def read(path, frames=[]):
                     for pts in frame.iter('Ctr'):
                         framelist.append(frameNo)
                         for child in pts:
-                            if child.tag =='Type':
+                            if child.tag == 'Type':
                                 if child.text == 'L':
                                     contour = 'L'
                                 elif child.text == 'V':
                                     contour = 'V'
                                 elif child.text == 'S':
-                                    contour= 'S'
+                                    contour = 'S'
                             if child.tag == 'Npts':
                                 no_points.append(child.text)
-                        # add each point
+                            # add each point
                             elif child.tag == 'p':
                                 if contour == 'L':
                                     lumen_subpoints.append(child.text)
@@ -101,7 +107,6 @@ def read(path, frames=[]):
                     vessel[frameNo] = vessel_subpoints
                     stent[frameNo] = stent_subpoints
 
-
     Lx, Ly = splitxy(lumen_points)
     Vx, Vy = splitxy(vessel_points)
     Sx, Sy = splitxy(stent_points)
@@ -113,5 +118,5 @@ def read(path, frames=[]):
     # print((xdim, ydim, zdim))
     # print((xres, yres))
 
-    #return (Lx, Ly), (Vx, Vy), (Sx, Sy), [xres, yres], framelist
-    return (Lx, Ly), (Vx, Vy), (Sx, Sy), [xres, yres], [xdim, ydim, zdim], phases
+    # return (Lx, Ly), (Vx, Vy), (Sx, Sy), [xres, yres], framelist
+    return (Lx, Ly), (Vx, Vy), (Sx, Sy), [xres, yres], [xdim, ydim, zdim], plaque_frames, phases

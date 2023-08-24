@@ -38,7 +38,9 @@ def readContours(window, fileName=None):
         )
 
     if fileName:
-        window.lumen, window.plaque, window.stent, window.resolution, _, window.phases = read(fileName)
+        window.lumen, window.plaque, window.stent, window.resolution, _, window.plaque_frames, window.phases = read(
+            fileName
+        )
 
         window.resolution = float(window.resolution[0])
         window.lumen = mapToList(window.lumen)
@@ -89,6 +91,7 @@ def writeContours(window):
         window.images.shape,
         window.resolution,
         window.ivusPullbackRate,
+        window.plaque_frames,
         window.phases,
         window.file_name,
     )
