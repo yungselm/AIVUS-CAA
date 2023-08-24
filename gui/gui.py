@@ -48,6 +48,7 @@ class Master(QMainWindow):
         super().__init__()
         self.image = False
         self.contours = False
+        self.segmentation = False
         self.lumen = ()
         self.plaque = ()
         self.gated_frames_dia = []
@@ -259,8 +260,8 @@ class Master(QMainWindow):
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""
-        if self.image and self.contours:
-            self.save_before_close()
+        # if self.image and self.contours:
+        #     self.save_before_close()
 
     def save_before_close(self):
         """Save contours, etc before closing program or reading new DICOM file"""

@@ -69,9 +69,11 @@ def read(path, frames=[]):
                 stent_subpoints = []
                 if frameNo in frames:
                     try:
-                        phases.append(frame.find('Phase').text)
+                        phase = frame.find('Phase').text
+                        phase = '-' if phase is None else phase
                     except AttributeError:  # old contour files may not have phase attribute
-                        pass
+                        phase = '-'
+                    phases.append(phase)
                     for pts in frame.iter('Ctr'):
                         framelist.append(frameNo)
                         for child in pts:

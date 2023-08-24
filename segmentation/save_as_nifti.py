@@ -2,7 +2,6 @@ import os
 
 from loguru import logger
 import SimpleITK as sitk
-from monailabel.transform.writer import write_nifti
 from PyQt5.QtWidgets import QErrorMessage
 from PyQt5.QtCore import Qt
 

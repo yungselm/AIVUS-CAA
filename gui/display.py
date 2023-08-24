@@ -69,9 +69,6 @@ class Display(QGraphicsView):
     def mousePressEvent(self, event):
         super(Display, self).mousePressEvent(event)
 
-        # if event.button() == Qt.RightButton and self.drawPoints:
-        #     self.drawPoints.pop()
-
         if self.draw:
             pos = self.mapToScene(event.pos())
             self.addManualSpline(pos)
