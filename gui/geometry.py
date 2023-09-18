@@ -15,6 +15,8 @@ class Point(QGraphicsEllipseItem):
             self.defaultColor = QPen(Qt.yellow, 3)
         elif color == 'r':
             self.defaultColor = QPen(Qt.red, 3)
+        elif color == "g":
+            self.defaultColor = QPen(Qt.green, 3)
         else:
             self.defaultColor = QPen(Qt.blue, 3)
 
@@ -57,6 +59,8 @@ class Spline(QGraphicsPathItem):
             self.setPen(QPen(Qt.yellow, 2))
         elif color == "r":
             self.setPen(QPen(Qt.red, 2))
+        elif color == "g":
+            self.setPen(QPen(Qt.green, 2))
         else:
             self.setPen(QPen(Qt.blue, 2))
 

@@ -17,7 +17,7 @@ def main(config: DictConfig) -> None:
         qdarktheme.enable_hi_dpi()
         app = QApplication(sys.argv)
         qdarktheme.setup_theme('auto')
-        Master()
+        Master(config)
         
         sys.exit(app.exec_())
 

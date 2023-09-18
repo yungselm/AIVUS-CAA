@@ -45,11 +45,13 @@ class Master(QMainWindow):
         plaque: tuple, contours for plaque border
     """
 
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
+        self.config = config
         self.image = False
         self.contours = False
         self.segmentation = False
+        self.colormap_enabled = False
         self.lumen = ()
         self.plaque = ()
         self.gated_frames_dia = []
@@ -177,7 +179,7 @@ class Master(QMainWindow):
         self.useDiastolicButton.clicked.connect(self.useDiastolic)
         self.useDiastolicButton.setToolTip("Press button to switch between diastolic and systolic frames")
 
-        self.wid = Display()
+        self.wid = Display(self, self.config.windowing_sensitivity)
         self.c = Communicate()
         self.c.updateBW[int].connect(self.wid.setFrame)
         self.c.updateBool[bool].connect(self.wid.setDisplay)
@@ -254,20 +256,24 @@ class Master(QMainWindow):
             self.slider.setValue(self.slider.value() + 1)
         elif key == Qt.Key_A or key == Qt.Key_Left:
             self.slider.setValue(self.slider.value() - 1)
-        elif key == Qt.Key_R:
-            readDICOM(self)
-        elif key == Qt.Key_C:
-            writeContours(self)
+        # elif key == Qt.Key_R:
+        #     readDICOM(self)
+        # elif key == Qt.Key_C:
+        #     writeContours(self)
         elif key == Qt.Key_E:
             if self.image:
                 self.wid.new(self, 2)  # start new manual Lumen contour
                 self.hideBox.setChecked(False)
                 self.contours = True
-        elif key == Qt.Key_F:
-            if self.image:
-                self.wid.new(self, 1)  # start new manual Vessel contour
-                self.hideBox.setChecked(False)
-                self.contours = True
+        if event.key() == Qt.Key.Key_R:
+            # Reset window level and window width to initial values
+            self.wid.window_level = self.wid.initial_window_level
+            self.wid.window_width = self.wid.initial_window_width
+            self.wid.displayImage()
+        elif event.key() == Qt.Key.Key_C:
+            # Toggle colormap
+            self.colormap_enabled = not self.colormap_enabled
+            self.wid.displayImage()
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""

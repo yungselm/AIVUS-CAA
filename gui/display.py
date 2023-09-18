@@ -2,8 +2,9 @@ import math
 
 import numpy as np
 from loguru import logger
+import cv2
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QPixmap, QImage
 
 from gui.geometry import Point, Spline
@@ -26,12 +27,13 @@ class Display(QGraphicsView):
         outerPoint: list, spline points for outer (plaque) contours
     """
 
-    def __init__(self):
+    def __init__(self, window, windowing_sensitivity):
         super(Display, self).__init__()
         print("View Height: {}, View Width: {}".format(self.width(), self.height()))
 
         scene = QGraphicsScene(self)
-
+        self.window = window
+        self.windowing_sensitivity = windowing_sensitivity
         self.scene = scene
         self.pointIdx = None
         self.frame = 0
@@ -50,6 +52,16 @@ class Display(QGraphicsView):
         self.outerPoint = []
         self.display_size = 800
 
+        # Store initial window level and window width (full width, middle level)
+        self.initial_window_level = 128  # window level is the center which determines the brightness of the image
+        self.initial_window_width = 256  # window width is the range of pixel values that are displayed
+        self.window_level = self.initial_window_level
+        self.window_width = self.initial_window_width
+
+        # Set up mouse event handling
+        self.setMouseTracking(True)
+        self.viewport().installEventFilter(self)
+
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -57,11 +69,28 @@ class Display(QGraphicsView):
         self.scene.addItem(self.image)
         self.setScene(self.scene)
 
+    def eventFilter(self, obj, event):
+        """Handle mouse events for adjusting window level and window width"""
+        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.RightButton:
+            # Right-click drag for adjusting window level and window width
+            dx = (event.x() - self.mouse_x) * self.windowing_sensitivity
+            dy = (event.y() - self.mouse_y) * self.windowing_sensitivity
+
+            self.window_level += dx
+            self.window_width += dy
+
+            self.displayImage()
+
+        elif event.type() == QEvent.Type.MouseButtonPress and event.buttons() == Qt.MouseButton.RightButton:
+            self.mouse_x = event.x()
+            self.mouse_y = event.y()
+
+        return super().eventFilter(obj, event)
+
     def findItem(self, item, eventPos):
         """Sets the active point for interaction"""
 
         pos = item.mapFromScene(self.mapToScene(eventPos))
-        dist = item.select_point(pos)
         item.updateColor()
         self.enable_drag = True
         self.activePoint = item
@@ -151,7 +180,7 @@ class Display(QGraphicsView):
 
         for frame in range(self.numberOfFrames):
             if self.lumen[0][frame]:
-                lumen = Spline([self.lumen[0][frame], self.lumen[1][frame]], 'r')
+                lumen = Spline([self.lumen[0][frame], self.lumen[1][frame]], 'g')
                 lumenContour[0].append(list(lumen.points[0]))
                 lumenContour[1].append(list(lumen.points[1]))
             else:
@@ -193,20 +222,31 @@ class Display(QGraphicsView):
         self.activePoint = None
         self.pointIdx = None
 
-        if len(self.images.shape) == 3:
-            self.image = QImage(
-                self.images[self.frame, :, :], self.imsize[1], self.imsize[2], QImage.Format_Grayscale8
-            ).scaled(self.display_size, self.display_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        # Calculate lower and upper bounds for the adjusted window level and window width
+        lower_bound = self.window_level - self.window_width / 2
+        upper_bound = self.window_level + self.window_width / 2
+
+        # Clip and normalize pixel values
+        normalized_data = np.clip(
+            self.images[self.frame, :, :], lower_bound, upper_bound
+        )  # clip values to be within the range
+        normalized_data = ((normalized_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
+        height, width = normalized_data.shape
+
+        if self.window.colormap_enabled:
+            # Apply an orange-blue colormap
+            colormap = cv2.applyColorMap(normalized_data, cv2.COLORMAP_JET)
+            q_image = QImage(colormap.data, width, height, width * 3, QImage.Format.Format_RGB888).scaled(
+                self.display_size, self.display_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+            )
         else:
-            bytesPerLine = 3 * self.imsize[2]
-            current_image = self.images[self.frame, :, :, :].astype(np.uint8, order='C', casting='unsafe')
-            self.image = QImage(
-                current_image.data, self.imsize[1], self.imsize[2], bytesPerLine, QImage.Format_RGB888
-            ).scaled(self.display_size, self.display_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            q_image = QImage(normalized_data.data, width, height, width, QImage.Format.Format_Grayscale8).scaled(
+                self.display_size, self.display_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+            )
 
-        image = QPixmap.fromImage(self.image)
-
-        self.image = QGraphicsPixmapItem(image)
+        self.q_image = q_image  # Update the QImage
+        self.pixmap = QPixmap.fromImage(q_image)
+        self.image = QGraphicsPixmapItem(self.pixmap)
         self.scene.addItem(self.image)
 
         if not self.hide:
@@ -222,9 +262,9 @@ class Display(QGraphicsView):
         if lumen[0][self.frame]:
             lumen_x = [val * contour_scaling_factor for val in lumen[0][self.frame]]
             lumen_y = [val * contour_scaling_factor for val in lumen[1][self.frame]]
-            self.innerSpline = Spline([lumen_x, lumen_y], 'r')
+            self.innerSpline = Spline([lumen_x, lumen_y], 'g')
             self.innerPoint = [
-                Point((self.innerSpline.knotPoints[0][idx], self.innerSpline.knotPoints[1][idx]), 'r')
+                Point((self.innerSpline.knotPoints[0][idx], self.innerSpline.knotPoints[1][idx]), 'g')
                 for idx in range(len(self.innerSpline.knotPoints[0]) - 1)
             ]
             [self.scene.addItem(point) for point in self.innerPoint]

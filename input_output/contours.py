@@ -13,7 +13,6 @@ from PyQt5.QtCore import Qt
 
 from input_output.read_xml import read
 from input_output.write_xml import write_xml, mask_image, get_contours
-# from segmentation.tf_predict import predict
 
 
 def readContours(window, fileName=None):
@@ -144,7 +143,7 @@ def segment(window):
     else:  # perform first segmentation
         masks = np.zeros((window.numberOfFrames, image_dim[1], image_dim[2]), dtype=np.uint8)
 
-    masks[window.gated_frames, :, :] = predict(window.images[window.gated_frames, :, :])
+    # masks[window.gated_frames, :, :] = predict(window.images[window.gated_frames, :, :])
     window.masks = masks
 
     # compute metrics such as plaque burden
