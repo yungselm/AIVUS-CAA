@@ -27,6 +27,9 @@ pylibjpeg-libjpeg = "*"
 pyqt5 = "*"
 pyqtdarktheme = "2.1.0"
 #urllib3 = "1.26.15"
+shapely = "*"
+SimpleITK = "*"
+opencv-python-headless = "*"
 
 [tool.poetry.group.dev.dependencies]
 autohooks = "^23.1.0"
