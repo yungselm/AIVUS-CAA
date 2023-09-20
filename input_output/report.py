@@ -8,7 +8,7 @@ from shapely.geometry import Polygon
 
 
 def report(window):
-    """Writes a report file containing lumen area, plaque, area, vessel area, plaque burden, phenotype"""
+    """Writes a report file containing lumen area, etc."""
 
     if not window.image:
         warning = QErrorMessage(window)

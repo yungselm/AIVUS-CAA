@@ -198,8 +198,6 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
                 p = et.SubElement(ctr, 'p')
                 p.text = str(int(x[frame][k])) + ',' + str(int(y[frame][k]))
         except IndexError:
-            logger.debug(len(x))
-            logger.debug(frame)
             pass
 
     tree = et.ElementTree(root)

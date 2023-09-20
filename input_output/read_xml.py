@@ -23,7 +23,6 @@ def read(path, frames=[]):
     Returns:
         (Lx, Ly): tuple, x and y lumen contours
         (Vx, Vy): tuple, x and y plaque contours
-        (Sx, Sy): tuple, x and y stent contours
         [xres, yres]: list, x and y pixel spacing
         framelist: list, frames with contours
     """
@@ -36,8 +35,6 @@ def read(path, frames=[]):
     plaque_frames = []
     phases = []
     lumen = {}
-    vessel = {}
-    stent = {}
 
     for child in root:
         for imageState in child.iter('ImageState'):
@@ -90,10 +87,7 @@ def read(path, frames=[]):
                                 elif contour == 'S':
                                     stent_subpoints.append(child.text)
                     lumen_points.append(lumen_subpoints)
-
                     lumen[frameNo] = lumen_subpoints
-                    vessel[frameNo] = vessel_subpoints
-                    stent[frameNo] = stent_subpoints
 
     Lx, Ly = splitxy(lumen_points)
 

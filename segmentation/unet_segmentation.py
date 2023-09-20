@@ -43,7 +43,7 @@ class UNetSegmentation:
         # self.cuda = False
         self.device = torch.device("cuda" if self.cuda else "cpu")
         self.input_shape = (512, 512)
-        self.num_classes = 3  # background, lumen, vessel
+        self.num_classes = 2  # background, lumen
 
         self.root_dir = config.root_dir
         self.batch_size = config.segmentation.batch_size

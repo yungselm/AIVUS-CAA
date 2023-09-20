@@ -130,12 +130,6 @@ def segment(window):
     window.lumen = maskToContours(masks)
     window.contours = True
 
-    # stent contours currently unsupported so create empty list
-    window.stent = [
-        [[] for _ in range(image_dim[0])],
-        [[] for _ in range(image_dim[0])],
-    ]
-
     window.wid.setData(window.lumen, window.images)
     window.hideBox.setChecked(False)
     window.status_bar.showMessage('Waiting for user input')
