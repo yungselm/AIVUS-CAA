@@ -28,9 +28,6 @@ def readDICOM(window):
 
     options = QFileDialog.Options()
     options = QFileDialog.DontUseNativeDialog
-    # fileName, _ = QFileDialog.getOpenFileName(
-    #     self, "QFileDialog.getOpenFileName()", "", "DICOM files (*.dcm);;All files (*)", options=options
-    # )
     fileName, _ = QFileDialog.getOpenFileName(
         window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
     )
@@ -70,10 +67,8 @@ def readDICOM(window):
 
         if not window.lumen or reinitializeContours:
             window.lumen = ([[] for _ in range(window.numberOfFrames)], [[] for _ in range(window.numberOfFrames)])
-            window.plaque = ([[] for _ in range(window.numberOfFrames)], [[] for _ in range(window.numberOfFrames)])
-            window.stent = ([[] for _ in range(window.numberOfFrames)], [[] for _ in range(window.numberOfFrames)])
 
-        window.wid.setData(window.lumen, window.plaque, window.stent, window.images)
+        window.wid.setData(window.lumen, window.images)
         window.slider.setValue(window.numberOfFrames - 1)
 
         # read contours if available
@@ -163,9 +158,3 @@ def parseDICOM(window):
         window.model = window.dicom.ManufacturerModelName
     else:
         window.model = 'Unknown'
-
-    # if pixel data is described by luminance (Y) and chominance (B & R)
-    # only occurs when SamplesPerPixel==3
-    # if self.dicom.get('PhotometricInterpretation') == 'YBR_FULL_422':
-    #    #self.images = np.mean(self.images, 3, dtype=np.uint8)
-    #    self.images = np.ascontiguousarray(self.images)[:, :, :, 0]

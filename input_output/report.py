@@ -26,7 +26,6 @@ def report(window):
         frame for frame in range(window.numberOfFrames) if window.lumen[0][frame] or window.plaque[0][frame]
     ]
     lumen_area, centroid_x, centroid_y = computeContourMetrics(window, contoured_frames)
-    phenotype = [0] * len(contoured_frames)
 
     f = open(os.path.splitext(window.file_name)[0] + "_report.txt", "w")
     f.write(

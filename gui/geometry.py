@@ -26,7 +26,6 @@ class Point(QGraphicsEllipseItem):
 
     def select_point(self, pos):
         """Identifies what point has been selected with the mouse"""
-
         dist = np.sqrt((self.rect().x() - pos.x()) ** 2 + (self.rect().y() - pos.y()) ** 2)
 
         return dist

@@ -18,9 +18,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QErrorMessage,
     QMenuBar,
-    QMenu,
     QStatusBar,
-    QSizePolicy
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
@@ -28,7 +26,7 @@ from PyQt5.QtGui import QIcon
 from gui.display import Display
 from gui.slider import Slider, Communicate
 from input_output.read_dicom import readDICOM
-from input_output.contours import readContours, writeContours, segment, newSpline
+from input_output.contours import writeContours, segment, newSpline
 from input_output.report import report
 from preprocessing.preprocessing import PreProcessing
 from segmentation.save_as_nifti import save_as_nifti
@@ -53,7 +51,6 @@ class Master(QMainWindow):
         self.segmentation = False
         self.colormap_enabled = False
         self.lumen = ()
-        self.plaque = ()
         self.gated_frames_dia = []
         self.gated_frames_sys = []
         self.distance_frames = []
@@ -68,9 +65,6 @@ class Master(QMainWindow):
         self.addToolBar("MY Window")
         self.showMaximized()
 
-        menuBar = QMenuBar(self)
-        self.setMenuBar(menuBar)
-        helpMenu = menuBar.addMenu('Help')
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage('Waiting for user input...')
@@ -88,17 +82,17 @@ class Master(QMainWindow):
         layout.addLayout(vbox1)
         layout.addLayout(vbox2)
 
-        dicomButton = QPushButton('&Read DICOM')
+        dicomButton = QPushButton('Read DICOM')
         segmentButton = QPushButton('Segment')
         splineButton = QPushButton('Manual Contour')
-        writeButton = QPushButton('Write &Contours')
+        writeButton = QPushButton('Write Contours')
         reportButton = QPushButton('Write Report')
 
         dicomButton.setToolTip("Load images in .dcm format")
-        segmentButton.setToolTip("Run deep learning based segmentation of lumen and plaque")
-        splineButton.setToolTip("Manually draw new contour for lumen, plaque or stent")
+        segmentButton.setToolTip("Run deep learning based segmentation of lumen")
+        splineButton.setToolTip("Manually draw new contour for lumen")
         writeButton.setToolTip("Save contours in .xml file")
-        reportButton.setToolTip("Write report containing, lumen, plaque and vessel areas and plaque burden")
+        reportButton.setToolTip("Write report to .txt file")
 
         hideHeader1 = QHeaderView(Qt.Vertical)
         hideHeader1.hide()
@@ -124,12 +118,12 @@ class Master(QMainWindow):
         self.shortcutInfo.setText(
             (
                 '\n'
-                'Press R to read a DICOM file. '
+                'First, load a DICOM file using the button below.\n'
                 'If available, contours for that file will be read automatically.\n'
                 'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
                 'Press E to draw a new Lumen contour.\n'
-                'Press F to draw a new Vessel contour.\n'
-                f'Press C to save all contours (done automatically every {int(autoSaveInterval/1000)} seconds).\n'
+                'Hold the right mouse button for windowing (can be reset by pressing R).\n'
+                f'Press C to toggle color mode.\n'
                 'Press H to hide all contours.\n'
                 'Press J to jiggle around the current frame.\n'
                 'Press Q to close the program.\n'
@@ -256,13 +250,9 @@ class Master(QMainWindow):
             self.slider.setValue(self.slider.value() + 1)
         elif key == Qt.Key_A or key == Qt.Key_Left:
             self.slider.setValue(self.slider.value() - 1)
-        # elif key == Qt.Key_R:
-        #     readDICOM(self)
-        # elif key == Qt.Key_C:
-        #     writeContours(self)
         elif key == Qt.Key_E:
             if self.image:
-                self.wid.new(self, 2)  # start new manual Lumen contour
+                self.wid.new(self)  # start new manual Lumen contour
                 self.hideBox.setChecked(False)
                 self.contours = True
         if event.key() == Qt.Key.Key_R:

@@ -8,10 +8,8 @@ import PIL.Image as im
 import matplotlib.path as mplPath
 from loguru import logger
 from skimage import measure
-from pathlib import Path
 
 
-# read images
 def mask_image(mask, catheter):
     # mask values outside perivascular as the image max
     mask.setflags(write=1)
@@ -30,20 +28,11 @@ def label_contours(image, levels):
     """generate contours for labels"""
     # Find contours at a constant value
     contours1 = measure.find_contours(image, levels[0])
-    contours2 = measure.find_contours(image, levels[1])
-
     lumen = []
-    plaque = []
-
     for contour in contours1:
-        # lumen.append(np.array((contour[:,0]*IVUS_spacing, contour[:,1]*resolution)))
         lumen.append(np.array((contour[:, 0], contour[:, 1])))
 
-    for contour in contours2:
-        # plaque.append(np.array((contour[:,0]*IVUS_spacing, contour[:,1]*resolution)))
-        plaque.append(np.array((contour[:, 0], contour[:, 1])))
-
-    return lumen, plaque
+    return lumen
 
 
 def keep_largest_contour(contours, image_shape):
@@ -81,32 +70,23 @@ def get_contours(preds, levels, image_shape):
     """Extracts contours from masked images. Returns x and y coodinates"""
     # get contours for each image
     lumen_pred = [[], []]
-    plaque_pred = [[], []]
     x = []
     y = []
     # convert contours to x and y points where every second entry in x and y are outer contours
     for i in range(preds.shape[0]):
         if np.any(preds[i, :, :] == 1):
-            lumen, plaque = label_contours(preds[i, :, :], levels)
+            lumen = label_contours(preds[i, :, :], levels)
             # return the contour with the largest number of points
             keep_lumen_x, keep_lumen_y = keep_largest_contour(lumen, image_shape)
-            keep_plaque_x, keep_plaque_y = keep_largest_contour(plaque, image_shape)
             x.append(keep_lumen_x)
             y.append(keep_lumen_y)
-
-            x.append(keep_plaque_x)
-            y.append(keep_plaque_y)
         else:
-            x.append([])
-            y.append([])
             x.append([])
             y.append([])
         lumen_pred[0].append(x[-2])
         lumen_pred[1].append(y[-2])
-        plaque_pred[0].append(x[-1])
-        plaque_pred[1].append(y[-1])
 
-    return x, y, lumen_pred, plaque_pred
+    return x, y, lumen_pred
 
 
 def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
@@ -205,27 +185,22 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
         except IndexError:  # old contour files may not have phases attr
             phase.text = '-'
 
-        for j in range(2):
-            try:
-                ctr = et.SubElement(fm, 'Ctr')
-                npts = et.SubElement(ctr, 'Npts')
-                npts.text = str(len(x[frame * 2 + j]))
-                type = et.SubElement(ctr, 'Type')
-                if j == 0:
-                    type.text = 'L'
-                elif j == 1:
-                    type.text = 'V'
-                handdrawn = et.SubElement(ctr, 'HandDrawn')
-                handdrawn.text = 'T'
-                # iterative over the points in each contour
-                for k in range(len(x[frame * 2 + j])):
-                    p = et.SubElement(ctr, 'p')
-                    p.text = str(int(x[frame * 2 + j][k])) + ',' + str(int(y[frame * 2 + j][k]))
-                # print(i, len(x[i*2+j]))
-            except IndexError:
-                logger.debug(len(x))
-                logger.debug(frame * 2 + j)
-                pass
+        try:
+            ctr = et.SubElement(fm, 'Ctr')
+            npts = et.SubElement(ctr, 'Npts')
+            npts.text = str(len(x[frame]))
+            type = et.SubElement(ctr, 'Type')
+            type.text = 'L'
+            handdrawn = et.SubElement(ctr, 'HandDrawn')
+            handdrawn.text = 'T'
+            # iterative over the points in each contour
+            for k in range(len(x[frame])):
+                p = et.SubElement(ctr, 'p')
+                p.text = str(int(x[frame][k])) + ',' + str(int(y[frame][k]))
+        except IndexError:
+            logger.debug(len(x))
+            logger.debug(frame)
+            pass
 
     tree = et.ElementTree(root)
     tree.write(os.path.splitext(out_path)[0] + '_contours.xml')

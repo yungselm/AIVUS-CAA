@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import (
     QErrorMessage,
     QFileDialog,
     QMessageBox,
-    QPushButton,
 )
 from PyQt5.QtCore import Qt
 
@@ -37,16 +36,12 @@ def readContours(window, fileName=None):
         )
 
     if fileName:
-        window.lumen, window.plaque, window.stent, window.resolution, _, window.plaque_frames, window.phases = read(
-            fileName
-        )
+        window.lumen, window.resolution, _, window.plaque_frames, window.phases = read(fileName)
 
         window.resolution = float(window.resolution[0])
         window.lumen = mapToList(window.lumen)
-        window.plaque = mapToList(window.plaque)
-        window.stent = mapToList(window.stent)
         window.contours = True
-        window.wid.setData(window.lumen, window.plaque, window.stent, window.images)
+        window.wid.setData(window.lumen, window.images)
         window.hideBox.setChecked(False)
 
 
@@ -60,7 +55,7 @@ def writeContours(window):
         warning.exec_()
         return
 
-    window.lumen, window.plaque = window.wid.getData()
+    window.lumen = window.wid.getData()
 
     # reformat data for compatibility with write_xml function
     x, y = [], []
@@ -72,17 +67,8 @@ def writeContours(window):
             new_x_lumen = []
             new_y_lumen = []
 
-        if i < len(window.plaque[0]):
-            new_x_plaque = window.plaque[0][i]
-            new_y_plaque = window.plaque[1][i]
-        else:
-            new_x_plaque = []
-            new_y_plaque = []
-
         x.append(new_x_lumen)
-        x.append(new_x_plaque)
         y.append(new_y_lumen)
-        y.append(new_y_plaque)
 
     write_xml(
         x,
@@ -99,8 +85,6 @@ def writeContours(window):
 def reset_contours(window):
     window.contours = False
     window.lumen = None
-    window.plaque = None
-    window.stent = None
 
 
 def segment(window):
@@ -129,13 +113,6 @@ def segment(window):
         window.status_bar.showMessage('Waiting for user input')
         return -1
 
-    # warning = QErrorMessage()
-    # warning.setWindowModality(Qt.WindowModal)
-    # warning.showMessage(
-    #     "Warning: IVUS Phenotyping is currently only supported for 20MHz images. Interpret other images with extreme caution"
-    # )
-    # warning.exec_()
-
     image_dim = window.images.shape
 
     if hasattr(window, 'masks'):  # keep previous segmentation
@@ -150,7 +127,7 @@ def segment(window):
     window.metrics = computeMetrics(window, masks)
 
     # convert masks to contours
-    window.lumen, window.plaque = maskToContours(masks)
+    window.lumen = maskToContours(masks)
     window.contours = True
 
     # stent contours currently unsupported so create empty list
@@ -159,7 +136,7 @@ def segment(window):
         [[] for _ in range(image_dim[0])],
     ]
 
-    window.wid.setData(window.lumen, window.plaque, window.stent, window.images)
+    window.wid.setData(window.lumen, window.images)
     window.hideBox.setChecked(False)
     window.status_bar.showMessage('Waiting for user input')
 
@@ -174,21 +151,7 @@ def newSpline(window):
         warning.exec_()
         return
 
-    b1 = QPushButton("Stent")
-    b2 = QPushButton("Vessel")
-    b3 = QPushButton("Lumen")
-
-    d = QMessageBox()
-    d.setText("Select which contour to draw")
-    d.setInformativeText("Contour must be closed before proceeding by clicking on initial point")
-    d.setWindowModality(Qt.WindowModal)
-    d.addButton(b1, 0)
-    d.addButton(b2, 1)
-    d.addButton(b3, 2)
-
-    result = d.exec_()
-
-    window.wid.new(window, result)
+    window.wid.new(window)
     window.hideBox.setChecked(False)
     window.contours = True
 
@@ -199,45 +162,35 @@ def maskToContours(masks):
     levels = [1.5, 2.5]
     image_shape = masks.shape[1:3]
     masks = mask_image(masks, catheter=0)
-    _, _, lumen_pred, plaque_pred = get_contours(masks, levels, image_shape)
+    _, _, lumen_pred = get_contours(masks, levels, image_shape)
 
-    return lumen_pred, plaque_pred
+    return lumen_pred
 
 
-def contoursToMask(images, contoured_frames, lumen, plaque):
+def contoursToMask(images, contoured_frames, lumen):
     """Convert IVUS contours to numpy mask"""
     image_shape = images.shape[1:3]
     mask = np.zeros_like(images)
     for i, frame in enumerate(contoured_frames):
         try:
             lumen_polygon = [[x, y] for x, y in zip(lumen[1][frame], lumen[0][frame])]
-            mask[i, :, :] += polygon2mask(image_shape, lumen_polygon).astype(np.uint8) * 2
+            mask[i, :, :] += polygon2mask(image_shape, lumen_polygon).astype(np.uint8)
         except ValueError:  # frame has no lumen contours
             pass
-        try:
-            vessel_polygon = [[x, y] for x, y in zip(plaque[1][frame], plaque[0][frame])]
-            mask[i, :, :] += polygon2mask(image_shape, vessel_polygon).astype(np.uint8)
-        except ValueError:  # frame has no vessel contours
-            pass
-    mask = np.clip(mask, a_min=0, a_max=2)  # enforce correct value range
+    mask = np.clip(mask, a_min=0, a_max=1)  # enforce correct value range
 
     return mask
 
 
 def computeMetrics(window, masks):
-    """Measures lumen area, plaque area and plaque burden"""
+    """Measures lumen area"""
+    lumen_area = np.sum(masks == 1, axis=(1, 2)) * window.resolution**2
 
-    lumen, plaque = 2, 1
-    lumen_area = np.sum(masks == lumen, axis=(1, 2)) * window.resolution**2
-    plaque_area = np.sum(masks == plaque, axis=(1, 2)) * window.resolution**2
-    plaque_burden = (plaque_area / (lumen_area + plaque_area)) * 100
-
-    return (lumen_area, plaque_area, plaque_burden)
+    return lumen_area
 
 
 def mapToList(contours):
     """Converts map to list"""
-
     x, y = contours
     x = [list(x[i]) for i in range(0, len(x))]
     y = [list(y[i]) for i in range(0, len(y))]

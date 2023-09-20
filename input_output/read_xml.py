@@ -29,12 +29,8 @@ def read(path, frames=[]):
     """
     tree = ET.parse(path)
     root = tree.getroot()
-    # print(root.tag)
     root.attrib
-    # print(root[0].text)
     lumen_points = []
-    vessel_points = []
-    stent_points = []
     no_points = []
     framelist = []
     plaque_frames = []
@@ -44,8 +40,6 @@ def read(path, frames=[]):
     stent = {}
 
     for child in root:
-        # use text to see the values in the tags
-        # print(child.tag, child.text)
         for imageState in child.iter('ImageState'):
             xdim = imageState.find('Xdim').text
             ydim = imageState.find('Ydim').text
@@ -56,13 +50,8 @@ def read(path, frames=[]):
         for imageCalibration in child.iter('ImageCalibration'):
             xres = imageCalibration.find('XCalibration').text
             yres = imageCalibration.find('YCalibration').text
-            pullbackSpeed = imageCalibration.find('PullbackSpeed').text
 
-        for frameState in child.iter('FrameState'):
-            xOffSet = frameState.find('Xoffset').text
-            yOffSet = frameState.find('Yoffset').text
-            fm = frameState.find('Fm').iter('Num')
-
+        for _ in child.iter('FrameState'):
             for frame in child.iter('Fm'):
                 frameNo = int(frame.find('Num').text)
                 # iterate through the frame and identify the contour
@@ -101,22 +90,14 @@ def read(path, frames=[]):
                                 elif contour == 'S':
                                     stent_subpoints.append(child.text)
                     lumen_points.append(lumen_subpoints)
-                    vessel_points.append(vessel_subpoints)
-                    stent_points.append(stent_subpoints)
+
                     lumen[frameNo] = lumen_subpoints
                     vessel[frameNo] = vessel_subpoints
                     stent[frameNo] = stent_subpoints
 
     Lx, Ly = splitxy(lumen_points)
-    Vx, Vy = splitxy(vessel_points)
-    Sx, Sy = splitxy(stent_points)
-    pointsY = []
 
     # return unique frames as we have entry for each inner and outer contour
     framelist = list(sorted(set(map(int, framelist))))
 
-    # print((xdim, ydim, zdim))
-    # print((xres, yres))
-
-    # return (Lx, Ly), (Vx, Vy), (Sx, Sy), [xres, yres], framelist
-    return (Lx, Ly), (Vx, Vy), (Sx, Sy), [xres, yres], [xdim, ydim, zdim], plaque_frames, phases
+    return (Lx, Ly), [xres, yres], [xdim, ydim, zdim], plaque_frames, phases
