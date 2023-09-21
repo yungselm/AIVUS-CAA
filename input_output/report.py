@@ -60,8 +60,8 @@ def report(window):
                 longest_x[index][1],
                 longest_y[index][1],
                 shortest_distances[index],
-                shortest_x[index],
-                shortest_y[index],
+                shortest_x[index][0],
+                shortest_y[index][0],
                 window.phases[frame],
             )
         )
@@ -88,9 +88,6 @@ def computeContourMetrics(window, contoured_frames):
 
 
 def findShortestDistanceContour(window, contoured_frames):
-    """ function to find the shortest distance between the centroid of the polygon and the polygon's exterior.
-    Function first evaluates shortest distance between the centroid and each point on the exterior, 
-    then extends a line to the exterior to calculate shortest distance"""
     shortest_distances = []
     shortest_points_x = []
     shortest_points_y = []
@@ -98,56 +95,29 @@ def findShortestDistanceContour(window, contoured_frames):
     for frame in contoured_frames:
         polygon = Polygon([(x, y) for x, y in zip(window.lumen[0][frame], window.lumen[1][frame])])
         centroid = polygon.centroid
+        circle = Point(centroid).buffer(1)
         exterior_coords = polygon.exterior.coords
 
-        min_distance = math.inf 
-        nearest_point = None
+        min_distance = math.inf
+        nearest_points = None
 
-        for point in exterior_coords:
-            distance = centroid.distance(Point(point))
-            if distance < min_distance:
-                min_distance = distance
-                nearest_point = Point(point)
-                print(nearest_point)
+        for point1, point2 in combinations(exterior_coords, 2):
+            line = LineString([point1, point2])
+            if line.intersects(circle):
+                distance = math.dist(point1, point2)
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest_points = (point1, point2)
 
         shortest_distances.append(min_distance * window.resolution)
-        shortest_points_x.append(nearest_point.x)
-        shortest_points_y.append(nearest_point.y)
-
-    return shortest_distances, shortest_points_x, shortest_points_y
-
-# def findShortestDistanceContour(window, contoured_frames):
-#     shortest_distances = []
-#     shortest_points_x = []
-#     shortest_points_y = []
-
-#     for frame in contoured_frames:
-#         polygon = Polygon([(x, y) for x, y in zip(window.lumen[0][frame], window.lumen[1][frame])])
-#         centroid = polygon.centroid
-#         exterior_coords = polygon.exterior.coords
-
-#         min_distance = math.inf
-#         nearest_points = None
-
-#         for point1, point2 in combinations(exterior_coords, 2):
-#             line = LineString([point1, point2])
-#             print("Hello")
-#             if line.intersects(centroid):
-#                 print("Hello")
-#                 distance = math.dist(point1, point2)
-#                 if distance < min_distance:
-#                     min_distance = distance
-#                     nearest_points = (point1, point2)
-
-#         shortest_distances.append(min_distance * window.resolution)
         
-#         # Separate x and y coordinates and append to the respective lists
-#         x1, y1 = nearest_points[0]
-#         x2, y2 = nearest_points[1]
-#         shortest_points_x.append([x1, x2])
-#         shortest_points_y.append([y1, y2])
+        # Separate x and y coordinates and append to the respective lists
+        x1, y1 = nearest_points[0]
+        x2, y2 = nearest_points[1]
+        shortest_points_x.append([x1, x2])
+        shortest_points_y.append([y1, y2])
     
-#     return shortest_distances, shortest_points_x, shortest_points_y
+    return shortest_distances, shortest_points_x, shortest_points_y
 
 def findLongestDistanceContour(window, contoured_frames):
     longest_distances = []
@@ -203,13 +173,18 @@ def plotContoursWithMetrics(window, contoured_frames, centroid_x, centroid_y, lu
     """Plot contours and annotate with metrics"""
     longest_distances, longest_x, longest_y = findLongestDistanceContour(window, contoured_frames)
     shortest_distances, shortest_x, shortest_y = findShortestDistanceContour(window, contoured_frames)
+    first_third = int(len(contoured_frames) * 0.25)
+    second_third = int(len(contoured_frames) * 0.5)
+    third_third = int(len(contoured_frames) * 0.75)
+    indices_to_plot = [first_third, second_third, third_third]
+    frames_to_plot = [contoured_frames[index] for index in indices_to_plot]
 
-    for index, frame in enumerate(contoured_frames):
-        plt.figure(figsize=(8, 6))
+    for index, frame in enumerate(frames_to_plot):
+        plt.figure(figsize=(6, 6))
         plt.plot(window.lumen[0][frame], window.lumen[1][frame], '-g', linewidth=2, label='Contour')
         plt.plot(centroid_x[index], centroid_y[index], 'ro', markersize=8, label='Centroid')
-        plt.plot(longest_x[index][0], longest_y[index][0], 'bo', markersize=8, label='Frathest Point 1')
-        plt.plot(longest_x[index][1], longest_y[index][1], 'bo', markersize=8, label='Frathest Point 2')
+        plt.plot(longest_x[index][0], longest_y[index][0], 'bo', markersize=8, label='Farthest Point 1')
+        plt.plot(longest_x[index][1], longest_y[index][1], 'bo', markersize=8, label='Farthest Point 2')
         plt.plot(shortest_x[index], shortest_y[index], 'yo', markersize=8, label='Shortest Point')
 
 
