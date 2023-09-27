@@ -18,70 +18,74 @@ class PreProcessing:
         return tags_dia, tags_sys, distance_frames
 
     def IVUS_gating_diastole(self):
-        """Performs gating of IVUS images"""
+        """Performs gating of IVUS images, based on the paper G. D. Maso Talou, 
+          "Improving Cardiac Phase Extraction in IVUS Studies by Integration of Gating Methods," 
+          in IEEE Transactions on Biomedical Engineering (Dec. 2015), doi: 10.1109/TBME.2015.2449232."""
 
         if len(self.images.shape) == 4:
             self.images = self.images[:, :, :, 0]
 
         num_images = self.images.shape[0]
-        pullback = self.speed * (num_images - 1) / self.frame_rate  # first image is recorded instantly so no time delay
+        pullback_len = self.speed * (num_images - 1) / self.frame_rate  # first image is recorded instantly so no time delay
 
-        s0 = np.zeros((num_images - 1, 1))
-        s1 = np.zeros((num_images - 1, 1))
+        # calculate features, one for correlation and one for gradient
+        feat_corr = np.zeros((num_images - 1, 1))
+        feat_grad = np.zeros((num_images - 1, 1))
 
         for i in range(num_images - 1):
             C = self.normxcorr(self.images[i, :, :], self.images[i + 1, :, :])
-            s0[i] = 1 - np.max(C)
+            feat_corr[i] = 1 - np.max(C)
             gradx, grady = np.gradient(self.images[i, :, :])
             gradmag = abs(np.sqrt(gradx**2 + grady**2))
-            s1[i] = -np.sum(gradmag)
+            feat_grad[i] = -np.sum(gradmag)
 
         # normalize data
-        s0_plus = s0 - np.min(s0)
-        s1_plus = s1 - np.min(s1)
+        feat_corr_plus = feat_corr - np.min(feat_corr)
+        feat_grad_plus = feat_grad - np.min(feat_grad)
 
-        s0_norm = s0_plus / np.sum(s0_plus)
-        s1_norm = s1_plus / np.sum(s1_plus)
+        feat_corr_norm = feat_corr_plus / np.sum(feat_corr_plus)
+        feat_grad_norm = feat_grad_plus / np.sum(feat_grad_plus)
 
         alpha = 0.25
-        s = alpha * s0_norm + (1 - alpha) * s1_norm
+        signal = alpha * feat_corr_norm + (1 - alpha) * feat_grad_norm
 
         # determine Fs (sampling frequency)
-        t = np.linspace(0, pullback / self.speed, num_images)
-        Fs = num_images / np.max(t)
-        NFFT = int(2 ** np.ceil(np.log2(np.abs(len(s)))))
-        ss = np.fft.fft(s, NFFT, 0) / len(s)
+        time = np.linspace(0, pullback_len / self.speed, num_images)
+        Fs = num_images / np.max(time)
+        NFFT = int(2 ** np.ceil(np.log2(np.abs(len(signal)))))
+        sample_signal = np.fft.fft(signal, NFFT, 0) / len(signal)
         freq = Fs / 2 * np.linspace(0, 1, NFFT // 2 + 1)
 
         # in order to return correct amplitude fft must be divided by length of sample
-        freq[freq < 0.75] = 0
-        freq[freq > 1.66] = 0
+        # remove non-physiological frequencies, chosen heart rate range is 40-170 bpm
+        freq[freq < 0.67] = 0
+        freq[freq > 2.83] = 0
 
-        ss1 = ss[0 : NFFT // 2 + 1]
-        ss1[freq == 0] = 0
+        sample_signal_red = sample_signal[0 : NFFT // 2 + 1]
+        sample_signal_red[freq == 0] = 0
 
         # determine maximum frequency component of ss
-        fm = np.argmax(np.abs(ss1))
-        fm = freq[fm]
+        max_freq_ss = np.argmax(np.abs(sample_signal_red))
+        max_freq_ss = freq[max_freq_ss]
 
         # find cutoff frequency
         sigma = 0.4
-        fc = (1 + sigma) * fm
+        cutoff_freq = (1 + sigma) * max_freq_ss
 
-        # construct low pass kernal (fmax is half of the transducer frame rate)
-        fmax = Fs / 2
+        # construct low pass kernel (nyqu_freq is half of the transducer frame rate) Nyquist frequency max that can be represented
+        nyqu_freq = Fs / 2
         tau = 25 / 46
         v = 21 / 46
-        f = ((fc / fmax) * np.sinc((fc * np.arange(1, num_images + 1)) / fmax)) * (
+        kernel_freq = ((cutoff_freq / nyqu_freq) * np.sinc((cutoff_freq * np.arange(1, num_images + 1)) / nyqu_freq)) * (
             tau - v * np.cos(2 * np.pi * (np.arange(1, num_images + 1) / num_images))
         )
 
         # determine low frequency signal
-        s_low = np.convolve(s[:, 0], f)
-        s_low = s_low[0 : len(s)]  # take first half only
+        s_low = np.convolve(signal[:, 0], kernel_freq)
+        s_low = s_low[0 : len(signal)]  # take first half only
 
         # find first minimum in heartbeat
-        hr_frames = int(np.round(Fs / fm))  # heart rate in frames
+        hr_frames = int(np.round(Fs / max_freq_ss))  # heart rate in frames
         idx = np.argmin(s_low[0:hr_frames])
         tags_dia = []
         tags_dia.append(idx)
@@ -90,7 +94,7 @@ class PreProcessing:
         while idx < (num_images - hr_frames):
             k = k + 1
             # based on known heart rate seach within 2 frames for local minimum
-            # increase fc to look at higher frequencies
+            # increase cutoff_freq to look at higher frequencies
             idx2 = idx + np.arange(hr_frames - 2, hr_frames + 3)
             # find local minimum
             idx2 = idx2[idx2 < num_images - 1]
@@ -98,57 +102,41 @@ class PreProcessing:
             idx = idx2[min_idx]
             tags_dia.append(idx)
 
-        fc = fc + fm
+        cutoff_freq = cutoff_freq + max_freq_ss
         j = 1
         s_low = np.expand_dims(s_low, 1)
 
-        while fc < fmax:
-            # recalculate f with new fc value
-            f = ((fc / fmax) * np.sinc((fc * np.arange(1, num_images + 1)) / fmax)) * (
+        while cutoff_freq < nyqu_freq:
+            # recalculate f with new cutoff_freq value
+            kernel_freq = ((cutoff_freq / nyqu_freq) * np.sinc((cutoff_freq * np.arange(1, num_images + 1)) / nyqu_freq)) * (
                 tau - v * np.cos(2 * np.pi * (np.arange(1, num_images + 1) / num_images))
             )
             # add extra columns to s_low to create surface as in paper
-            s_temp = np.expand_dims(np.convolve(s[:, 0], f), 1)
-            s_low = np.concatenate((s_low, s_temp[0 : len(s)]), 1)
+            s_temp = np.expand_dims(np.convolve(signal[:, 0], kernel_freq), 1)
+            s_low = np.concatenate((s_low, s_temp[0 : len(signal)]), 1)
 
             # adjust each previous minimum p(i) to the nearest minimum
             for i in range(len(tags_dia)):
                 # find index of new lowest p in +/-1 neighbour search
                 search_index = np.arange(tags_dia[i] - 1, tags_dia[i] + 2)
                 search_index = search_index[search_index >= 0]
-                search_index = search_index[search_index < len(s)]  # <=?
-                search_index = np.in1d(np.arange(0, len(s)), search_index)
+                search_index = search_index[search_index < len(signal)]  # <=?
+                search_index = np.in1d(np.arange(0, len(signal)), search_index)
                 # determine index of min value in the specified neighbour range
                 min_value = np.argmin(s_low[search_index, j])
                 # switch from logical to indexed values
                 search_index = np.argwhere(search_index)
                 tags_dia[i] = search_index[min_value][0]
             # iteratively adjust to the new minimum
-            # increase fc to look at higher frequencies
-            fc = fc + fm
+            # increase cutoff_freq to look at higher frequencies
+            cutoff_freq = cutoff_freq + max_freq_ss
             j = j + 1
-
-        # normalize each column of s_low
-        max_values = np.max(s_low, 0)
-        s_low_norm = s_low / np.tile(max_values, [len(s), 1])
 
         # group images between p(i) and p(i+1)
         # output frames corresponding to each cardiac phase
-        HB = []
+        heartbeat = []
         for i in range(len(tags_dia) - 1):
-            HB.append(list(np.arange(tags_dia[i], tags_dia[i + 1])))
-
-        # identify P cardiac phases (where P is the amount of frames in shortest heartbeat
-        P = [len(entry) for entry in HB]
-        P = min(P)
-
-        # each column in U corresponds to a cardiac phase (systole, diastole)
-        U = np.zeros((len(HB), P))
-        for i in range(len(HB)):
-            U[i, :] = HB[i][0:P]
-
-        # determine heartbeat period
-        t_HB = t[tags_dia[1:]] - t[tags_dia[:-1]]
+            heartbeat.append(list(np.arange(tags_dia[i], tags_dia[i + 1])))
 
         return tags_dia
 
@@ -162,20 +150,31 @@ class PreProcessing:
         C = C / (image1.shape[0] * image1.shape[1])
         return C
 
-    def IVUS_gating_systole(self, tags_dia):
-        """based on the frames p from IVUS gating, find the systolic frames with the formula 425 - 1.5 * HR"""
-        distance_frames = []
+    def IVUS_gating_systole(self, s_low, tags_dia, num_frames_to_remove=0.25):
+        """find the minimum signal value in between two diastolic frames and use this as the systolic frame"""
+        s_low = self.IVUS_gating_diastole()
+        
+        num_frames = len(tags_dia)
+        num_frames_to_ignore = int(np.round(num_frames * 0.25))
+        num_frames_to_analyze = num_frames - 2 * num_frames_to_ignore
+        
         tags_sys = []
-        for i in range(len(tags_dia) - 1):
-            frame_diff = tags_dia[i + 1] - tags_dia[i]
-            time_diff = frame_diff / self.frame_rate
-            HR = 60 / time_diff
-            s_to_systole = float((425 - 1.5 * HR) / 1000)
-            frames = int(s_to_systole * self.frame_rate)
-            tags_sys.append(tags_dia[i] + frames)
-            distance = time_diff * self.speed
-            distance_frames.append(distance)
-        return tags_sys, distance_frames
+
+        for i in range(num_frames - 1):
+            if i < num_frames_to_ignore or i >= (num_frames - num_frames_to_ignore):
+                continue  # Ignore the first and last 25% of frames
+            
+            start_idx = tags_dia[i] + num_frames_to_ignore
+            end_idx = tags_dia[i + 1] - num_frames_to_ignore
+            
+            # Extract the relevant portion of s_low for analysis
+            segment = s_low[start_idx:end_idx]
+            
+            # Find the index of the minimum value within the segment
+            min_idx = start_idx + np.argmin(segment)
+            tags_sys.append(min_idx)
+        
+        return tags_sys
 
     def stack_generator(self, tags_dia, tags_sys):
         """generate a stack for systolic and diastolic images based on list position"""
