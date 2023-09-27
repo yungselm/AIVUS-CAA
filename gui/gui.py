@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QErrorMessage,
-    QMenuBar,
     QStatusBar,
 )
 from PyQt5.QtCore import Qt, QTimer

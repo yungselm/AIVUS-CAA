@@ -5,6 +5,7 @@ import qdarktheme
 from omegaconf import DictConfig
 from loguru import logger
 
+from version import __version__
 from gui.gui import QApplication, Master
 from segmentation.unet_segmentation import UNetSegmentation
 
@@ -16,6 +17,7 @@ def main(config: DictConfig) -> None:
     else:
         qdarktheme.enable_hi_dpi()
         app = QApplication(sys.argv)
+        app.setApplicationVersion(__version__)
         qdarktheme.setup_theme('auto')
         Master(config)
         

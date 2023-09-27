@@ -1,6 +1,5 @@
 [tool.poetry]
 name = "AAOCASeg"
-version = "0.1.0"
 description = ""
 authors = ["yungselm", "cardionaut"]
 

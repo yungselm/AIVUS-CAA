@@ -1,5 +1,9 @@
+import glob
+
 import xml.etree.ElementTree as ET
 from loguru import logger
+
+from version import version_file_str
 
 
 def splitxy(points):
@@ -26,7 +30,17 @@ def read(path, frames=[]):
         [xres, yres]: list, x and y pixel spacing
         framelist: list, frames with contours
     """
-    tree = ET.parse(path)
+    xml_files = glob.glob(f'{path}_contours_*.xml')
+    xml_legacy_file = glob.glob(f'{path}_contours.xml')  # legacy file without version number
+
+    if xml_files:
+        newest_xml = max(xml_files)  # find file with most recent version
+    else:
+        newest_xml = xml_legacy_file[0]
+
+    logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_xml}')
+    
+    tree = ET.parse(newest_xml)  # current version
     root = tree.getroot()
     root.attrib
     lumen_points = []

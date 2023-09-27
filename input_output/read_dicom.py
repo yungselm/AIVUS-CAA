@@ -73,7 +73,7 @@ def readDICOM(window):
 
         # read contours if available
         try:
-            readContours(window, os.path.splitext(window.file_name)[0] + '_contours.xml')
+            readContours(window, os.path.splitext(window.file_name)[0])
             window.segmentation = True
             try:
                 window.gated_frames_dia = [frame for frame in range(window.numberOfFrames) if window.phases[frame] == 'D']

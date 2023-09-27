@@ -9,6 +9,8 @@ import matplotlib.path as mplPath
 from loguru import logger
 from skimage import measure
 
+from version import version_file_str
+
 
 def mask_image(mask, catheter):
     # mask values outside perivascular as the image max
@@ -201,7 +203,7 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
             pass
 
     tree = et.ElementTree(root)
-    tree.write(os.path.splitext(out_path)[0] + '_contours.xml')
+    tree.write(os.path.splitext(out_path)[0] + f'_contours_{version_file_str}.xml')
 
 
 if __name__ == '__main__':
