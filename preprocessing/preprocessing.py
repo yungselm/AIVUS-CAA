@@ -150,7 +150,7 @@ class PreProcessing:
         C = C / (image1.shape[0] * image1.shape[1])
         return C
 
-    def IVUS_gating_systole(self, s_low, tags_dia, num_frames_to_remove=0.25):
+    def IVUS_gating_systole(self, tags_dia, num_frames_to_remove=0.25):
         """find the minimum signal value in between two diastolic frames and use this as the systolic frame"""
         s_low = self.IVUS_gating_diastole()
         

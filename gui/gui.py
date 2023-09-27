@@ -82,12 +82,14 @@ class Master(QMainWindow):
         layout.addLayout(vbox2)
 
         dicomButton = QPushButton('Read DICOM')
+        gatingButton = QPushButton('Extract Diastolic and Systolic Frames')
         segmentButton = QPushButton('Segment')
         splineButton = QPushButton('Manual Contour')
         writeButton = QPushButton('Write Contours')
         reportButton = QPushButton('Write Report')
 
         dicomButton.setToolTip("Load images in .dcm format")
+        gatingButton.setToolTip("Extract diastolic and systolic images from pullback")
         segmentButton.setToolTip("Run deep learning based segmentation of lumen")
         splineButton.setToolTip("Manually draw new contour for lumen")
         writeButton.setToolTip("Save contours in .xml file")
@@ -130,6 +132,7 @@ class Master(QMainWindow):
         )
 
         dicomButton.clicked.connect(lambda _: readDICOM(self))
+        gatingButton.clicked.connect(self.gate)
         segmentButton.clicked.connect(lambda _: segment(self))
         splineButton.clicked.connect(lambda _: newSpline(self))
         writeButton.clicked.connect(lambda _: writeContours(self))
@@ -193,6 +196,7 @@ class Master(QMainWindow):
         vbox2.addWidget(self.hideBox)
         vbox2.addWidget(self.useDiastolicButton)
         vbox2.addWidget(dicomButton)
+        vbox2.addWidget(gatingButton)
         vbox2.addWidget(segmentButton)
         vbox2.addWidget(splineButton)
         vbox2.addWidget(writeButton)
@@ -305,7 +309,7 @@ class Master(QMainWindow):
         except AttributeError:  # self.images not defined because no file was read first
             warning = QErrorMessage(self)
             warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage("Please first select a DICOM file to be read")
+            warning.showMessage("Please first read a DICOM file")
             warning.exec_()
             return
 
@@ -350,9 +354,6 @@ class Master(QMainWindow):
     def changeState(self, value):
         self.c.updateBool.emit(value)
         self.wid.run()
-
-    def useGated(self, value):
-        self.gated = value
 
     def useDiastolic(self):
         if self.image:
