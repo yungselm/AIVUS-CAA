@@ -41,15 +41,15 @@ def report(window):
     f = open(os.path.splitext(window.file_name)[0] + "_report.txt", "w")
     f.write(
         "Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})"
-        "\tCentroid x (px)\tCentroid y (px)\tLongest Distance (mm)\t Longest x 1(px)\t Longest y 1(py)\t Longest x 2(px)"
-        "\t Longest y 2(py)\tShortest Distance (mm)\t Shortest x (px)\t Shortest y\tPhase\n"
+        "\tLongest Distance (mm)\t Longest x 1(px)\t Longest y 1(py)\t Longest x 2(px)"
+        "\tShortest Distance (mm)\tElliptic Ratio\tPhase\n"
     )
 
     for index, frame in enumerate(contoured_frames):
         f.write(
             f"{frame}\t{window.pullbackLength[frame]:.2f}\t{lumen_area[index]:.2f}"
             f"\t{longest_distances[index]:.2f}\t{shortest_distances[index]:.2f}"
-            f"\t{window.phases[frame]}\n"
+            f"\t{longest_distances[index]/shortest_distances[index]:.2f}\t{window.phases[frame]}\n"
         )
     f.close()
 

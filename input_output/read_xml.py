@@ -44,7 +44,6 @@ def read(path, frames=[]):
     root = tree.getroot()
     root.attrib
     lumen_points = []
-    no_points = []
     framelist = []
     plaque_frames = []
     phases = []
@@ -65,10 +64,7 @@ def read(path, frames=[]):
         for _ in child.iter('FrameState'):
             for frame in child.iter('Fm'):
                 frameNo = int(frame.find('Num').text)
-                # iterate through the frame and identify the contour
                 lumen_subpoints = []
-                vessel_subpoints = []
-                stent_subpoints = []
                 if frameNo in frames:
                     try:
                         plaque_frames.append(frame.find('Plaque').text)
@@ -86,20 +82,10 @@ def read(path, frames=[]):
                             if child.tag == 'Type':
                                 if child.text == 'L':
                                     contour = 'L'
-                                elif child.text == 'V':
-                                    contour = 'V'
-                                elif child.text == 'S':
-                                    contour = 'S'
-                            if child.tag == 'Npts':
-                                no_points.append(child.text)
                             # add each point
                             elif child.tag == 'p':
                                 if contour == 'L':
                                     lumen_subpoints.append(child.text)
-                                elif contour == 'V':
-                                    vessel_subpoints.append(child.text)
-                                elif contour == 'S':
-                                    stent_subpoints.append(child.text)
                     lumen_points.append(lumen_subpoints)
                     lumen[frameNo] = lumen_subpoints
 
