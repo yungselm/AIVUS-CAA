@@ -126,9 +126,9 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
     timezone.text = 'GMT-300 min'
     demographics = et.SubElement(root, 'Demographics')
     patientname = et.SubElement(demographics, 'PatientName')
-    patientname.text = out_path
+    patientname.text = os.path.basename(out_path)
     patientid = et.SubElement(demographics, 'PatientID')
-    patientid.text = out_path
+    patientid.text = os.path.basename(out_path)
 
     imagestate = et.SubElement(root, 'ImageState')
     xdim = et.SubElement(imagestate, 'Xdim')
@@ -203,7 +203,7 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
             pass
 
     tree = et.ElementTree(root)
-    tree.write(os.path.splitext(out_path)[0] + f'_contours_{version_file_str}.xml')
+    tree.write(out_path + f'_contours_{version_file_str}.xml')
 
 
 if __name__ == '__main__':

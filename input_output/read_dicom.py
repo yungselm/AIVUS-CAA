@@ -36,7 +36,7 @@ def readDICOM(window):
         try:
             window.dicom = dcm.read_file(fileName, force=True)
             window.images = window.dicom.pixel_array
-            window.file_name = fileName
+            window.file_name = os.path.splitext(fileName)[0]  # remove file extension
         except:
             error = QMessageBox()
             error.setIcon(QMessageBox.Critical)
@@ -73,7 +73,7 @@ def readDICOM(window):
 
         # read contours if available
         try:
-            readContours(window, os.path.splitext(window.file_name)[0])
+            readContours(window, window.file_name)
             window.segmentation = True
             try:
                 window.gated_frames_dia = [frame for frame in range(window.numberOfFrames) if window.phases[frame] == 'D']
