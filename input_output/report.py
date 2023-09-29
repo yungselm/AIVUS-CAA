@@ -199,7 +199,7 @@ def plotContoursWithMetrics(
         )
 
         plt.annotate(
-            f'Lumen Area: {lumen_area[index]:.2f} mm\N{SUPERSCRIPT TWO}',
+            f'Lumen Area: {lumen_area[index]:.2f} mm\N{SUPERSCRIPT TWO}\nElliptic Ratio: {longest_distances[index]/shortest_distances[index]:.2f}',
             xy=(centroid_x[index], centroid_y[index]),
             xycoords='data',
             xytext=(10, 0),
