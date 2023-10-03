@@ -8,8 +8,8 @@ from tqdm import tqdm
 from PyQt5.QtWidgets import QErrorMessage
 from PyQt5.QtCore import Qt
 from shapely.geometry import Polygon, Point, LineString
-from shapely.ops import nearest_points, split
-from itertools import combinations, product
+from shapely.ops import nearest_points
+from itertools import combinations
 
 
 def report(window):
@@ -81,21 +81,23 @@ def findShortestDistanceContour(window, contoured_frames):
         exterior_coords = polygon.exterior.coords[0::3]
 
         min_distance = math.inf
-        nearest_points = None
+        closest_points = None
+        min_dist_to_centroid = polygon.exterior.distance(centroid)
 
         for point1, point2 in combinations(exterior_coords, 2):
-            line = LineString([point1, point2])
-            if line.intersects(circle):
-                distance = math.dist(point1, point2)
-                if distance < min_distance:
-                    min_distance = distance
-                    nearest_points = (point1, point2)
+            distance = math.dist(point1, point2)
+            if distance < min_distance and distance > min_dist_to_centroid * 2:           
+                line = LineString([point1, point2])
+                if line.intersects(circle):
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_points = (point1, point2)
 
         shortest_distances.append(min_distance * window.resolution)
 
         # Separate x and y coordinates and append to the respective lists
-        x1, y1 = nearest_points[0]
-        x2, y2 = nearest_points[1]
+        x1, y1 = closest_points[0]
+        x2, y2 = closest_points[1]
         shortest_points_x.append([x1, x2])
         shortest_points_y.append([y1, y2])
 
