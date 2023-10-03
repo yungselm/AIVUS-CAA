@@ -89,9 +89,8 @@ def findShortestDistanceContour(window, contoured_frames):
             if distance < min_distance and distance > min_dist_to_centroid * 2:           
                 line = LineString([point1, point2])
                 if line.intersects(circle):
-                    if distance < min_distance:
-                        min_distance = distance
-                        closest_points = (point1, point2)
+                    min_distance = distance
+                    closest_points = (point1, point2)
 
         shortest_distances.append(min_distance * window.resolution)
 
