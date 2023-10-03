@@ -1,12 +1,15 @@
 import os
 import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 from loguru import logger
+from tqdm import tqdm
 from PyQt5.QtWidgets import QErrorMessage
 from PyQt5.QtCore import Qt
 from shapely.geometry import Polygon, Point, LineString
-from itertools import combinations
+from shapely.ops import nearest_points, split
+from itertools import combinations, product
 
 
 def report(window):
@@ -27,15 +30,8 @@ def report(window):
     contoured_frames = [frame for frame in range(window.numberOfFrames) if window.lumen[0][frame]]
     lumen_area, centroid_x, centroid_y = computeContourMetrics(window, contoured_frames)
 
-    longest_distances, longest_x, longest_y = findLongestDistanceContour(window, contoured_frames)
-    shortest_distances, shortest_x, shortest_y = findShortestDistanceContour(window, contoured_frames)
-
-    print(longest_x[0][0])
-    print(longest_y[0][0])
-    print(shortest_distances[0])
-
-    plotContoursWithMetrics(
-        window, contoured_frames, centroid_x, centroid_y, lumen_area, longest_distances, shortest_distances
+    longest_distances, shortest_distances = plotContoursWithMetrics(
+        window, contoured_frames, centroid_x, centroid_y, lumen_area
     )
 
     f = open(os.path.splitext(window.file_name)[0] + "_report.txt", "w")
@@ -78,7 +74,7 @@ def findShortestDistanceContour(window, contoured_frames):
     shortest_points_x = []
     shortest_points_y = []
 
-    for frame in contoured_frames:
+    for frame in tqdm(contoured_frames, desc='finding shortest distances'):
         polygon = Polygon([(x, y) for x, y in zip(window.lumen[0][frame], window.lumen[1][frame])])
         centroid = polygon.centroid
         circle = Point(centroid).buffer(1)
@@ -111,7 +107,7 @@ def findLongestDistanceContour(window, contoured_frames):
     longest_points_x = []  # List to store x coordinates of the points
     longest_points_y = []  # List to store y coordinates of the points
 
-    for frame in contoured_frames:
+    for frame in tqdm(contoured_frames, desc='finding longest distances'):
         polygon = Polygon([(x, y) for x, y in zip(window.lumen[0][frame], window.lumen[1][frame])])
 
         # Get the exterior coordinates of the polygon
@@ -159,7 +155,7 @@ def centroidPolygonSimple(x, y):
     return centroid_x, centroid_y
 
 
-def plotContoursWithMetrics(
+def plotContoursWithMetrics(window, contoured_frames, centroid_x, centroid_y, lumen_area):
     window, contoured_frames, centroid_x, centroid_y, lumen_area, shortest_distances, longest_distances
 ):
     """Plot contours and annotate with metrics"""
@@ -213,3 +209,5 @@ def plotContoursWithMetrics(
         plt.grid()
         plt.tight_layout()
         plt.show()
+
+    return longest_distances, shortest_distances
