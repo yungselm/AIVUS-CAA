@@ -156,8 +156,6 @@ def centroidPolygonSimple(x, y):
 
 
 def plotContoursWithMetrics(window, contoured_frames, centroid_x, centroid_y, lumen_area):
-    window, contoured_frames, centroid_x, centroid_y, lumen_area, shortest_distances, longest_distances
-):
     """Plot contours and annotate with metrics"""
     longest_distances, longest_x, longest_y = findLongestDistanceContour(window, contoured_frames)
     shortest_distances, shortest_x, shortest_y = findShortestDistanceContour(window, contoured_frames)
