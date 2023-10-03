@@ -78,7 +78,7 @@ def findShortestDistanceContour(window, contoured_frames):
         polygon = Polygon([(x, y) for x, y in zip(window.lumen[0][frame], window.lumen[1][frame])])
         centroid = polygon.centroid
         circle = Point(centroid).buffer(1)
-        exterior_coords = polygon.exterior.coords[0::3]
+        exterior_coords = polygon.exterior.coords[0::5]
 
         min_distance = math.inf
         closest_points = None
