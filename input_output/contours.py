@@ -58,19 +58,19 @@ def writeContours(window):
 
     window.lumen = window.wid.getData()
 
-    # write contours to .csv file
-    csv_out_dir = os.path.join(window.file_name + '_csv_files')
-    os.makedirs(csv_out_dir, exist_ok=True)
-    contoured_frames = [
-        frame for frame in range(window.numberOfFrames) if window.lumen[0][frame]
-    ]  # find frames with contours (no need to save the others)
+    # # write contours to .csv file
+    # csv_out_dir = os.path.join(window.file_name + '_csv_files')
+    # os.makedirs(csv_out_dir, exist_ok=True)
+    # contoured_frames = [
+    #     frame for frame in range(window.numberOfFrames) if window.lumen[0][frame]
+    # ]  # find frames with contours (no need to save the others)
 
-    for frame in contoured_frames:
-        with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
-            writer = csv.writer(csv_file, delimiter='\t')
-            rows = zip(window.lumen[0][frame], window.lumen[1][frame])  # csv can only write rows, not columns directly
-            for row in rows:
-                writer.writerow(row)
+    # for frame in contoured_frames:
+    #     with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
+    #         writer = csv.writer(csv_file, delimiter='\t')
+    #         rows = zip(window.lumen[0][frame], window.lumen[1][frame])  # csv can only write rows, not columns directly
+    #         for row in rows:
+    #             writer.writerow(row)
 
     # reformat data for compatibility with write_xml function
     x, y = [], []

@@ -184,8 +184,8 @@ def plotContoursWithMetrics(window, contoured_frames, plot=True):
         with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter='\t')
             rows = zip(
-                [x - centroids_x[frame_index] for x in window.lumen[0][frame]],
-                [y - centroids_y[frame_index] for y in window.lumen[1][frame]],
+                [(x - centroids_x[frame_index]) * window.resolution for x in window.lumen[0][frame]],
+                [(y - centroids_y[frame_index]) * window.resolution for y in window.lumen[1][frame]],
             )  # csv can only write rows, not columns directly
             for row in rows:
                 writer.writerow(row)
