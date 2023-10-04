@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 import pydicom
@@ -7,12 +8,13 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QMainWi
 from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5.QtCore import Qt
 
-path = r'D:\Documents\2_Coding\Python\AAOCASeg\testreport'
+path = '/home/yungselm/shared-drives/D:/Documents/2_Coding/Python/AAOCASeg/testreport'
 
 class DICOMViewer(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.saveAsJPG()
 
     def initUI(self):
         # Create a central widget
@@ -33,12 +35,12 @@ class DICOMViewer(QMainWindow):
         # Load the DICOM image
         dicom_file = path
         dicom = pydicom.dcmread(dicom_file)
-        dicom_data = dicom.pixel_array[512]
+        self.dicom_data = dicom.pixel_array[512]
 
         # Normalize the DICOM data to 8-bit, for other libraries to work with format
-        dicom_data_min = np.min(dicom_data)
-        dicom_data_max = np.max(dicom_data)
-        self.normalized_data = ((dicom_data - dicom_data_min) / (dicom_data_max - dicom_data_min) * 255).astype(np.uint8)
+        dicom_data_min = np.min(self.dicom_data)
+        dicom_data_max = np.max(self.dicom_data)
+        self.normalized_data = ((self.dicom_data - dicom_data_min) / (dicom_data_max - dicom_data_min) * 255).astype(np.uint8)
 
         # Convert the NumPy array to a QImage
         if len(self.normalized_data.shape) == 2:
@@ -124,8 +126,17 @@ class DICOMViewer(QMainWindow):
             # Toggle colormap
             self.colormap_enabled = not self.colormap_enabled
             self.updateImage()
+    
+    def saveAsJPG(self):
+        # change numpy array to jpg
+        print(os.path.join(path, 'test.jpg'))
+        # remove filename from path
+        new_path = os.path.dirname(path)
+        cv2.imwrite(os.path.join(new_path, 'test.jpg'), self.dicom_data)
+        # save in path     
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     viewer = DICOMViewer()
-    sys.exit(app.exec_())
+    sys.exit(app.exec_()) 

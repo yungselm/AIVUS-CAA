@@ -28,7 +28,7 @@ def report(window):
     window.lumen = window.wid.getData()
     contoured_frames = [frame for frame in range(window.numberOfFrames) if window.lumen[0][frame]]
 
-    longest_distances, shortest_distances, lumen_area = plotContoursWithMetrics(window, contoured_frames, plot=False)
+    longest_distances, shortest_distances, lumen_area = plotContoursWithMetrics(window, contoured_frames, plot=True)
     if longest_distances is None or shortest_distances is None:  # report was cancelled
         return
 
