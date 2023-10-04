@@ -1,5 +1,7 @@
 import os
 import csv
+import json
+import glob
 
 import numpy as np
 from loguru import logger
@@ -11,106 +13,160 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
+from version import version_file_str
 from input_output.read_xml import read
 from input_output.write_xml import write_xml, mask_image, get_contours
 
 
-def readContours(window, fileName=None):
-    """Reads contours.
+def readContours(main_window, file_name=None):
+    """Reads contours saved in json/xml format and displays the contours in the graphics scene"""
+    success = False
+    json_files = glob.glob(f'{file_name}_contours*.json')
+    xml_files = glob.glob(f'{file_name}_contours*.xml')
 
-    Reads contours  saved in xml format (Echoplaque compatible) and
-    displays the contours in the graphics scene
-    """
-
-    if not window.image:
-        warning = QErrorMessage(window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Reading of contours failed. Images must be loaded prior to loading contours')
-        warning.exec_()
-        return
-
-    if fileName is None:
+    if file_name is None:  # call by manual button click
+        if not main_window.image_displayed:
+            warning = QErrorMessage(main_window)
+            warning.setWindowModality(Qt.WindowModal)
+            warning.showMessage('Reading of contours failed. Images must be loaded prior to loading contours')
+            warning.exec_()
+            return
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(
-            window, "QFileDialog.getOpenFileName()", "", "XML file (*.xml)", options=options
+        file_name, _ = QFileDialog.getOpenFileName(
+            main_window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
         )
 
-    if fileName:
-        window.lumen, window.resolution, _, window.plaque_frames, window.phases = read(fileName)
+        if os.path.splitext(file_name)[1] == '.json':
+            with open(file_name, 'r') as in_file:
+                main_window.data = json.load(in_file)
+            success = True
+        elif os.path.splitext(file_name)[1] == '.xml':
+            (
+                main_window.data['lumen'],
+                main_window.metadata['resolution'],
+                _,
+                main_window.data['plaque_frames'],
+                main_window.data['phases'],
+            ) = read(file_name)
+            main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
+            main_window.data['lumen'] = mapToList(main_window.data['lumen'])
+            success = True
 
-        window.resolution = float(window.resolution[0])
-        window.lumen = mapToList(window.lumen)
-        window.contours = True
-        window.wid.setData(window.lumen, window.images)
-        window.hideBox.setChecked(False)
+    elif not main_window.use_xml_files and json_files:  # json files have priority over xml unless desired
+        newest_json = max(json_files)  # find file with most recent version
+        logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_json}')
+        with open(newest_json, 'r') as in_file:
+            main_window.data = json.load(in_file)
+        success = True
+
+    elif xml_files:
+        newest_xml = max(xml_files)  # find file with most recent version
+        logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_xml}')
+        (
+            main_window.data['lumen'],
+            main_window.metadata['resolution'],
+            _,
+            main_window.data['plaque_frames'],
+            main_window.data['phases'],
+        ) = read(newest_xml)
+        main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
+        main_window.data['lumen'] = mapToList(main_window.data['lumen'])
+        (  # initialise empty containers
+            main_window.data['lumen_centroid'],
+            main_window.data['farthest_point'],
+            main_window.data['nearest_point'],
+        ) = [
+            (
+                [[] for _ in range(main_window.metadata['number_of_frames'])],
+                [[] for _ in range(main_window.metadata['number_of_frames'])],
+            )
+            for _ in range(3)
+        ]
+        (
+            main_window.data['lumen_area'],
+            main_window.data['farthest_distance'],
+            main_window.data['nearest_distance'],
+        ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
+        success = True
+
+    if success:
+        main_window.contours_drawn = True
+        main_window.display.setData(main_window.data['lumen'], main_window.images)
+        main_window.hideBox.setChecked(False)
 
 
-def writeContours(window):
-    """Writes contours to an xml file compatible with Echoplaque"""
+def writeContours(main_window):
+    """Writes contours to a json/xml file"""
 
-    if not window.image:
-        warning = QErrorMessage(window)
+    if not main_window.image_displayed:
+        warning = QErrorMessage(main_window)
         warning.setWindowModality(Qt.WindowModal)
         warning.showMessage('Cannot write contours before reading DICOM file')
         warning.exec_()
         return
 
-    window.lumen = window.wid.getData()
+    main_window.data['lumen'] = main_window.display.getData()
 
-    # # write contours to .csv file
-    # csv_out_dir = os.path.join(window.file_name + '_csv_files')
-    # os.makedirs(csv_out_dir, exist_ok=True)
-    # contoured_frames = [
-    #     frame for frame in range(window.numberOfFrames) if window.lumen[0][frame]
-    # ]  # find frames with contours (no need to save the others)
+    # write contours to .csv file
+    csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
+    os.makedirs(csv_out_dir, exist_ok=True)
+    contoured_frames = [
+        frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
+    ]  # find frames with contours (no need to save the others)
 
-    # for frame in contoured_frames:
-    #     with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
-    #         writer = csv.writer(csv_file, delimiter='\t')
-    #         rows = zip(window.lumen[0][frame], window.lumen[1][frame])  # csv can only write rows, not columns directly
-    #         for row in rows:
-    #             writer.writerow(row)
+    for frame in contoured_frames:
+        with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
+            writer = csv.writer(csv_file, delimiter='\t')
+            rows = zip(
+                main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]
+            )  # csv can only write rows, not columns directly
+            for row in rows:
+                writer.writerow(row)
 
-    # reformat data for compatibility with write_xml function
-    x, y = [], []
-    for i in range(window.numberOfFrames):
-        if i < len(window.lumen[0]):
-            new_x_lumen = window.lumen[0][i]
-            new_y_lumen = window.lumen[1][i]
-        else:
-            new_x_lumen = []
-            new_y_lumen = []
+    if main_window.use_xml_files:
+        # reformat data for compatibility with write_xml function
+        x, y = [], []
+        for i in range(main_window.metadata['number_of_frames']):
+            if i < len(main_window.data['lumen'][0]):
+                new_x_lumen = main_window.data['lumen'][0][i]
+                new_y_lumen = main_window.data['lumen'][1][i]
+            else:
+                new_x_lumen = []
+                new_y_lumen = []
 
-        x.append(new_x_lumen)
-        y.append(new_y_lumen)
+            x.append(new_x_lumen)
+            y.append(new_y_lumen)
 
-    write_xml(
-        x,
-        y,
-        window.images.shape,
-        window.resolution,
-        window.ivusPullbackRate,
-        window.plaque_frames,
-        window.phases,
-        window.file_name,
-    )
-
-
-def reset_contours(window):
-    window.contours = False
-    window.lumen = None
+        write_xml(
+            x,
+            y,
+            main_window.images.shape,
+            main_window.metadata['resolution'],
+            main_window.ivusPullbackRate,
+            main_window.data['plaque_frames'],
+            main_window.data['phases'],
+            main_window.file_name,
+        )
+    else:
+        with open(os.path.join(main_window.file_name + f'_contours_{version_file_str}.json'), 'w') as out_file:
+            json.dump(main_window.data, out_file)
 
 
-def segment(window):
+def reset_contours(main_window):
+    main_window.contours_drawn = False
+    main_window.data['lumen'] = None
+
+
+def segment(main_window):
     """Segmentation and phenotyping of IVUS images"""
-    window.status_bar.showMessage('Segmenting all gated frames...')
-    if not window.image:
-        warning = QErrorMessage(window)
+    main_window.status_bar.showMessage('Segmenting all gated frames...')
+    if not main_window.image_displayed:
+        warning = QErrorMessage(main_window)
         warning.setWindowModality(Qt.WindowModal)
         warning.showMessage('Cannot perform automatic segmentation before reading DICOM file')
         warning.exec_()
-        window.status_bar.showMessage('Waiting for user input')
+        main_window.status_bar.showMessage('Waiting for user input')
         return
 
     save_path = os.path.join(os.getcwd(), "model", "saved_model.pb")
@@ -125,44 +181,44 @@ def segment(window):
         error.setWindowModality(Qt.WindowModal)
         error.setText(message)
         error.exec_()
-        window.status_bar.showMessage('Waiting for user input')
+        main_window.status_bar.showMessage('Waiting for user input')
         return -1
 
-    image_dim = window.images.shape
+    image_dim = main_window.images.shape
 
-    if hasattr(window, 'masks'):  # keep previous segmentation
-        masks = window.masks
+    if hasattr(main_window, 'masks'):  # keep previous segmentation
+        masks = main_window.masks
     else:  # perform first segmentation
-        masks = np.zeros((window.numberOfFrames, image_dim[1], image_dim[2]), dtype=np.uint8)
+        masks = np.zeros((main_window.metadata['number_of_frames'], image_dim[1], image_dim[2]), dtype=np.uint8)
 
-    # masks[window.gated_frames, :, :] = predict(window.images[window.gated_frames, :, :])
-    window.masks = masks
+    # masks[main_window.gated_frames, :, :] = predict(main_window.images[main_window.gated_frames, :, :])
+    main_window.masks = masks
 
     # compute metrics such as plaque burden
-    window.metrics = computeMetrics(window, masks)
+    main_window.metrics = computeMetrics(main_window, masks)
 
     # convert masks to contours
-    window.lumen = maskToContours(masks)
-    window.contours = True
+    main_window.data['lumen'] = maskToContours(masks)
+    main_window.contours_drawn = True
 
-    window.wid.setData(window.lumen, window.images)
-    window.hideBox.setChecked(False)
-    window.status_bar.showMessage('Waiting for user input')
+    main_window.display.setData(main_window.data['lumen'], main_window.images)
+    main_window.hideBox.setChecked(False)
+    main_window.status_bar.showMessage('Waiting for user input')
 
 
-def newSpline(window):
+def newSpline(main_window):
     """Create a message box to choose what spline to create"""
 
-    if not window.image:
-        warning = QErrorMessage(window)
+    if not main_window.image_displayed:
+        warning = QErrorMessage(main_window)
         warning.setWindowModality(Qt.WindowModal)
         warning.showMessage('Cannot create manual contour before reading DICOM file')
         warning.exec_()
         return
 
-    window.wid.new(window)
-    window.hideBox.setChecked(False)
-    window.contours = True
+    main_window.display.new(main_window)
+    main_window.hideBox.setChecked(False)
+    main_window.contours_drawn = True
 
 
 def maskToContours(masks):
@@ -191,9 +247,9 @@ def contoursToMask(images, contoured_frames, lumen):
     return mask
 
 
-def computeMetrics(window, masks):
+def computeMetrics(main_window, masks):
     """Measures lumen area"""
-    lumen_area = np.sum(masks == 1, axis=(1, 2)) * window.resolution**2
+    lumen_area = np.sum(masks == 1, axis=(1, 2)) * main_window.metadata['resolution'] ** 2
 
     return lumen_area
 

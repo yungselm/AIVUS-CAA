@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QPixmap, QImage
 
 from gui.geometry import Point, Spline
+from input_output.report import computeContourMetrics, findLongestDistanceContour, findShortestDistanceContour
 
 
 class Display(QGraphicsView):
@@ -17,26 +18,23 @@ class Display(QGraphicsView):
     interact and manipulate contours.
 
     Attributes:
-        scene: QGraphicsScene, all items
+        graphics_scene: QGraphicsScene, all items
         frame: int, current frame
         lumen: tuple, lumen contours
-        hide: bool, indicates whether contours should be displayed or hidden
+        hide_contours: bool, indicates whether contours should be displayed or hidden
         activePoint: Point, active point in spline
         innerPoint: list, spline points for inner (lumen) contours
     """
 
-    def __init__(self, window, windowing_sensitivity):
+    def __init__(self, main_window, windowing_sensitivity):
         super(Display, self).__init__()
-        print("View Height: {}, View Width: {}".format(self.width(), self.height()))
-
-        scene = QGraphicsScene(self)
-        self.window = window
+        self.main_window = main_window
         self.windowing_sensitivity = windowing_sensitivity
-        self.scene = scene
+        self.graphics_scene = QGraphicsScene(self)
         self.pointIdx = None
         self.frame = 0
         self.lumen = ([], [])
-        self.hide = True
+        self.hide_contours = True
         self.draw = False
         self.drawPoints = []
         self.splineDrawn = False
@@ -57,8 +55,8 @@ class Display(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.image = QGraphicsPixmapItem(QPixmap(self.display_size, self.display_size))
-        self.scene.addItem(self.image)
-        self.setScene(self.scene)
+        self.graphics_scene.addItem(self.image)
+        self.setScene(self.graphics_scene)
 
     def eventFilter(self, obj, event):
         """Handle mouse events for adjusting window level and window width"""
@@ -76,7 +74,7 @@ class Display(QGraphicsView):
         elif event.type() == QEvent.Type.MouseButtonPress and event.buttons() == Qt.MouseButton.RightButton:
             self.mouse_x = event.x()
             self.mouse_y = event.y()
-        
+
         self.setMouseTracking(False)
 
         return super().eventFilter(obj, event)
@@ -159,10 +157,10 @@ class Display(QGraphicsView):
     def displayImage(self):
         """Clears scene and displays current image and splines"""
 
-        self.scene.clear()
+        self.graphics_scene.clear()
         self.viewport().update()
 
-        [self.removeItem(item) for item in self.scene.items()]
+        [self.removeItem(item) for item in self.graphics_scene.items()]
 
         self.activePoint = None
         self.pointIdx = None
@@ -178,7 +176,7 @@ class Display(QGraphicsView):
         normalized_data = ((normalized_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
         height, width = normalized_data.shape
 
-        if self.window.colormap_enabled:
+        if self.main_window.colormap_enabled:
             # Apply an orange-blue colormap
             colormap = cv2.applyColorMap(normalized_data, cv2.COLORMAP_JET)
             q_image = QImage(colormap.data, width, height, width * 3, QImage.Format.Format_RGB888).scaled(
@@ -192,13 +190,22 @@ class Display(QGraphicsView):
         self.q_image = q_image  # Update the QImage
         self.pixmap = QPixmap.fromImage(q_image)
         self.image = QGraphicsPixmapItem(self.pixmap)
-        self.scene.addItem(self.image)
+        self.graphics_scene.addItem(self.image)
 
-        if not self.hide:
+        if not self.hide_contours:
             if self.lumen[0]:
                 self.addInteractiveSplines(self.lumen)
+                (
+                    self.main_window.data['lumen_area'][self.frame],
+                    self.main_window.data['lumen_centroid'][0][self.frame],
+                    self.main_window.data['lumen_centroid'][1][self.frame],
+                ) = computeContourMetrics(
+                    self.main_window,
+                    self.main_window.data['lumen'][0][self.frame],
+                    self.main_window.data['lumen'][1][self.frame],
+                )
 
-        self.setScene(self.scene)
+        self.setScene(self.graphics_scene)
 
     def addInteractiveSplines(self, lumen):
         """Adds inner and outer splines to scene"""
@@ -212,8 +219,8 @@ class Display(QGraphicsView):
                 Point((self.innerSpline.knotPoints[0][idx], self.innerSpline.knotPoints[1][idx]), 'g')
                 for idx in range(len(self.innerSpline.knotPoints[0]) - 1)
             ]
-            [self.scene.addItem(point) for point in self.innerPoint]
-            self.scene.addItem(self.innerSpline)
+            [self.graphics_scene.addItem(point) for point in self.innerPoint]
+            self.graphics_scene.addItem(self.innerSpline)
 
     def addManualSpline(self, point):
         """Creates an interactive spline manually point by point"""
@@ -222,7 +229,7 @@ class Display(QGraphicsView):
             self.splineDrawn = False
 
         self.drawPoints.append(Point((point.x(), point.y()), 'b'))
-        self.scene.addItem(self.drawPoints[-1])
+        self.graphics_scene.addItem(self.drawPoints[-1])
 
         if len(self.drawPoints) > 3:
             if not self.splineDrawn:
@@ -233,7 +240,7 @@ class Display(QGraphicsView):
                     ],
                     'c',
                 )
-                self.scene.addItem(self.newSpline)
+                self.graphics_scene.addItem(self.newSpline)
                 self.splineDrawn = True
             else:
                 self.newSpline.update(point, len(self.drawPoints))
@@ -255,15 +262,15 @@ class Display(QGraphicsView):
                     self.lumen[0][self.frame] = [val / scaling_factor for val in downsampled[0][0]]
                     self.lumen[1][self.frame] = [val / scaling_factor for val in downsampled[1][0]]
 
-                self.win.setCursor(Qt.ArrowCursor)
+                self.main_window.setCursor(Qt.ArrowCursor)
                 self.displayImage()
 
     def run(self):
         self.displayImage()
 
-    def new(self, window):
-        self.win = window
-        self.win.setCursor(Qt.CrossCursor)
+    def new(self, main_window):
+        self.main_window = main_window
+        self.main_window.setCursor(Qt.CrossCursor)
 
         self.draw = True
 
@@ -272,8 +279,11 @@ class Display(QGraphicsView):
 
         self.displayImage()
 
+    def displayMetrics(self, frame):
+        pass
+
     def setFrame(self, value):
         self.frame = value
 
-    def setDisplay(self, hide):
-        self.hide = hide
+    def setDisplay(self, hide_contours):
+        self.hide_contours = hide_contours
