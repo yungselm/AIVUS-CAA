@@ -1,5 +1,6 @@
 import os
 import math
+import csv
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -174,6 +175,20 @@ def plotContoursWithMetrics(window, contoured_frames, plot=True):
 
     if progress.wasCanceled():
         return None, None
+
+    # write contours to .csv file
+    csv_out_dir = os.path.join(window.file_name + '_csv_files')
+    os.makedirs(csv_out_dir, exist_ok=True)
+
+    for frame_index, frame in enumerate(contoured_frames):
+        with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
+            writer = csv.writer(csv_file, delimiter='\t')
+            rows = zip(
+                [x - centroids_x[frame_index] for x in window.lumen[0][frame]],
+                [y - centroids_y[frame_index] for y in window.lumen[1][frame]],
+            )  # csv can only write rows, not columns directly
+            for row in rows:
+                writer.writerow(row)
 
     progress.close()
 
