@@ -3,9 +3,10 @@ import math
 import numpy as np
 from loguru import logger
 import cv2
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsTextItem
 from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QPixmap, QImage
+from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
 from input_output.report import computeContourMetrics, findLongestDistanceContour, findShortestDistanceContour
@@ -194,6 +195,9 @@ class Display(QGraphicsView):
 
         if not self.hide_contours:
             if self.lumen[0]:
+                lumen_x, lumen_y = [self.main_window.data['lumen'][i][self.frame] for i in range(2)]
+                polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
+
                 self.addInteractiveSplines(self.lumen)
                 (
                     self.main_window.data['lumen_area'][self.frame],
@@ -201,9 +205,26 @@ class Display(QGraphicsView):
                     self.main_window.data['lumen_centroid'][1][self.frame],
                 ) = computeContourMetrics(
                     self.main_window,
-                    self.main_window.data['lumen'][0][self.frame],
-                    self.main_window.data['lumen'][1][self.frame],
+                    lumen_x,
+                    lumen_y,
                 )
+
+                self.main_window.data['farthest_distance'][self.frame],
+                self.main_window.data['farthest_point'][0][self.frame],
+                self.main_window.data['farthest_point'][1][self.frame] = findLongestDistanceContour(
+                    self.main_window, polygon.exterior.coords
+                )
+                self.main_window.data['nearest_distance'][self.frame],
+                self.main_window.data['nearest_point'][0][self.frame],
+                self.main_window.data['nearest_point'][1][self.frame] = findShortestDistanceContour(
+                    self.main_window, polygon
+                )
+                self.text = QGraphicsTextItem(
+                    f"Lumen area:\t{self.main_window.data['lumen_area']}\n"
+                    f"Lumen circumf:\t{polygon.length}\n"
+                    f"Elliptic ratio:\t{self.main_window.data['farthest_distance'][self.frame]/self.main_window.data['nearest_distance'][self.frame]}"
+                )
+                self.graphics_scene.addItem(self.text)
 
         self.setScene(self.graphics_scene)
 

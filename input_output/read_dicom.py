@@ -69,11 +69,16 @@ def readDICOM(main_window):
             main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
             main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']
 
+            (
+                main_window.data['lumen_area'],
+                main_window.data['farthest_distance'],
+                main_window.data['nearest_distance'],
+            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
             (  # initialise empty containers
-                main_window.data['lumen'],
                 main_window.data['lumen_centroid'],
                 main_window.data['farthest_point'],
                 main_window.data['nearest_point'],
+                main_window.data['lumen'],
             ) = [
                 (
                     [[] for _ in range(main_window.metadata['number_of_frames'])],
@@ -81,11 +86,6 @@ def readDICOM(main_window):
                 )
                 for _ in range(4)
             ]
-            (
-                main_window.data['lumen_area'],
-                main_window.data['farthest_distance'],
-                main_window.data['nearest_distance'],
-            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
 
         main_window.display.setData(main_window.data['lumen'], main_window.images)
         main_window.image_displayed = True
