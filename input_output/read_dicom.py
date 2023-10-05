@@ -71,8 +71,8 @@ def readDICOM(main_window):
 
             (
                 main_window.data['lumen_area'],
-                main_window.data['farthest_distance'],
-                main_window.data['nearest_distance'],
+                main_window.data['longest_distance'],
+                main_window.data['shortest_distance'],
             ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
             (  # initialise empty containers
                 main_window.data['lumen_centroid'],
@@ -125,15 +125,25 @@ def parseDICOM(main_window):
         )
         ivusPullbackRate = float(ivusPullbackRate)
 
+    if main_window.dicom.get('FrameTimeVector'):
+        frameTimeVector = main_window.dicom.get('FrameTimeVector')
+        frameTimeVector = [float(frame) for frame in frameTimeVector]
+        pullbackTime = np.cumsum(frameTimeVector) / 1000  # assume in ms
+        pullbackLength = pullbackTime * float(ivusPullbackRate)
+    else:
+        pullbackLength = np.zeros((main_window.images.shape[0],))
+
+    main_window.metadata['pullback_length'] = pullbackLength
+
     if main_window.dicom.get('SequenceOfUltrasoundRegions'):
         if main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalUnitsXDirection == 3:
             # pixels are in cm, convert to mm
-            main_window.metadata['resolution'] = main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX * 10
+            resolution = main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX * 10
         else:
             # assume mm
-            main_window.metadata['resolution'] = main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX
+            resolution = main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX
     elif main_window.dicom.get('PixelSpacing'):
-        main_window.metadata['resolution'] = float(main_window.dicom.PixelSpacing[0])
+        resolution = float(main_window.dicom.PixelSpacing[0])
     else:
         resolution, _ = QInputDialog.getText(
             main_window,
@@ -142,7 +152,9 @@ def parseDICOM(main_window):
             QLineEdit.Normal,
             "",
         )
-        main_window.metadata['resolution'] = float(resolution)
+        resolution = float(resolution)
+
+    main_window.metadata['resolution'] = resolution
 
     if main_window.dicom.get('Rows'):
         rows = main_window.dicom.Rows

@@ -85,8 +85,8 @@ def readContours(main_window, file_name=None):
         ]
         (
             main_window.data['lumen_area'],
-            main_window.data['farthest_distance'],
-            main_window.data['nearest_distance'],
+            main_window.data['longest_distance'],
+            main_window.data['shortest_distance'],
         ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
         success = True
 
@@ -107,22 +107,6 @@ def writeContours(main_window):
         return
 
     main_window.data['lumen'] = main_window.display.getData()
-
-    # write contours to .csv file
-    csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
-    os.makedirs(csv_out_dir, exist_ok=True)
-    contoured_frames = [
-        frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
-    ]  # find frames with contours (no need to save the others)
-
-    for frame in contoured_frames:
-        with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
-            writer = csv.writer(csv_file, delimiter='\t')
-            rows = zip(
-                main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]
-            )  # csv can only write rows, not columns directly
-            for row in rows:
-                writer.writerow(row)
 
     if main_window.use_xml_files:
         # reformat data for compatibility with write_xml function

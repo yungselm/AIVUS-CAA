@@ -162,3 +162,5 @@ cython_debug/
 model/
 
 lightning_logs/
+
+test_windowingslider.py

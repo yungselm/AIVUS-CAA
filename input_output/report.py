@@ -26,9 +26,13 @@ def report(main_window):
         return
 
     main_window.data['lumen'] = main_window.display.getData()
-    contoured_frames = [frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]]
+    contoured_frames = [
+        frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
+    ]
 
-    longest_distances, shortest_distances, lumen_area = plotContoursWithMetrics(main_window, contoured_frames, plot=True)
+    longest_distances, shortest_distances, lumen_area = plotContoursWithMetrics(
+        main_window, contoured_frames, plot=True, save_as_csv=True
+    )
     if longest_distances is None or shortest_distances is None:  # report was cancelled
         return
 
@@ -39,28 +43,57 @@ def report(main_window):
         "\tShortest Distance (mm)\tElliptic Ratio\tPhase\n"
     )
 
-    for index, frame in enumerate(contoured_frames):
+    for frame, frame in enumerate(contoured_frames):
         f.write(
-            f"{frame}\t{main_window.pullbackLength[frame]:.2f}\t{lumen_area[index]:.2f}"
-            f"\t{longest_distances[index]:.2f}\t{shortest_distances[index]:.2f}"
-            f"\t{longest_distances[index]/shortest_distances[index]:.2f}\t{main_window.data['phases'][frame]}\n"
+            f"{frame}\t{main_window.metadata['pullback_length'][frame]:.2f}\t{lumen_area[frame]:.2f}"
+            f"\t{longest_distances[frame]:.2f}\t{shortest_distances[frame]:.2f}"
+            f"\t{longest_distances[frame]/shortest_distances[frame]:.2f}\t{main_window.data['phases'][frame]}\n"
         )
     f.close()
 
     main_window.successMessage("Write report")
 
 
-def computeContourMetrics(main_window, lumen_x, lumen_y):
+def computeContourMetrics(main_window, lumen_x, lumen_y, frame):
     """Computes lumen area and centroid from contour"""
     if lumen_x:
-        lumen_area = contourArea(lumen_x, lumen_y) * main_window.metadata['resolution']**2
+        lumen_area = contourArea(lumen_x, lumen_y) * main_window.metadata['resolution'] ** 2
         centroid_x, centroid_y = centroidPolygonSimple(lumen_x, lumen_y)
-        return lumen_area, round(centroid_x), round(centroid_y)
+        main_window.data['lumen_area'][frame] = lumen_area
+        main_window.data['lumen_centroid'][0][frame] = centroid_x
+        main_window.data['lumen_centroid'][1][frame] = centroid_y
+
+        return lumen_area, centroid_x, centroid_y
     else:
         return None, None, None
 
 
-def findShortestDistanceContour(main_window, polygon):
+def findLongestDistanceContour(main_window, exterior_coords, frame):
+    max_distance = 0
+    farthest_points = None
+
+    for point1, point2 in combinations(exterior_coords, 2):
+        distance = math.dist(point1, point2)
+        if distance > max_distance:
+            max_distance = distance
+            farthest_points = (point1, point2)
+
+    longest_distance = max_distance * main_window.metadata['resolution']
+
+    # Separate x and y coordinates and append to the respective lists
+    x1, y1 = farthest_points[0]
+    x2, y2 = farthest_points[1]
+    farthest_point_x = [x1, x2]
+    farthest_point_y = [y1, y2]
+
+    main_window.data['longest_distance'][frame] = longest_distance
+    main_window.data['farthest_point'][0][frame] = farthest_point_x
+    main_window.data['farthest_point'][1][frame] = farthest_point_y
+
+    return longest_distance, farthest_point_x, farthest_point_y
+
+
+def findShortestDistanceContour(main_window, polygon, frame):
     centroid = polygon.centroid
     circle = Point(centroid).buffer(1)
     exterior_coords = polygon.exterior.coords[0::5]
@@ -82,31 +115,14 @@ def findShortestDistanceContour(main_window, polygon):
     # Separate x and y coordinates and append to the respective lists
     x1, y1 = closest_points[0]
     x2, y2 = closest_points[1]
-    shortest_point_x = [x1, x2]
-    shortest_point_y = [y1, y2]
+    closest_point_x = [x1, x2]
+    closest_point_y = [y1, y2]
 
-    return shortest_distance, shortest_point_x, shortest_point_y
+    main_window.data['shortest_distance'][frame] = shortest_distance
+    main_window.data['nearest_point'][0][frame] = closest_point_x
+    main_window.data['nearest_point'][1][frame] = closest_point_y
 
-
-def findLongestDistanceContour(main_window, exterior_coords):
-    max_distance = 0
-    farthest_points = None
-
-    for point1, point2 in combinations(exterior_coords, 2):
-        distance = math.dist(point1, point2)
-        if distance > max_distance:
-            max_distance = distance
-            farthest_points = (point1, point2)
-
-    longest_distance = max_distance * main_window.metadata['resolution']
-
-    # Separate x and y coordinates and append to the respective lists
-    x1, y1 = farthest_points[0]
-    x2, y2 = farthest_points[1]
-    longest_point_x = [x1, x2]
-    longest_point_y = [y1, y2]
-
-    return longest_distance, longest_point_x, longest_point_y
+    return shortest_distance, closest_point_x, closest_point_y
 
 
 def contourArea(x, y):
@@ -131,7 +147,7 @@ def centroidPolygonSimple(x, y):
     return centroid_x, centroid_y
 
 
-def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
+def plotContoursWithMetrics(main_window, contoured_frames, plot=True, save_as_csv=True):
     """Plot contours and annotate with metrics"""
     progress = QProgressDialog()
     progress.setWindowFlags(Qt.Dialog)
@@ -145,10 +161,10 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
     progress.setWindowTitle("Writing report...")
     progress.show()
 
-    farthest_distance = main_window.data['farthest_distance']
+    longest_distance = main_window.data['longest_distance']
     farthest_x = main_window.data['farthest_point'][0]
     farthest_y = main_window.data['farthest_point'][1]
-    nearest_distance = main_window.data['nearest_distance']
+    shortest_distance = main_window.data['shortest_distance']
     nearest_x = main_window.data['nearest_point'][0]
     nearest_y = main_window.data['nearest_point'][1]
     lumen_area = main_window.data['lumen_area']
@@ -158,19 +174,19 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
     for frame in contoured_frames:
         if lumen_area[frame]:  # values already computed for this frame -> skip
             continue
-        
+
         lumen_x, lumen_y = [main_window.data['lumen'][i][frame] for i in range(2)]
         lumen_area[frame], centroid_x[frame], centroid_y[frame] = computeContourMetrics(
-            main_window, lumen_x, lumen_y
+            main_window, lumen_x, lumen_y, frame
         )
         polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
         exterior_coords = polygon.exterior.coords
 
-        farthest_distance[frame], farthest_x[frame], farthest_y[frame] = findLongestDistanceContour(
-            main_window, exterior_coords
+        longest_distance[frame], farthest_x[frame], farthest_y[frame] = findLongestDistanceContour(
+            main_window, exterior_coords, frame
         )
-        nearest_distance[frame], nearest_x[frame], nearest_y[frame] = findShortestDistanceContour(
-            main_window, polygon
+        shortest_distance[frame], nearest_x[frame], nearest_y[frame] = findShortestDistanceContour(
+            main_window, polygon, frame
         )
         progress.setValue(frame)
         if progress.wasCanceled():
@@ -187,8 +203,14 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
         with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter='\t')
             rows = zip(
-                [(x - centroid_x[frame]) * main_window.metadata['resolution'] for x in main_window.data['lumen'][0][frame]],
-                [(y - centroid_y[frame]) * main_window.metadata['resolution'] for y in main_window.data['lumen'][1][frame]],
+                [
+                    (x - centroid_x[frame]) * main_window.metadata['resolution']
+                    for x in main_window.data['lumen'][0][frame]
+                ],
+                [
+                    (y - centroid_y[frame]) * main_window.metadata['resolution']
+                    for y in main_window.data['lumen'][1][frame]
+                ],
             )  # csv can only write rows, not columns directly
             for row in rows:
                 writer.writerow(row)
@@ -200,21 +222,27 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
         second_third = int(len(contoured_frames) * 0.5)
         third_third = int(len(contoured_frames) * 0.75)
         indices_to_plot = [first_third, second_third, third_third]
-        frames_to_plot = [contoured_frames[index] for index in indices_to_plot]
+        frames_to_plot = [contoured_frames[frame] for frame in indices_to_plot]
 
-        for index, frame in zip(indices_to_plot, frames_to_plot):
+        for frame in frames_to_plot:
             plt.figure(figsize=(6, 6))
-            plt.plot(main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame], '-g', linewidth=2, label='Contour')
-            plt.plot(centroid_x[index], centroid_y[index], 'ro', markersize=8, label='Centroid')
-            plt.plot(farthest_x[index][0], farthest_y[index][0], 'bo', markersize=8, label='Farthest Point 1')
-            plt.plot(farthest_x[index][1], farthest_y[index][1], 'bo', markersize=8, label='Farthest Point 2')
-            plt.plot(nearest_x[index][0], nearest_y[index][0], 'yo', markersize=8, label='Shortest Point 1')
-            plt.plot(nearest_x[index][1], nearest_y[index][1], 'yo', markersize=8, label='Shortest Point 2')
+            plt.plot(
+                main_window.data['lumen'][0][frame],
+                main_window.data['lumen'][1][frame],
+                '-g',
+                linewidth=2,
+                label='Contour',
+            )
+            plt.plot(centroid_x[frame], centroid_y[frame], 'ro', markersize=8, label='Centroid')
+            plt.plot(farthest_x[frame][0], farthest_y[frame][0], 'bo', markersize=8, label='Farthest Point 1')
+            plt.plot(farthest_x[frame][1], farthest_y[frame][1], 'bo', markersize=8, label='Farthest Point 2')
+            plt.plot(nearest_x[frame][0], nearest_y[frame][0], 'yo', markersize=8, label='Nearest Point 1')
+            plt.plot(nearest_x[frame][1], nearest_y[frame][1], 'yo', markersize=8, label='Nearest Point 2')
 
             # Annotate with shortest and longest distances
             plt.annotate(
-                f'Shortest Distance: {nearest_distance[index]:.2f} mm',
-                xy=(centroid_x[index], centroid_y[index]),
+                f'Shortest Distance: {shortest_distance[frame]:.2f} mm',
+                xy=(centroid_x[frame], centroid_y[frame]),
                 xycoords='data',
                 xytext=(10, 30),
                 textcoords='offset points',
@@ -222,8 +250,8 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
             )
 
             plt.annotate(
-                f'Longest Distance: {farthest_distance[index]:.2f} mm',
-                xy=(centroid_x[index], centroid_y[index]),
+                f'Longest Distance: {longest_distance[frame]:.2f} mm',
+                xy=(centroid_x[frame], centroid_y[frame]),
                 xycoords='data',
                 xytext=(10, -30),
                 textcoords='offset points',
@@ -231,8 +259,8 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
             )
 
             plt.annotate(
-                f'Lumen Area: {lumen_area[index]:.2f} mm\N{SUPERSCRIPT TWO}\nElliptic Ratio: {farthest_distance[index]/nearest_distance[index]:.2f}',
-                xy=(centroid_x[index], centroid_y[index]),
+                f'Lumen Area: {lumen_area[frame]:.2f} mm\N{SUPERSCRIPT TWO}\nElliptic Ratio: {longest_distance[frame]/shortest_distance[frame]:.2f}',
+                xy=(centroid_x[frame], centroid_y[frame]),
                 xycoords='data',
                 xytext=(10, 0),
                 textcoords='offset points',
@@ -246,4 +274,4 @@ def plotContoursWithMetrics(main_window, contoured_frames, plot=True):
             plt.tight_layout()
             plt.show()
 
-    return farthest_distance, nearest_distance, lumen_area
+    return longest_distance, shortest_distance, lumen_area

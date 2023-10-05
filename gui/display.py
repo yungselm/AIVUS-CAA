@@ -194,35 +194,23 @@ class Display(QGraphicsView):
         self.graphics_scene.addItem(self.image)
 
         if not self.hide_contours:
-            if self.lumen[0]:
+            if self.main_window.data['lumen'][0][self.frame]:
                 lumen_x, lumen_y = [self.main_window.data['lumen'][i][self.frame] for i in range(2)]
                 polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
 
                 self.addInteractiveSplines(self.lumen)
-                (
-                    self.main_window.data['lumen_area'][self.frame],
-                    self.main_window.data['lumen_centroid'][0][self.frame],
-                    self.main_window.data['lumen_centroid'][1][self.frame],
-                ) = computeContourMetrics(
-                    self.main_window,
-                    lumen_x,
-                    lumen_y,
-                )
+                lumen_area, _, _ = computeContourMetrics(self.main_window, lumen_x, lumen_y, self.frame)
 
-                self.main_window.data['farthest_distance'][self.frame],
-                self.main_window.data['farthest_point'][0][self.frame],
-                self.main_window.data['farthest_point'][1][self.frame] = findLongestDistanceContour(
-                    self.main_window, polygon.exterior.coords
+                longest_distance, _, _ = findLongestDistanceContour(
+                    self.main_window, polygon.exterior.coords, self.frame
                 )
-                self.main_window.data['nearest_distance'][self.frame],
-                self.main_window.data['nearest_point'][0][self.frame],
-                self.main_window.data['nearest_point'][1][self.frame] = findShortestDistanceContour(
-                    self.main_window, polygon
-                )
+                shortest_distance, _, _ = findShortestDistanceContour(self.main_window, polygon, self.frame)
+
+                elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
                 self.text = QGraphicsTextItem(
-                    f"Lumen area:\t{self.main_window.data['lumen_area']}\n"
-                    f"Lumen circumf:\t{polygon.length}\n"
-                    f"Elliptic ratio:\t{self.main_window.data['farthest_distance'][self.frame]/self.main_window.data['nearest_distance'][self.frame]}"
+                    f"Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n"
+                    f"Lumen circumf:\t{round(polygon.length * self.main_window.metadata['resolution'], 2)} (mm)\n"
+                    f"Elliptic ratio:\t{round(elliptic_ratio, 2)}"
                 )
                 self.graphics_scene.addItem(self.text)
 
