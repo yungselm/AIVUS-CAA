@@ -45,16 +45,14 @@ class Master(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.image = False
-        self.contours = False
+        self.use_xml_files = False
+        self.image_displayed = False
+        self.contours_drawn = False
         self.segmentation = False
         self.colormap_enabled = False
-        self.lumen = ()
-        self.gated_frames_dia = []
-        self.gated_frames_sys = []
-        self.distance_frames = []
-        self.plaque_frames = []
-        self.phases = []
+        self.data = {}  # container to be saved in JSON file later, includes contours, etc.
+        self.metadata = {}  # metadata used outside of readDICOM (not saved to JSON file)
+        self.images = None
         self.initGUI()
 
     def initGUI(self):
@@ -175,16 +173,16 @@ class Master(QMainWindow):
         self.useDiastolicButton.clicked.connect(self.useDiastolic)
         self.useDiastolicButton.setToolTip("Press button to switch between diastolic and systolic frames")
 
-        self.wid = Display(self, self.config.windowing_sensitivity)
-        self.c = Communicate()
-        self.c.updateBW[int].connect(self.wid.setFrame)
-        self.c.updateBool[bool].connect(self.wid.setDisplay)
+        self.display = Display(self, self.config.windowing_sensitivity)
+        self.comms = Communicate()
+        self.comms.updateBW[int].connect(self.display.setFrame)
+        self.comms.updateBool[bool].connect(self.display.setDisplay)
 
         self.text = QLabel()
         self.text.setAlignment(Qt.AlignCenter)
         self.text.setText("Frame {}".format(self.slider.value() + 1))
 
-        vbox1.addWidget(self.wid)
+        vbox1.addWidget(self.display)
         vbox1hbox1.addWidget(self.playButton)
         vbox1hbox1.addWidget(self.slider)
         vbox1hbox1.addWidget(self.diastolicFrameBox)
@@ -225,14 +223,14 @@ class Master(QMainWindow):
         if key == Qt.Key_Q:
             self.close()
         elif key == Qt.Key_H:
-            if self.image:
+            if self.image_displayed:
                 if not self.hideBox.isChecked():
                     self.hideBox.setChecked(True)
                 elif self.hideBox.isChecked():
                     self.hideBox.setChecked(False)
                 self.hideBox.setChecked(self.hideBox.isChecked())
         elif key == Qt.Key_J:
-            if self.image:
+            if self.image_displayed:
                 currentFrame = self.slider.value()
                 self.slider.setValue(currentFrame + 1)
                 QApplication.processEvents()
@@ -254,19 +252,19 @@ class Master(QMainWindow):
         elif key == Qt.Key_A or key == Qt.Key_Left:
             self.slider.setValue(self.slider.value() - 1)
         elif key == Qt.Key_E:
-            if self.image:
-                self.wid.new(self)  # start new manual Lumen contour
+            if self.image_displayed:
+                self.display.new(self)  # start new manual Lumen contour
                 self.hideBox.setChecked(False)
-                self.contours = True
+                self.contours_drawn = True
         if event.key() == Qt.Key.Key_R:
             # Reset window level and window width to initial values
-            self.wid.window_level = self.wid.initial_window_level
-            self.wid.window_width = self.wid.initial_window_width
-            self.wid.displayImage()
+            self.display.window_level = self.display.initial_window_level
+            self.display.window_width = self.display.initial_window_width
+            self.display.displayImage()
         elif event.key() == Qt.Key.Key_C:
             # Toggle colormap
             self.colormap_enabled = not self.colormap_enabled
-            self.wid.displayImage()
+            self.display.displayImage()
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""
@@ -324,15 +322,15 @@ class Master(QMainWindow):
 
     def autoSave(self):
         """Automatically saves contours to a temporary file every autoSaveInterval seconds"""
-        if self.image:
+        if self.image_displayed:
             writeContours(self)
 
     def changeValue(self, value):
-        self.c.updateBW.emit(value)
-        self.wid.run()
+        self.comms.updateBW.emit(value)
+        self.display.run()
         self.text.setText("Frame {}".format(value + 1))
         try:
-            if self.plaque_frames[value] == '1':
+            if self.data['plaque_frames'][value] == '1':
                 self.plaqueFrameBox.setChecked(True)
             else:
                 self.plaqueFrameBox.setChecked(False)
@@ -352,11 +350,11 @@ class Master(QMainWindow):
             pass
 
     def changeState(self, value):
-        self.c.updateBool.emit(value)
-        self.wid.run()
+        self.comms.updateBool.emit(value)
+        self.display.run()
 
     def useDiastolic(self):
-        if self.image:
+        if self.image_displayed:
             if self.useDiastolicButton.isChecked():
                 self.useDiastolicButton.setText('Diastolic Frames')
                 self.useDiastolicButton.setStyleSheet('background-color: #192f91')
@@ -369,12 +367,12 @@ class Master(QMainWindow):
             self.slider.addGatedFrames(self.gated_frames)
 
     def toggleDiastolicFrame(self, state_true):
-        if self.image:
+        if self.image_displayed:
             frame = self.slider.value()
             if state_true:
                 if frame not in self.gated_frames_dia:
                     bisect.insort_left(self.gated_frames_dia, frame)
-                    self.phases[frame] = 'D'
+                    self.data['phases'][frame] = 'D'
                 try:  # frame cannot be diastolic and systolic at the same time
                     self.systolicFrameBox.setChecked(False)
                 except ValueError:
@@ -382,17 +380,17 @@ class Master(QMainWindow):
             else:
                 try:
                     self.gated_frames_dia.remove(frame)
-                    self.phases[frame] = '-'
+                    self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
 
     def toggleSystolicFrame(self, state_true):
-        if self.image:
+        if self.image_displayed:
             frame = self.slider.value()
             if state_true:
                 if frame not in self.gated_frames_sys:
                     bisect.insort_left(self.gated_frames_sys, frame)
-                    self.phases[frame] = 'S'
+                    self.data['phases'][frame] = 'S'
                 try:  # frame cannot be diastolic and systolic at the same time
                     self.diastolicFrameBox.setChecked(False)
                 except ValueError:
@@ -400,17 +398,17 @@ class Master(QMainWindow):
             else:
                 try:
                     self.gated_frames_sys.remove(frame)
-                    self.phases[frame] = '-'
+                    self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
 
     def togglePlaqueFrame(self, state_true):
-        if self.image:
+        if self.image_displayed:
             frame = self.slider.value()
             if state_true:
-                self.plaque_frames[frame] = '1'
+                self.data['plaque_frames'][frame] = '1'
             else:
-                self.plaque_frames[frame] = '0'
+                self.data['plaque_frames'][frame] = '0'
 
     def errorMessage(self):
         """Helper function for errors"""

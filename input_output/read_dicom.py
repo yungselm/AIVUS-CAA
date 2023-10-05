@@ -15,28 +15,24 @@ from PyQt5.QtCore import Qt
 from input_output.contours import readContours
 
 
-def readDICOM(window):
+def readDICOM(main_window):
     """Reads DICOM images.
 
     Reads the dicom images and metadata. Places metatdata in a table.
     Images are displayed in the graphics scene.
     """
-    if window.image:
-        window.save_before_close()
-
-    window.status_bar.showMessage('Reading DICOM file...')
-
+    main_window.status_bar.showMessage('Reading DICOM file...')
     options = QFileDialog.Options()
     options = QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(
-        window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
+        main_window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
     )
 
     if fileName:
         try:
-            window.dicom = dcm.read_file(fileName, force=True)
-            window.images = window.dicom.pixel_array
-            window.file_name = os.path.splitext(fileName)[0]  # remove file extension
+            main_window.dicom = dcm.read_file(fileName, force=True)
+            main_window.images = main_window.dicom.pixel_array
+            main_window.file_name = os.path.splitext(fileName)[0]  # remove file extension
         except:
             error = QMessageBox()
             error.setIcon(QMessageBox.Critical)
@@ -47,114 +43,139 @@ def readDICOM(window):
             error.exec_()
             return None
 
-        window.slider.setMaximum(window.dicom.NumberOfFrames - 1)
-        window.image = True
-        parseDICOM(window)
-        window.numberOfFrames = int(window.dicom.NumberOfFrames)
-        window.infoTable.setItem(0, 1, QTableWidgetItem(window.patientName))
-        window.infoTable.setItem(1, 1, QTableWidgetItem(window.patientBirthDate))
-        window.infoTable.setItem(2, 1, QTableWidgetItem(window.patientSex))
-        window.infoTable.setItem(3, 1, QTableWidgetItem(str(window.ivusPullbackRate)))
-        window.infoTable.setItem(4, 1, QTableWidgetItem(str(window.resolution)))
-        window.infoTable.setItem(5, 1, QTableWidgetItem(str(window.rows)))
-        window.infoTable.setItem(6, 1, QTableWidgetItem(window.manufacturer))
-        window.infoTable.setItem(7, 1, QTableWidgetItem((window.model)))
+        main_window.metadata['number_of_frames'] = int(main_window.dicom.NumberOfFrames)
+        main_window.slider.setMaximum(main_window.metadata['number_of_frames'] - 1)
+        parseDICOM(main_window)
 
-        if len(window.lumen) != 0:
-            reinitializeContours = len(window.lumen) != window.numberOfFrames
-        else:
-            reinitializeContours = False
-
-        if not window.lumen or reinitializeContours:
-            window.lumen = ([[] for _ in range(window.numberOfFrames)], [[] for _ in range(window.numberOfFrames)])
-
-        window.wid.setData(window.lumen, window.images)
-        window.slider.setValue(window.numberOfFrames - 1)
-
-        # read contours if available
         try:
-            readContours(window, window.file_name)
-            window.segmentation = True
+            readContours(main_window, main_window.file_name)
+            main_window.segmentation = True
             try:
-                window.gated_frames_dia = [frame for frame in range(window.numberOfFrames) if window.phases[frame] == 'D']
-                window.gated_frames_sys = [frame for frame in range(window.numberOfFrames) if window.phases[frame] == 'S']
+                main_window.gated_frames_dia = [
+                    frame
+                    for frame in range(main_window.metadata['number_of_frames'])
+                    if main_window.data['phases'][frame] == 'D'
+                ]
+                main_window.gated_frames_sys = [
+                    frame
+                    for frame in range(main_window.metadata['number_of_frames'])
+                    if main_window.data['phases'][frame] == 'S'
+                ]
             except IndexError:  # old contour files may not have phases attr
                 pass
-            window.gated_frames = window.gated_frames_dia
-            window.slider.addGatedFrames(window.gated_frames)
+            main_window.gated_frames = main_window.gated_frames_dia
+            main_window.slider.addGatedFrames(main_window.gated_frames)
         except FileNotFoundError:
-            window.plaque_frames = ['0'] * window.numberOfFrames
-            window.phases = ['-'] * window.numberOfFrames
-    window.status_bar.showMessage('Waiting for user input')
+            main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
+            main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']
+
+            (
+                main_window.data['lumen_area'],
+                main_window.data['longest_distance'],
+                main_window.data['shortest_distance'],
+            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
+            (  # initialise empty containers
+                main_window.data['lumen_centroid'],
+                main_window.data['farthest_point'],
+                main_window.data['nearest_point'],
+                main_window.data['lumen'],
+            ) = [
+                (
+                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                )
+                for _ in range(4)
+            ]
+
+        main_window.display.setData(main_window.data['lumen'], main_window.images)
+        main_window.image_displayed = True
+        main_window.slider.setValue(main_window.metadata['number_of_frames'] - 1)
+    main_window.status_bar.showMessage('Waiting for user input')
 
 
-def parseDICOM(window):
+def parseDICOM(main_window):
     """Parses DICOM metadata"""
-
-    if len(window.dicom.PatientName.encode('ascii')) > 0:
-        window.patientName = window.dicom.PatientName.original_string.decode('utf-8')
+    if len(main_window.dicom.PatientName.encode('ascii')) > 0:
+        patientName = main_window.dicom.PatientName.original_string.decode('utf-8')
     else:
-        window.patientName = 'Unknown'
+        patientName = 'Unknown'
 
-    if len(window.dicom.PatientBirthDate) > 0:
-        window.patientBirthDate = window.dicom.PatientBirthDate
+    if len(main_window.dicom.PatientBirthDate) > 0:
+        patientBirthDate = main_window.dicom.PatientBirthDate
     else:
-        window.patientBirthDate = 'Unknown'
+        patientBirthDate = 'Unknown'
 
-    if len(window.dicom.PatientSex) > 0:
-        window.patientSex = window.dicom.PatientSex
+    if len(main_window.dicom.PatientSex) > 0:
+        patientSex = main_window.dicom.PatientSex
     else:
-        window.patientSex = 'Unknown'
+        patientSex = 'Unknown'
 
-    if window.dicom.get('IVUSPullbackRate'):
-        window.ivusPullbackRate = float(window.dicom.IVUSPullbackRate)
+    if main_window.dicom.get('IVUSPullbackRate'):
+        ivusPullbackRate = float(main_window.dicom.IVUSPullbackRate)
     # check Boston private tag
-    elif window.dicom.get(0x000B1001):
-        window.ivusPullbackRate = float(window.dicom[0x000B1001].value)
+    elif main_window.dicom.get(0x000B1001):
+        ivusPullbackRate = float(main_window.dicom[0x000B1001].value)
     else:
-        window.ivusPullbackRate, _ = QInputDialog.getText(
-            window,
+        ivusPullbackRate, _ = QInputDialog.getText(
+            main_window,
             "Pullback Speed",
             "No pullback speed found, please enter pullback speeed (mm/s)",
             QLineEdit.Normal,
             "0.5",
         )
-        window.ivusPullbackRate = float(window.ivusPullbackRate)
+        ivusPullbackRate = float(ivusPullbackRate)
 
-    if window.dicom.get('FrameTimeVector'):
-        frameTimeVector = window.dicom.get('FrameTimeVector')
+    if main_window.dicom.get('FrameTimeVector'):
+        frameTimeVector = main_window.dicom.get('FrameTimeVector')
         frameTimeVector = [float(frame) for frame in frameTimeVector]
         pullbackTime = np.cumsum(frameTimeVector) / 1000  # assume in ms
-        window.pullbackLength = pullbackTime * float(window.ivusPullbackRate)
+        pullbackLength = pullbackTime * float(ivusPullbackRate)
     else:
-        window.pullbackLength = np.zeros((window.images.shape[0],))
+        pullbackLength = np.zeros((main_window.images.shape[0],))
 
-    if window.dicom.get('SequenceOfUltrasoundRegions'):
-        if window.dicom.SequenceOfUltrasoundRegions[0].PhysicalUnitsXDirection == 3:
+    main_window.metadata['pullback_length'] = pullbackLength
+
+    if main_window.dicom.get('SequenceOfUltrasoundRegions'):
+        if main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalUnitsXDirection == 3:
             # pixels are in cm, convert to mm
-            window.resolution = window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX * 10
+            resolution = main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX * 10
         else:
             # assume mm
-            window.resolution = window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX
-    elif window.dicom.get('PixelSpacing'):
-        window.resolution = float(window.dicom.PixelSpacing[0])
+            resolution = main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalDeltaX
+    elif main_window.dicom.get('PixelSpacing'):
+        resolution = float(main_window.dicom.PixelSpacing[0])
     else:
-        resolution, done = QInputDialog.getText(
-            window, "Pixel Spacing", "No pixel spacing info found, please enter pixel spacing (mm)", QLineEdit.Normal, ""
+        resolution, _ = QInputDialog.getText(
+            main_window,
+            "Pixel Spacing",
+            "No pixel spacing info found, please enter pixel spacing (mm)",
+            QLineEdit.Normal,
+            "",
         )
-        window.resolution = float(resolution)
+        resolution = float(resolution)
 
-    if window.dicom.get('Rows'):
-        window.rows = window.dicom.Rows
-    else:
-        window.rows = window.images.shape[1]
+    main_window.metadata['resolution'] = resolution
 
-    if window.dicom.get('Manufacturer'):
-        window.manufacturer = window.dicom.Manufacturer
+    if main_window.dicom.get('Rows'):
+        rows = main_window.dicom.Rows
     else:
-        window.manufacturer = 'Unknown'
+        rows = main_window.images.shape[1]
 
-    if window.dicom.get('ManufacturerModelName'):
-        window.model = window.dicom.ManufacturerModelName
+    if main_window.dicom.get('Manufacturer'):
+        manufacturer = main_window.dicom.Manufacturer
     else:
-        window.model = 'Unknown'
+        manufacturer = 'Unknown'
+
+    if main_window.dicom.get('ManufacturerModelName'):
+        model = main_window.dicom.ManufacturerModelName
+    else:
+        model = 'Unknown'
+
+    main_window.infoTable.setItem(0, 1, QTableWidgetItem(patientName))
+    main_window.infoTable.setItem(1, 1, QTableWidgetItem(patientBirthDate))
+    main_window.infoTable.setItem(2, 1, QTableWidgetItem(patientSex))
+    main_window.infoTable.setItem(3, 1, QTableWidgetItem(str(ivusPullbackRate)))
+    main_window.infoTable.setItem(4, 1, QTableWidgetItem(str(main_window.metadata['resolution'])))
+    main_window.infoTable.setItem(5, 1, QTableWidgetItem(str(rows)))
+    main_window.infoTable.setItem(6, 1, QTableWidgetItem(manufacturer))
+    main_window.infoTable.setItem(7, 1, QTableWidgetItem((model)))
