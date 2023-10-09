@@ -11,18 +11,21 @@ class Point(QGraphicsEllipseItem):
 
     def __init__(self, pos, color):
         super(Point, self).__init__()
+        self.point_thickness = 1
+        self.point_radius = 10
+
         if color == 'y':
-            self.defaultColor = QPen(Qt.yellow, 3)
+            self.defaultColor = QPen(Qt.yellow, self.point_thickness)
         elif color == 'r':
-            self.defaultColor = QPen(Qt.red, 3)
+            self.defaultColor = QPen(Qt.red, self.point_thickness)
         elif color == "g":
-            self.defaultColor = QPen(Qt.green, 3)
+            self.defaultColor = QPen(Qt.green, self.point_thickness)
         else:
-            self.defaultColor = QPen(Qt.blue, 3)
+            self.defaultColor = QPen(Qt.blue, self.point_thickness)
 
         self.setPen(self.defaultColor)
-        self.radius = 10
-        self.setRect(pos[0], pos[1], self.radius, self.radius)
+        self.setRect(pos[0] - self.point_radius * 0.5, pos[1] - self.point_radius * 0.5, self.point_radius, self.point_radius)
+        logger.debug(f'initialise point: {pos[0]}, {pos[1]}')
 
     def select_point(self, pos):
         """Identifies what point has been selected with the mouse"""
@@ -34,15 +37,16 @@ class Point(QGraphicsEllipseItem):
         return self.rect().x(), self.rect().y()
 
     def updateColor(self):
-        self.setPen(QPen(Qt.blue, 2))
+        self.setPen(QPen(Qt.blue, self.point_thickness))
 
     def resetColor(self):
         self.setPen(self.defaultColor)
 
     def update(self, pos):
         """Updates the Point position"""
+        logger.debug(f'update point to: {pos.x()}, {pos.y()}')
 
-        self.setRect(pos.x(), pos.y(), self.radius, self.radius)
+        self.setRect(pos.x() - self.point_radius * 0.5, pos.y() - self.point_radius * 0.5, self.point_radius, self.point_radius)
 
         return self.rect()
 
@@ -53,15 +57,16 @@ class Spline(QGraphicsPathItem):
     def __init__(self, points, color):
         super().__init__()
         self.setKnotPoints(points)
+        spline_thickness = 1
 
         if color == 'y':
-            self.setPen(QPen(Qt.yellow, 2))
+            self.setPen(QPen(Qt.yellow, spline_thickness))
         elif color == "r":
-            self.setPen(QPen(Qt.red, 2))
+            self.setPen(QPen(Qt.red, spline_thickness))
         elif color == "g":
-            self.setPen(QPen(Qt.green, 2))
+            self.setPen(QPen(Qt.green, spline_thickness))
         else:
-            self.setPen(QPen(Qt.blue, 2))
+            self.setPen(QPen(Qt.blue, spline_thickness))
 
     def setKnotPoints(self, knotPoints):
         """KnotPoints is a list of points"""
@@ -78,8 +83,8 @@ class Spline(QGraphicsPathItem):
             self.setPath(self.path)
             self.path.closeSubpath()
             self.knotPoints = knotPoints
-        except IndexError:  # not knotPoints for this frame
-            logger.debug(knotPoints)
+        except IndexError:  # no knotPoints for this frame
+            logger.error(knotPoints)
             pass
 
     def interpolate(self, pts):

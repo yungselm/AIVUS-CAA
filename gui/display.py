@@ -42,7 +42,7 @@ class Display(QGraphicsView):
         self.newSpline = None
         self.enable_drag = True
         self.activePoint = None
-        self.innerPoint = []
+        self.innerPoints = []
         self.display_size = 800
 
         # Store initial window level and window width (full width, middle level)
@@ -91,25 +91,20 @@ class Display(QGraphicsView):
                 # identify which point has been clicked
                 items = self.items(event.pos())
                 for item in items:
-                    if item in self.innerPoint:
+                    if item in self.innerPoints:
                         # Convert mouse position to item position https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                        self.pointIdx = [i for i, checkItem in enumerate(self.innerPoint) if item == checkItem][0]
+                        self.pointIdx = [i for i, checkItem in enumerate(self.innerPoints) if item == checkItem][0]
                         item.updateColor()
                         self.enable_drag = True
                         self.activePoint = item
 
     def mouseReleaseEvent(self, event):
         if self.pointIdx is not None:
-            contour_scaling_factor = self.display_size / self.imsize[1]
             item = self.activePoint
             item.resetColor()
 
-            self.lumen_to_display[0][self.frame] = [
-                val / contour_scaling_factor for val in self.innerSpline.knotPoints[0]
-            ]
-            self.lumen_to_display[1][self.frame] = [
-                val / contour_scaling_factor for val in self.innerSpline.knotPoints[1]
-            ]
+            self.lumen_to_display[0][self.frame] = [val / self.scaling_factor for val in self.innerSpline.knotPoints[0]]
+            self.lumen_to_display[1][self.frame] = [val / self.scaling_factor for val in self.innerSpline.knotPoints[1]]
             (
                 self.main_window.data['lumen'][0][self.frame],
                 self.main_window.data['lumen'][1][self.frame],
@@ -126,9 +121,9 @@ class Display(QGraphicsView):
 
     def setData(self, lumen, images):
         self.numberOfFrames = images.shape[0]
+        self.scaling_factor = self.display_size / images.shape[1]
         self.lumen_to_display = self.downsample(lumen)
         self.images = images
-        self.imsize = self.images.shape
         self.displayImage()
 
     def updateData(self, frame=None):
@@ -159,15 +154,14 @@ class Display(QGraphicsView):
     def downsample(self, contours, num_points=20):
         """Downsamples input contour data by selecting n points from original contour"""
 
-        numberOfFrames = len(contours[0])
-        downsampled = [[] for _ in range(numberOfFrames)], [[] for _ in range(numberOfFrames)]
+        num_frames = len(contours[0])
+        downsampled = [[] for _ in range(num_frames)], [[] for _ in range(num_frames)]
 
-        for i in range(numberOfFrames):
-            if contours[0][i]:
-                idx = len(contours[0][i]) // num_points
-                downsampled[0][i] = [pnt for j, pnt in enumerate(contours[0][i]) if j % idx == 0]
-                downsampled[1][i] = [pnt for j, pnt in enumerate(contours[1][i]) if j % idx == 0]
-
+        for frame in range(num_frames):
+            if contours[0][frame]:
+                points_to_sample = range(0, len(contours[0][frame]), len(contours[0][frame]) // num_points)
+                for axis in range(2):
+                    downsampled[axis][frame] = [contours[axis][frame][point] for point in points_to_sample]
         return downsampled
 
     def displayImage(self):
@@ -232,18 +226,17 @@ class Display(QGraphicsView):
         self.setScene(self.graphics_scene)
 
     def addInteractiveSplines(self, lumen):
-        """Adds inner and outer splines to scene"""
+        """Adds lumen splines to scene"""
 
-        contour_scaling_factor = self.display_size / self.imsize[1]
         if lumen[0][self.frame]:
-            lumen_x = [val * contour_scaling_factor for val in lumen[0][self.frame]]
-            lumen_y = [val * contour_scaling_factor for val in lumen[1][self.frame]]
+            lumen_x = [val * self.scaling_factor for val in lumen[0][self.frame]]
+            lumen_y = [val * self.scaling_factor for val in lumen[1][self.frame]]
             self.innerSpline = Spline([lumen_x, lumen_y], 'g')
-            self.innerPoint = [
+            self.innerPoints = [
                 Point((self.innerSpline.knotPoints[0][idx], self.innerSpline.knotPoints[1][idx]), 'g')
                 for idx in range(len(self.innerSpline.knotPoints[0]) - 1)
             ]
-            [self.graphics_scene.addItem(point) for point in self.innerPoint]
+            [self.graphics_scene.addItem(point) for point in self.innerPoints]
             self.graphics_scene.addItem(self.innerSpline)
 
     def addManualSpline(self, point):
@@ -282,9 +275,8 @@ class Display(QGraphicsView):
                     downsampled = self.downsample(
                         ([self.newSpline.points[0].tolist()], [self.newSpline.points[1].tolist()])
                     )
-                    scaling_factor = self.display_size / self.imsize[1]
-                    self.lumen_to_display[0][self.frame] = [val / scaling_factor for val in downsampled[0][0]]
-                    self.lumen_to_display[1][self.frame] = [val / scaling_factor for val in downsampled[1][0]]
+                    self.lumen_to_display[0][self.frame] = [val / self.scaling_factor for val in downsampled[0][0]]
+                    self.lumen_to_display[1][self.frame] = [val / self.scaling_factor for val in downsampled[1][0]]
                     (
                         self.main_window.data['lumen'][0][self.frame],
                         self.main_window.data['lumen'][1][self.frame],
