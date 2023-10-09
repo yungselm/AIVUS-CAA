@@ -83,22 +83,25 @@ class Display(QGraphicsView):
     def mousePressEvent(self, event):
         super(Display, self).mousePressEvent(event)
 
-        if self.draw:
-            pos = self.mapToScene(event.pos())
-            self.addManualSpline(pos)
-        else:
-            # identify which point has been clicked
-            items = self.items(event.pos())
-            for item in items:
-                if item in self.innerPoint:
-                    # Convert mouse position to item position https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                    self.pointIdx = [i for i, checkItem in enumerate(self.innerPoint) if item == checkItem][0]
-                    item.updateColor()
-                    self.enable_drag = True
-                    self.activePoint = item
+        if event.type() == QEvent.Type.MouseButtonPress and event.buttons() == Qt.MouseButton.LeftButton:  # ignore RMB
+            if self.draw:
+                pos = self.mapToScene(event.pos())
+                self.addManualSpline(pos)
+            else:
+                logger.debug('LMB pressed, entering drag mode')
+                # identify which point has been clicked
+                items = self.items(event.pos())
+                for item in items:
+                    if item in self.innerPoint:
+                        # Convert mouse position to item position https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
+                        self.pointIdx = [i for i, checkItem in enumerate(self.innerPoint) if item == checkItem][0]
+                        item.updateColor()
+                        self.enable_drag = True
+                        self.activePoint = item
 
     def mouseReleaseEvent(self, event):
         if self.pointIdx is not None:
+            logger.debug('LMB released')
             contour_scaling_factor = self.display_size / self.imsize[1]
             item = self.activePoint
             item.resetColor()
@@ -107,12 +110,13 @@ class Display(QGraphicsView):
             self.lumen[1][self.frame] = [val / contour_scaling_factor for val in self.innerSpline.knotPoints[1]]
 
     def mouseMoveEvent(self, event):
-        if self.pointIdx is not None:
-            item = self.activePoint
-            pos = item.mapFromScene(self.mapToScene(event.pos()))
-            newPos = item.update(pos)
-            # update the spline
-            self.innerSpline.update(newPos, self.pointIdx)
+        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.LeftButton:  # ignore LMB
+            if self.pointIdx is not None:
+                item = self.activePoint
+                pos = item.mapFromScene(self.mapToScene(event.pos()))
+                newPos = item.update(pos)
+                # update the spline
+                self.innerSpline.update(newPos, self.pointIdx)
 
     def setData(self, lumen, images):
         self.numberOfFrames = images.shape[0]

@@ -113,10 +113,15 @@ def findShortestDistanceContour(main_window, polygon, frame):
     shortest_distance = min_distance * main_window.metadata['resolution']
 
     # Separate x and y coordinates and append to the respective lists
-    x1, y1 = closest_points[0]
-    x2, y2 = closest_points[1]
-    closest_point_x = [x1, x2]
-    closest_point_y = [y1, y2]
+    try:
+        x1, y1 = closest_points[0]
+        x2, y2 = closest_points[1]
+        closest_point_x = [x1, x2]
+        closest_point_y = [y1, y2]
+    except TypeError:  # closest_points might be None for some very weird shapes
+        closest_point_x = [0, 0]
+        closest_point_y = [0, 0]
+        shortest_distance = 0
 
     main_window.data['shortest_distance'][frame] = shortest_distance
     main_window.data['nearest_point'][0][frame] = closest_point_x
