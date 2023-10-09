@@ -106,8 +106,6 @@ def writeContours(main_window):
         warning.exec_()
         return
 
-    main_window.data['lumen'] = main_window.display.getData()
-
     if main_window.use_xml_files:
         # reformat data for compatibility with write_xml function
         x, y = [], []
