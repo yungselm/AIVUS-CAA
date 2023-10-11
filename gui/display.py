@@ -123,6 +123,8 @@ class Display(QGraphicsView):
         self.numberOfFrames = images.shape[0]
         self.scaling_factor = self.display_size / images.shape[1]
         self.lumen_to_display = self.downsample(lumen)
+        if len(lumen[0][0]) == 500:  # complete contour loaded -> save downsampled version
+            self.main_window.data['lumen'] = self.lumen_to_display
         self.images = images
         self.displayImage()
 
@@ -260,6 +262,7 @@ class Display(QGraphicsView):
                 self.graphics_scene.addItem(self.newSpline)
                 self.splineDrawn = True
             else:
+                logger.debug('update spline called')
                 self.newSpline.update(point, len(self.drawPoints))
 
         if len(self.drawPoints) > 1:

@@ -25,7 +25,6 @@ class Point(QGraphicsEllipseItem):
 
         self.setPen(self.defaultColor)
         self.setRect(pos[0] - self.point_radius * 0.5, pos[1] - self.point_radius * 0.5, self.point_radius, self.point_radius)
-        logger.debug(f'initialise point: {pos[0]}, {pos[1]}')
 
     def select_point(self, pos):
         """Identifies what point has been selected with the mouse"""
@@ -44,8 +43,7 @@ class Point(QGraphicsEllipseItem):
 
     def update(self, pos):
         """Updates the Point position"""
-        logger.debug(f'update point to: {pos.x()}, {pos.y()}')
-
+        
         self.setRect(pos.x() - self.point_radius * 0.5, pos.y() - self.point_radius * 0.5, self.point_radius, self.point_radius)
 
         return self.rect()
@@ -72,8 +70,8 @@ class Spline(QGraphicsPathItem):
         """KnotPoints is a list of points"""
 
         try:
-            p1 = QPointF(knotPoints[0][0], knotPoints[1][0])
-            self.path = QPainterPath(p1)
+            start_point = QPointF(knotPoints[0][0], knotPoints[1][0])
+            self.path = QPainterPath(start_point)
             super(Spline, self).__init__(self.path)
 
             self.points = self.interpolate(knotPoints)
@@ -91,6 +89,7 @@ class Spline(QGraphicsPathItem):
         """Interpolates the spline points at 500 points along spline"""
         pts = np.array(pts)
         tck, u = splprep(pts, u=None, s=0.0, per=1)
+        tck[1][0], tck[1][1] = pts[0], pts[1]  # keep old knot points
         u_new = np.linspace(u.min(), u.max(), 500)
         x_new, y_new = splev(u_new, tck, der=0)
 
