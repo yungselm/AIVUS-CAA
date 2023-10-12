@@ -28,12 +28,6 @@ class Point(QGraphicsEllipseItem):
             pos[0] - self.point_radius * 0.5, pos[1] - self.point_radius * 0.5, self.point_radius, self.point_radius
         )
 
-    def select_point(self, pos):
-        """Identifies what point has been selected with the mouse"""
-        dist = np.sqrt((self.rect().x() - pos.x()) ** 2 + (self.rect().y() - pos.y()) ** 2)
-
-        return dist
-
     def getPoint(self):
         return self.rect().x(), self.rect().y()
 
@@ -49,7 +43,6 @@ class Point(QGraphicsEllipseItem):
         self.setRect(
             pos.x() - self.point_radius * 0.5, pos.y() - self.point_radius * 0.5, self.point_radius, self.point_radius
         )
-
         return self.rect()
 
 
@@ -58,6 +51,8 @@ class Spline(QGraphicsPathItem):
 
     def __init__(self, points, color):
         super().__init__()
+        self.knotpoints = None
+        self.full_contour = None
         self.setKnotPoints(points)
         spline_thickness = 1
 
@@ -70,23 +65,21 @@ class Spline(QGraphicsPathItem):
         else:
             self.setPen(QPen(Qt.blue, spline_thickness))
 
-    def setKnotPoints(self, knotPoints):
-        """KnotPoints is a list of points"""
-
+    def setKnotPoints(self, points):
         try:
-            start_point = QPointF(knotPoints[0][0], knotPoints[1][0])
+            start_point = QPointF(points[0][0], points[1][0])
             self.path = QPainterPath(start_point)
             super(Spline, self).__init__(self.path)
 
-            self.points = self.interpolate(knotPoints)
-            for i in range(0, len(self.points[0])):
-                self.path.lineTo(self.points[0][i], self.points[1][i])
+            self.full_contour = self.interpolate(points)
+            for i in range(0, len(self.full_contour[0])):
+                self.path.lineTo(self.full_contour[0][i], self.full_contour[1][i])
 
             self.setPath(self.path)
             self.path.closeSubpath()
-            self.knotPoints = knotPoints
-        except IndexError:  # no knotPoints for this frame
-            logger.error(knotPoints)
+            self.knotpoints = points
+        except IndexError:  # no points for this frame
+            logger.error(points)
             pass
 
     def interpolate(self, pts):
@@ -105,13 +98,13 @@ class Spline(QGraphicsPathItem):
             idx: index on spline of updated point
         """
 
-        if idx == len(self.knotPoints[0]) + 1:
-            self.knotPoints[0].append(pos.x())
-            self.knotPoints[1].append(pos.y())
+        if idx == len(self.knotpoints[0]) + 1:
+            self.knotpoints[0].append(pos.x())
+            self.knotpoints[1].append(pos.y())
         else:
-            self.knotPoints[0][idx] = pos.x()
-            self.knotPoints[1][idx] = pos.y()
-        self.points = self.interpolate(self.knotPoints)
-        for i in range(0, len(self.points[0])):
-            self.path.setElementPositionAt(i, self.points[0][i], self.points[1][i])
+            self.knotpoints[0][idx] = pos.x()
+            self.knotpoints[1][idx] = pos.y()
+        self.full_contour = self.interpolate(self.knotpoints)
+        for i in range(0, len(self.full_contour[0])):
+            self.path.setElementPositionAt(i, self.full_contour[0][i], self.full_contour[1][i])
         self.setPath(self.path)

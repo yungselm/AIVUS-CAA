@@ -35,6 +35,7 @@ class Display(QGraphicsView):
         self.pointIdx = None
         self.frame = 0
         self.hide_contours = True
+        self.lumen_spline = None  # entire contour (not only knotpoints), needed for elliptic ratio
         self.draw = False
         self.drawPoints = []
         self.splineDrawn = False
@@ -87,32 +88,28 @@ class Display(QGraphicsView):
             item.resetColor()
 
             self.main_window.data['lumen'][0][self.frame] = [
-                val / self.scaling_factor for val in self.innerSpline.knotPoints[0]
+                val / self.scaling_factor for val in self.lumen_spline.knotpoints[0]
             ]
             self.main_window.data['lumen'][1][self.frame] = [
-                val / self.scaling_factor for val in self.innerSpline.knotPoints[1]
+                val / self.scaling_factor for val in self.lumen_spline.knotpoints[1]
             ]
+            self.displayImage()
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
             if self.pointIdx is not None:
                 item = self.activePoint
-                pos = item.mapFromScene(self.mapToScene(event.pos()))
-                newPos = item.update(pos)
-                # update the spline
-                self.innerSpline.update(newPos, self.pointIdx)
+                mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
+                new_point = item.update(mouse_position)
+                self.lumen_spline.update(new_point, self.pointIdx)
 
         elif event.buttons() == Qt.MouseButton.RightButton:
             self.setMouseTracking(True)
             # Right-click drag for adjusting window level and window width
-            dx = (event.x() - self.mouse_x) * self.windowing_sensitivity
-            dy = (event.y() - self.mouse_y) * self.windowing_sensitivity
-
-            self.window_level += dx
-            self.window_width += dy
+            self.window_level += (event.x() - self.mouse_x) * self.windowing_sensitivity
+            self.window_width += (event.y() - self.mouse_y) * self.windowing_sensitivity
 
             self.displayImage()
-
             self.setMouseTracking(False)
 
     def setData(self, lumen, images):
@@ -178,10 +175,9 @@ class Display(QGraphicsView):
 
         if not self.hide_contours:
             if self.main_window.data['lumen'][0][self.frame]:
-                lumen_x, lumen_y = [self.main_window.data['lumen'][i][self.frame] for i in range(2)]
-                polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
-
                 self.addInteractiveSplines(self.main_window.data['lumen'])
+                lumen_x, lumen_y = [list(self.lumen_spline.full_contour[i]) for i in range(2)]
+                polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
                 lumen_area, _, _ = computeContourMetrics(self.main_window, lumen_x, lumen_y, self.frame)
 
                 longest_distance, _, _ = findLongestDistanceContour(
@@ -205,13 +201,13 @@ class Display(QGraphicsView):
         if lumen[0][self.frame]:
             lumen_x = [val * self.scaling_factor for val in lumen[0][self.frame]]
             lumen_y = [val * self.scaling_factor for val in lumen[1][self.frame]]
-            self.innerSpline = Spline([lumen_x, lumen_y], 'g')
+            self.lumen_spline = Spline([lumen_x, lumen_y], 'g')
             self.innerPoints = [
-                Point((self.innerSpline.knotPoints[0][idx], self.innerSpline.knotPoints[1][idx]), 'g')
-                for idx in range(len(self.innerSpline.knotPoints[0]) - 1)
+                Point((self.lumen_spline.knotpoints[0][idx], self.lumen_spline.knotpoints[1][idx]), 'g')
+                for idx in range(len(self.lumen_spline.knotpoints[0]) - 1)
             ]
             [self.graphics_scene.addItem(point) for point in self.innerPoints]
-            self.graphics_scene.addItem(self.innerSpline)
+            self.graphics_scene.addItem(self.lumen_spline)
 
     def addManualSpline(self, point):
         """Creates an interactive spline manually point by point"""
@@ -247,7 +243,7 @@ class Display(QGraphicsView):
                 self.drawPoints = []
                 if self.newSpline is not None:
                     downsampled = self.downsample(
-                        ([self.newSpline.points[0].tolist()], [self.newSpline.points[1].tolist()])
+                        ([self.newSpline.full_contour[0].tolist()], [self.newSpline.full_contour[1].tolist()])
                     )
                     self.main_window.data['lumen'][0][self.frame] = [
                         val / self.scaling_factor for val in downsampled[0][0]

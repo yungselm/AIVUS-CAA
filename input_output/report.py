@@ -119,6 +119,7 @@ def findShortestDistanceContour(main_window, polygon, frame):
         closest_point_x = [x1, x2]
         closest_point_y = [y1, y2]
     except TypeError:  # closest_points might be None for some very weird shapes
+        logger.warning('No closest points found, probably due to polygon shape')
         closest_point_x = [0, 0]
         closest_point_y = [0, 0]
         shortest_distance = 0
