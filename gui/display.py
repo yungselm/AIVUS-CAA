@@ -34,7 +34,6 @@ class Display(QGraphicsView):
         self.graphics_scene = QGraphicsScene(self)
         self.pointIdx = None
         self.frame = 0
-        self.lumen_to_display = ([], [])
         self.hide_contours = True
         self.draw = False
         self.drawPoints = []
@@ -51,7 +50,7 @@ class Display(QGraphicsView):
         self.window_level = self.initial_window_level
         self.window_width = self.initial_window_width
 
-        self.viewport().installEventFilter(self)
+        # self.viewport().installEventFilter(self)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -59,9 +58,51 @@ class Display(QGraphicsView):
         self.graphics_scene.addItem(self.image)
         self.setScene(self.graphics_scene)
 
-    def eventFilter(self, obj, event):
-        """Handle mouse events for adjusting window level and window width"""
-        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.RightButton:
+    def mousePressEvent(self, event):
+        super(Display, self).mousePressEvent(event)
+
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            if self.draw:
+                pos = self.mapToScene(event.pos())
+                self.addManualSpline(pos)
+            else:
+                # identify which point has been clicked
+                items = self.items(event.pos())
+                for item in items:
+                    if item in self.innerPoints:
+                        # Convert mouse position to item position
+                        # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
+                        self.pointIdx = [i for i, checkItem in enumerate(self.innerPoints) if item == checkItem][0]
+                        item.updateColor()
+                        self.enable_drag = True
+                        self.activePoint = item
+
+        elif event.buttons() == Qt.MouseButton.RightButton:
+            self.mouse_x = event.x()
+            self.mouse_y = event.y()
+
+    def mouseReleaseEvent(self, event):
+        if self.pointIdx is not None:
+            item = self.activePoint
+            item.resetColor()
+
+            self.main_window.data['lumen'][0][self.frame] = [
+                val / self.scaling_factor for val in self.innerSpline.knotPoints[0]
+            ]
+            self.main_window.data['lumen'][1][self.frame] = [
+                val / self.scaling_factor for val in self.innerSpline.knotPoints[1]
+            ]
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            if self.pointIdx is not None:
+                item = self.activePoint
+                pos = item.mapFromScene(self.mapToScene(event.pos()))
+                newPos = item.update(pos)
+                # update the spline
+                self.innerSpline.update(newPos, self.pointIdx)
+
+        elif event.buttons() == Qt.MouseButton.RightButton:
             self.setMouseTracking(True)
             # Right-click drag for adjusting window level and window width
             dx = (event.x() - self.mouse_x) * self.windowing_sensitivity
@@ -72,86 +113,17 @@ class Display(QGraphicsView):
 
             self.displayImage()
 
-        elif event.type() == QEvent.Type.MouseButtonPress and event.buttons() == Qt.MouseButton.RightButton:
-            self.mouse_x = event.x()
-            self.mouse_y = event.y()
-
-        self.setMouseTracking(False)
-
-        return super().eventFilter(obj, event)
-
-    def mousePressEvent(self, event):
-        super(Display, self).mousePressEvent(event)
-
-        if event.type() == QEvent.Type.MouseButtonPress and event.buttons() == Qt.MouseButton.LeftButton:  # ignore RMB
-            if self.draw:
-                pos = self.mapToScene(event.pos())
-                self.addManualSpline(pos)
-            else:
-                # identify which point has been clicked
-                items = self.items(event.pos())
-                for item in items:
-                    if item in self.innerPoints:
-                        # Convert mouse position to item position https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                        self.pointIdx = [i for i, checkItem in enumerate(self.innerPoints) if item == checkItem][0]
-                        item.updateColor()
-                        self.enable_drag = True
-                        self.activePoint = item
-
-    def mouseReleaseEvent(self, event):
-        if self.pointIdx is not None:
-            item = self.activePoint
-            item.resetColor()
-
-            self.lumen_to_display[0][self.frame] = [val / self.scaling_factor for val in self.innerSpline.knotPoints[0]]
-            self.lumen_to_display[1][self.frame] = [val / self.scaling_factor for val in self.innerSpline.knotPoints[1]]
-            (
-                self.main_window.data['lumen'][0][self.frame],
-                self.main_window.data['lumen'][1][self.frame],
-            ) = self.updateData(self.frame)
-
-    def mouseMoveEvent(self, event):
-        if event.type() == QEvent.Type.MouseMove and event.buttons() == Qt.MouseButton.LeftButton:  # ignore RMB
-            if self.pointIdx is not None:
-                item = self.activePoint
-                pos = item.mapFromScene(self.mapToScene(event.pos()))
-                newPos = item.update(pos)
-                # update the spline
-                self.innerSpline.update(newPos, self.pointIdx)
+            self.setMouseTracking(False)
 
     def setData(self, lumen, images):
         self.numberOfFrames = images.shape[0]
         self.scaling_factor = self.display_size / images.shape[1]
-        self.lumen_to_display = self.downsample(lumen)
         if len(lumen[0][0]) == 500:  # complete contour loaded -> save downsampled version
-            self.main_window.data['lumen'] = self.lumen_to_display
+            self.main_window.data['lumen'] = self.downsample(lumen)
+        else:
+            self.main_window.data['lumen'] = lumen
         self.images = images
         self.displayImage()
-
-    def updateData(self, frame=None):
-        """Gets the interpolated image contours
-
-        Returns:
-            lumenContour: tuple, first and second lists are lists of x and y points
-        """
-
-        lumenContour = ([], [])
-
-        if frame is not None:  # update single frame
-            if self.lumen_to_display[0][frame]:
-                lumen = Spline([self.lumen_to_display[0][frame], self.lumen_to_display[1][frame]], 'g')
-                return list(lumen.points[0]), list(lumen.points[1])
-
-        for frame in range(self.numberOfFrames):  # update all frames
-            if self.lumen_to_display[0][frame]:
-                lumen = Spline([self.lumen_to_display[0][frame], self.lumen_to_display[1][frame]], 'g')
-                lumenContour[0].append(list(lumen.points[0]))
-                lumenContour[1].append(list(lumen.points[1]))
-            else:
-                lumenContour[0].append([])
-                lumenContour[1].append([])
-
-        return lumenContour
 
     def downsample(self, contours, num_points=20):
         """Downsamples input contour data by selecting n points from original contour"""
@@ -209,7 +181,7 @@ class Display(QGraphicsView):
                 lumen_x, lumen_y = [self.main_window.data['lumen'][i][self.frame] for i in range(2)]
                 polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
 
-                self.addInteractiveSplines(self.lumen_to_display)
+                self.addInteractiveSplines(self.main_window.data['lumen'])
                 lumen_area, _, _ = computeContourMetrics(self.main_window, lumen_x, lumen_y, self.frame)
 
                 longest_distance, _, _ = findLongestDistanceContour(
@@ -262,7 +234,6 @@ class Display(QGraphicsView):
                 self.graphics_scene.addItem(self.newSpline)
                 self.splineDrawn = True
             else:
-                logger.debug('update spline called')
                 self.newSpline.update(point, len(self.drawPoints))
 
         if len(self.drawPoints) > 1:
@@ -278,12 +249,12 @@ class Display(QGraphicsView):
                     downsampled = self.downsample(
                         ([self.newSpline.points[0].tolist()], [self.newSpline.points[1].tolist()])
                     )
-                    self.lumen_to_display[0][self.frame] = [val / self.scaling_factor for val in downsampled[0][0]]
-                    self.lumen_to_display[1][self.frame] = [val / self.scaling_factor for val in downsampled[1][0]]
-                    (
-                        self.main_window.data['lumen'][0][self.frame],
-                        self.main_window.data['lumen'][1][self.frame],
-                    ) = self.updateData(self.frame)
+                    self.main_window.data['lumen'][0][self.frame] = [
+                        val / self.scaling_factor for val in downsampled[0][0]
+                    ]
+                    self.main_window.data['lumen'][1][self.frame] = [
+                        val / self.scaling_factor for val in downsampled[1][0]
+                    ]
 
                 self.main_window.setCursor(Qt.ArrowCursor)
                 self.displayImage()
@@ -297,13 +268,10 @@ class Display(QGraphicsView):
 
         self.draw = True
 
-        self.lumen_to_display[0][self.frame] = []
-        self.lumen_to_display[1][self.frame] = []
+        self.main_window.data['lumen'][0][self.frame] = []
+        self.main_window.data['lumen'][1][self.frame] = []
 
         self.displayImage()
-
-    def displayMetrics(self, frame):
-        pass
 
     def setFrame(self, value):
         self.frame = value

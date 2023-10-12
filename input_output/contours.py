@@ -95,6 +95,8 @@ def readContours(main_window, file_name=None):
         main_window.display.setData(main_window.data['lumen'], main_window.images)
         main_window.hideBox.setChecked(False)
 
+    return success
+
 
 def writeContours(main_window):
     """Writes contours to a json/xml file"""

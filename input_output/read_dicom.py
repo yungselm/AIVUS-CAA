@@ -48,7 +48,7 @@ def readDICOM(main_window):
         parseDICOM(main_window)
 
         try:
-            readContours(main_window, main_window.file_name)
+            success = readContours(main_window, main_window.file_name)
             main_window.segmentation = True
             try:
                 main_window.gated_frames_dia = [
@@ -87,7 +87,8 @@ def readDICOM(main_window):
                 for _ in range(4)
             ]
 
-        main_window.display.setData(main_window.data['lumen'], main_window.images)
+        if not success:  # else data already set
+            main_window.display.setData(main_window.data['lumen'], main_window.images)
         main_window.image_displayed = True
         main_window.slider.setValue(main_window.metadata['number_of_frames'] - 1)
     main_window.status_bar.showMessage('Waiting for user input')
