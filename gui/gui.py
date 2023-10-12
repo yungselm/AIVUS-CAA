@@ -253,7 +253,7 @@ class Master(QMainWindow):
             self.slider.setValue(self.slider.value() - 1)
         elif key == Qt.Key_E:
             if self.image_displayed:
-                self.display.new(self)  # start new manual Lumen contour
+                self.display.new_contour(self)  # start new manual Lumen contour
                 self.hideBox.setChecked(False)
                 self.contours_drawn = True
         if event.key() == Qt.Key.Key_R:

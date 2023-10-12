@@ -200,7 +200,7 @@ def newSpline(main_window):
         warning.exec_()
         return
 
-    main_window.display.new(main_window)
+    main_window.display.new_contour(main_window)
     main_window.hideBox.setChecked(False)
     main_window.contours_drawn = True
 

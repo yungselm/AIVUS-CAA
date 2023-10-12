@@ -25,7 +25,6 @@ def report(main_window):
         main_window.errorMessage()
         return
 
-    main_window.data['lumen'] = main_window.display.getData()
     contoured_frames = [
         frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
     ]
@@ -44,10 +43,11 @@ def report(main_window):
     )
 
     for frame, frame in enumerate(contoured_frames):
+        elliptic_ratio = longest_distances[frame] / shortest_distances[frame] if shortest_distances[frame] != 0 else 0
         f.write(
             f"{frame}\t{main_window.metadata['pullback_length'][frame]:.2f}\t{lumen_area[frame]:.2f}"
             f"\t{longest_distances[frame]:.2f}\t{shortest_distances[frame]:.2f}"
-            f"\t{longest_distances[frame]/shortest_distances[frame]:.2f}\t{main_window.data['phases'][frame]}\n"
+            f"\t{elliptic_ratio:.2f}\t{main_window.data['phases'][frame]}\n"
         )
     f.close()
 
