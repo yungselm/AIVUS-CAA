@@ -29,7 +29,10 @@ class Point(QGraphicsEllipseItem):
         )
 
     def getPoint(self):
-        return self.rect().x(), self.rect().y()
+        try:
+            return self.rect().x(), self.rect().y()
+        except RuntimeError:  # Point has been deleted
+            return None, None
 
     def updateColor(self):
         self.setPen(QPen(Qt.blue, self.point_thickness))

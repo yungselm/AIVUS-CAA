@@ -51,7 +51,6 @@ class Display(QGraphicsView):
         self.window_level = self.initial_window_level
         self.window_width = self.initial_window_width
 
-        # self.viewport().installEventFilter(self)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -60,8 +59,6 @@ class Display(QGraphicsView):
         self.setScene(self.graphics_scene)
 
     def mousePressEvent(self, event):
-        super(Display, self).mousePressEvent(event)
-
         if event.buttons() == Qt.MouseButton.LeftButton:
             if self.draw:
                 pos = self.mapToScene(event.pos())
@@ -212,48 +209,57 @@ class Display(QGraphicsView):
     def addManualSpline(self, point):
         """Creates an interactive spline manually point by point"""
 
-        if not self.drawPoints:
+        if self.drawPoints:
+            start_point = self.drawPoints[0].getPoint()
+        else:
             self.splineDrawn = False
+            start_point = (point.x(), point.y())
 
-        self.drawPoints.append(Point((point.x(), point.y()), 'b'))
-        self.graphics_scene.addItem(self.drawPoints[-1])
+        if start_point[0] is None:  # occurs when Point has been deleted during draw (e.g. by RMB click)
+            self.drawPoints = []
+            self.draw = False
+            self.main_window.setCursor(Qt.ArrowCursor)
+            self.displayImage()
+        else:
+            self.drawPoints.append(Point((point.x(), point.y()), 'b'))
+            self.graphics_scene.addItem(self.drawPoints[-1])
 
-        if len(self.drawPoints) > 3:
-            if not self.splineDrawn:
-                self.newSpline = Spline(
-                    [
-                        [point.getPoint()[0] for point in self.drawPoints],
-                        [point.getPoint()[1] for point in self.drawPoints],
-                    ],
-                    'c',
-                )
-                self.graphics_scene.addItem(self.newSpline)
-                self.splineDrawn = True
-            else:
-                self.newSpline.update(point, len(self.drawPoints))
-
-        if len(self.drawPoints) > 1:
-            dist = math.sqrt(
-                (point.x() - self.drawPoints[0].getPoint()[0]) ** 2
-                + (point.y() - self.drawPoints[0].getPoint()[1]) ** 2
-            )
-
-            if dist < 10:
-                self.draw = False
-                self.drawPoints = []
-                if self.newSpline is not None:
-                    downsampled = self.downsample(
-                        ([self.newSpline.full_contour[0].tolist()], [self.newSpline.full_contour[1].tolist()])
+            if len(self.drawPoints) > 3:
+                if not self.splineDrawn:
+                    self.newSpline = Spline(
+                        [
+                            [point.getPoint()[0] for point in self.drawPoints],
+                            [point.getPoint()[1] for point in self.drawPoints],
+                        ],
+                        'c',
                     )
-                    self.main_window.data['lumen'][0][self.frame] = [
-                        val / self.scaling_factor for val in downsampled[0][0]
-                    ]
-                    self.main_window.data['lumen'][1][self.frame] = [
-                        val / self.scaling_factor for val in downsampled[1][0]
-                    ]
+                    self.graphics_scene.addItem(self.newSpline)
+                    self.splineDrawn = True
+                else:
+                    self.newSpline.update(point, len(self.drawPoints))
 
-                self.main_window.setCursor(Qt.ArrowCursor)
-                self.displayImage()
+            if len(self.drawPoints) > 1:
+                dist = math.sqrt(
+                    (point.x() - self.drawPoints[0].getPoint()[0]) ** 2
+                    + (point.y() - self.drawPoints[0].getPoint()[1]) ** 2
+                )
+
+                if dist < 10:
+                    self.draw = False
+                    self.drawPoints = []
+                    if self.newSpline is not None:
+                        downsampled = self.downsample(
+                            ([self.newSpline.full_contour[0].tolist()], [self.newSpline.full_contour[1].tolist()])
+                        )
+                        self.main_window.data['lumen'][0][self.frame] = [
+                            val / self.scaling_factor for val in downsampled[0][0]
+                        ]
+                        self.main_window.data['lumen'][1][self.frame] = [
+                            val / self.scaling_factor for val in downsampled[1][0]
+                        ]
+
+                    self.main_window.setCursor(Qt.ArrowCursor)
+                    self.displayImage()
 
     def run(self):
         self.displayImage()
