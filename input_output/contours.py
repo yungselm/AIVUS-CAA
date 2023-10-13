@@ -75,6 +75,8 @@ def readContours(main_window, file_name=None):
         logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_json}')
         with open(newest_json, 'r') as in_file:
             main_window.data = json.load(in_file)
+        if 'lumen_circumf' not in main_window.data.keys():
+            main_window.data['lumen_circumf'] = [0] * main_window.metadata['number_of_frames']
         success = True
 
     elif xml_files:

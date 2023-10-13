@@ -289,7 +289,7 @@ class Master(QMainWindow):
             self.paused = True
             self.playButton.setIcon(self.playIcon)
 
-        for frame in range(start_frame, self.numberOfFrames):
+        for frame in range(start_frame, self.metadata['number_of_frames']):
             if not self.paused:
                 self.slider.setValue(frame)
                 QApplication.processEvents()
