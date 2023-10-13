@@ -11,7 +11,12 @@ hydra:
 root_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
 train: False
 
-windowing_sensitivity: 0.03  # 1 for default, below 1 for slower, above 1 for faster
+display:
+  image_size: 1024
+  windowing_sensitivity: 0.03  # 1 for default, below 1 for slower, above 1 for faster
+  spline_thickness: 3
+  point_thickness: 1
+  point_radius: 10
 
 segmentation:
   batch_size: 12

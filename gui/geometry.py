@@ -9,10 +9,10 @@ from PyQt5.QtGui import QPen, QPainterPath
 class Point(QGraphicsEllipseItem):
     """Class that describes a spline point"""
 
-    def __init__(self, pos, color):
+    def __init__(self, pos, color, line_thickness, point_radius):
         super(Point, self).__init__()
-        self.line_thickness = 1
-        self.point_radius = 10
+        self.line_thickness = line_thickness
+        self.point_radius = point_radius
 
         if color == 'y':
             self.defaultColor = QPen(Qt.yellow, self.line_thickness)
@@ -52,12 +52,11 @@ class Point(QGraphicsEllipseItem):
 class Spline(QGraphicsPathItem):
     """Class that describes a spline"""
 
-    def __init__(self, points, color):
+    def __init__(self, points, color, line_thickness):
         super().__init__()
         self.knotpoints = None
         self.full_contour = None
         self.setKnotPoints(points)
-        line_thickness = 3
 
         if color == 'y':
             self.setPen(QPen(Qt.yellow, line_thickness))

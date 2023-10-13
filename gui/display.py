@@ -27,10 +27,14 @@ class Display(QGraphicsView):
         innerPoint: list, spline points for inner (lumen) contours
     """
 
-    def __init__(self, main_window, windowing_sensitivity):
+    def __init__(self, main_window, config):
         super(Display, self).__init__()
         self.main_window = main_window
-        self.windowing_sensitivity = windowing_sensitivity
+        self.image_size = config.display.image_size
+        self.windowing_sensitivity = config.display.windowing_sensitivity
+        self.spline_thickness = config.display.spline_thickness
+        self.point_thickness = config.display.point_thickness
+        self.point_radius = config.display.point_radius
         self.graphics_scene = QGraphicsScene(self)
         self.point_index = None
         self.frame = 0
@@ -43,7 +47,6 @@ class Display(QGraphicsView):
         self.enable_drag = True
         self.active_point = None
         self.lumen_points = []
-        self.display_size = 800
 
         # Store initial window level and window width (full width, middle level)
         self.initial_window_level = 128  # window level is the center which determines the brightness of the image
@@ -54,7 +57,7 @@ class Display(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.image = QGraphicsPixmapItem(QPixmap(self.display_size, self.display_size))
+        self.image = QGraphicsPixmapItem(QPixmap(self.image_size, self.image_size))
         self.text = None
         self.graphics_scene.addItem(self.image)
         self.setScene(self.graphics_scene)
@@ -115,7 +118,7 @@ class Display(QGraphicsView):
 
     def setData(self, lumen, images):
         self.numberOfFrames = images.shape[0]
-        self.scaling_factor = self.display_size / images.shape[1]
+        self.scaling_factor = self.image_size / images.shape[1]
         if len(lumen[0][0]) == 500:  # complete contour loaded -> save downsampled version
             self.main_window.data['lumen'] = self.downsample(lumen)
         else:
@@ -162,11 +165,11 @@ class Display(QGraphicsView):
                 # Apply an orange-blue colormap
                 colormap = cv2.applyColorMap(normalized_data, cv2.COLORMAP_JET)
                 q_image = QImage(colormap.data, width, height, width * 3, QImage.Format.Format_RGB888).scaled(
-                    self.display_size, self.display_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+                    self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
             else:
                 q_image = QImage(normalized_data.data, width, height, width, QImage.Format.Format_Grayscale8).scaled(
-                    self.display_size, self.display_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+                    self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
 
             self.q_image = q_image  # Update the QImage
@@ -210,9 +213,14 @@ class Display(QGraphicsView):
         if lumen[0][self.frame]:
             lumen_x = [val * self.scaling_factor for val in lumen[0][self.frame]]
             lumen_y = [val * self.scaling_factor for val in lumen[1][self.frame]]
-            self.lumen_spline = Spline([lumen_x, lumen_y], 'g')
+            self.lumen_spline = Spline([lumen_x, lumen_y], 'g', self.spline_thickness)
             self.lumen_points = [
-                Point((self.lumen_spline.knotpoints[0][idx], self.lumen_spline.knotpoints[1][idx]), 'g')
+                Point(
+                    (self.lumen_spline.knotpoints[0][idx], self.lumen_spline.knotpoints[1][idx]),
+                    'g',
+                    self.point_thickness,
+                    self.point_radius,
+                )
                 for idx in range(len(self.lumen_spline.knotpoints[0]) - 1)
             ]
             [self.graphics_scene.addItem(point) for point in self.lumen_points]
@@ -233,7 +241,7 @@ class Display(QGraphicsView):
             self.main_window.setCursor(Qt.ArrowCursor)
             self.displayImage(update_splines=True)
         else:
-            self.drawPoints.append(Point((point.x(), point.y()), 'b'))
+            self.drawPoints.append(Point((point.x(), point.y()), 'b', self.point_thickness, self.point_radius))
             self.graphics_scene.addItem(self.drawPoints[-1])
 
             if len(self.drawPoints) > 3:
@@ -244,6 +252,7 @@ class Display(QGraphicsView):
                             [point.getPoint()[1] for point in self.drawPoints],
                         ],
                         'c',
+                        self.spline_thickness,
                     )
                     self.graphics_scene.addItem(self.newSpline)
                     self.splineDrawn = True

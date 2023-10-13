@@ -173,7 +173,7 @@ class Master(QMainWindow):
         self.useDiastolicButton.clicked.connect(self.useDiastolic)
         self.useDiastolicButton.setToolTip("Press button to switch between diastolic and systolic frames")
 
-        self.display = Display(self, self.config.windowing_sensitivity)
+        self.display = Display(self, self.config)
         self.comms = Communicate()
         self.comms.updateBW[int].connect(self.display.setFrame)
         self.comms.updateBool[bool].connect(self.display.setDisplay)
