@@ -265,7 +265,7 @@ class Display(QGraphicsView):
                     + (point.y() - self.drawPoints[0].getPoint()[1]) ** 2
                 )
 
-                if dist < 10:
+                if dist < 20:
                     self.draw = False
                     self.drawPoints = []
                     if self.newSpline is not None:
@@ -289,6 +289,7 @@ class Display(QGraphicsView):
         self.main_window = main_window
         self.main_window.setCursor(Qt.CrossCursor)
         self.draw = True
+        self.drawPoints = []
 
         self.main_window.data['lumen'][0][self.frame] = []
         self.main_window.data['lumen'][1][self.frame] = []
