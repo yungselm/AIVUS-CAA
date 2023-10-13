@@ -260,11 +260,11 @@ class Master(QMainWindow):
             # Reset window level and window width to initial values
             self.display.window_level = self.display.initial_window_level
             self.display.window_width = self.display.initial_window_width
-            self.display.displayImage()
+            self.display.displayImage(update_image=True)
         elif event.key() == Qt.Key.Key_C:
             # Toggle colormap
             self.colormap_enabled = not self.colormap_enabled
-            self.display.displayImage()
+            self.display.displayImage(update_image=True)
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""

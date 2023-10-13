@@ -32,7 +32,7 @@ class Display(QGraphicsView):
         self.main_window = main_window
         self.windowing_sensitivity = windowing_sensitivity
         self.graphics_scene = QGraphicsScene(self)
-        self.pointIdx = None
+        self.point_index = None
         self.frame = 0
         self.hide_contours = True
         self.lumen_spline = None  # entire contour (not only knotpoints), needed for elliptic ratio
@@ -41,7 +41,7 @@ class Display(QGraphicsView):
         self.splineDrawn = False
         self.newSpline = None
         self.enable_drag = True
-        self.activePoint = None
+        self.active_point = None
         self.lumen_points = []
         self.display_size = 800
 
@@ -69,21 +69,39 @@ class Display(QGraphicsView):
                 items = self.items(event.pos())
                 for item in items:
                     if item in self.lumen_points:
+                        self.main_window.setCursor(Qt.BlankCursor)  # remove cursor for precise spline changes
                         # Convert mouse position to item position
                         # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                        self.pointIdx = [i for i, checkItem in enumerate(self.lumen_points) if item == checkItem][0]
+                        self.point_index = self.lumen_points.index(item)
                         item.updateColor()
                         self.enable_drag = True
-                        self.activePoint = item
+                        self.active_point = item
 
         elif event.buttons() == Qt.MouseButton.RightButton:
             self.mouse_x = event.x()
             self.mouse_y = event.y()
 
-    def mouseReleaseEvent(self, event):
+    def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
-            if self.pointIdx is not None:
-                item = self.activePoint
+            if self.point_index is not None:
+                item = self.active_point
+                mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
+                new_point = item.update(mouse_position)
+                self.lumen_spline.update(new_point, self.point_index)
+
+        elif event.buttons() == Qt.MouseButton.RightButton:
+            self.setMouseTracking(True)
+            # Right-click drag for adjusting window level and window width
+            self.window_level += (event.x() - self.mouse_x) * self.windowing_sensitivity
+            self.window_width += (event.y() - self.mouse_y) * self.windowing_sensitivity
+            self.displayImage(update_image=True)
+            self.setMouseTracking(False)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:  # for some reason event.buttons() does not work here
+            if self.point_index is not None:
+                self.main_window.setCursor(Qt.ArrowCursor)
+                item = self.active_point
                 item.resetColor()
 
                 self.main_window.data['lumen'][0][self.frame] = [
@@ -93,23 +111,7 @@ class Display(QGraphicsView):
                     val / self.scaling_factor for val in self.lumen_spline.knotpoints[1]
                 ]
                 self.displayImage(update_splines=True)
-
-    def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            if self.pointIdx is not None:
-                item = self.activePoint
-                mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
-                new_point = item.update(mouse_position)
-                self.lumen_spline.update(new_point, self.pointIdx)
-
-        elif event.buttons() == Qt.MouseButton.RightButton:
-            self.setMouseTracking(True)
-            # Right-click drag for adjusting window level and window width
-            self.window_level += (event.x() - self.mouse_x) * self.windowing_sensitivity
-            self.window_width += (event.y() - self.mouse_y) * self.windowing_sensitivity
-
-            self.displayImage(update_image=True)
-            self.setMouseTracking(False)
+                self.point_index = None
 
     def setData(self, lumen, images):
         self.numberOfFrames = images.shape[0]
@@ -142,8 +144,8 @@ class Display(QGraphicsView):
                 for item in self.graphics_scene.items()
                 if isinstance(item, QGraphicsPixmapItem)
             ]  # clear previous scene
-            self.activePoint = None
-            self.pointIdx = None
+            self.active_point = None
+            self.point_index = None
 
             # Calculate lower and upper bounds for the adjusted window level and window width
             lower_bound = self.window_level - self.window_width / 2
@@ -172,20 +174,24 @@ class Display(QGraphicsView):
             self.image = QGraphicsPixmapItem(self.pixmap)
             self.graphics_scene.addItem(self.image)
 
-        old_splines = self.graphics_scene.items()
+        old_splines = [
+            item for item in self.graphics_scene.items() if isinstance(item, (Spline, Point, QGraphicsTextItem))
+        ]
         [
             self.graphics_scene.removeItem(item)
             for item in self.graphics_scene.items()
             if isinstance(item, (Spline, Point, QGraphicsTextItem))
         ]  # clear previous scene
-        if not self.hide_contours and self.main_window.data['lumen'][0][self.frame]:
+        if not self.hide_contours:
             if update_splines:
                 self.addInteractiveSplines(self.main_window.data['lumen'])
                 lumen_x, lumen_y = [list(self.lumen_spline.full_contour[i]) for i in range(2)]
                 polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
                 lumen_area, _, _ = computeContourMetrics(self.main_window, lumen_x, lumen_y, self.frame)
 
-                longest_distance, _, _ = findLongestDistanceContour(self.main_window, polygon.exterior.coords, self.frame)
+                longest_distance, _, _ = findLongestDistanceContour(
+                    self.main_window, polygon.exterior.coords, self.frame
+                )
                 shortest_distance, _, _ = findShortestDistanceContour(self.main_window, polygon, self.frame)
 
                 elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0

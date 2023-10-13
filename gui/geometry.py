@@ -11,17 +11,17 @@ class Point(QGraphicsEllipseItem):
 
     def __init__(self, pos, color):
         super(Point, self).__init__()
-        self.point_thickness = 1
+        self.line_thickness = 1
         self.point_radius = 10
 
         if color == 'y':
-            self.defaultColor = QPen(Qt.yellow, self.point_thickness)
+            self.defaultColor = QPen(Qt.yellow, self.line_thickness)
         elif color == 'r':
-            self.defaultColor = QPen(Qt.red, self.point_thickness)
+            self.defaultColor = QPen(Qt.red, self.line_thickness)
         elif color == "g":
-            self.defaultColor = QPen(Qt.green, self.point_thickness)
+            self.defaultColor = QPen(Qt.green, self.line_thickness)
         else:
-            self.defaultColor = QPen(Qt.blue, self.point_thickness)
+            self.defaultColor = QPen(Qt.blue, self.line_thickness)
 
         self.setPen(self.defaultColor)
         self.setRect(
@@ -35,7 +35,7 @@ class Point(QGraphicsEllipseItem):
             return None, None
 
     def updateColor(self):
-        self.setPen(QPen(Qt.blue, self.point_thickness))
+        self.setPen(QPen(Qt.transparent, self.line_thickness))
 
     def resetColor(self):
         self.setPen(self.defaultColor)
@@ -44,7 +44,7 @@ class Point(QGraphicsEllipseItem):
         """Updates the Point position"""
 
         self.setRect(
-            pos.x() - self.point_radius * 0.5, pos.y() - self.point_radius * 0.5, self.point_radius, self.point_radius
+            pos.x(), pos.y(), self.point_radius, self.point_radius
         )
         return self.rect()
 
@@ -57,16 +57,16 @@ class Spline(QGraphicsPathItem):
         self.knotpoints = None
         self.full_contour = None
         self.setKnotPoints(points)
-        spline_thickness = 1
+        line_thickness = 3
 
         if color == 'y':
-            self.setPen(QPen(Qt.yellow, spline_thickness))
+            self.setPen(QPen(Qt.yellow, line_thickness))
         elif color == "r":
-            self.setPen(QPen(Qt.red, spline_thickness))
+            self.setPen(QPen(Qt.red, line_thickness))
         elif color == "g":
-            self.setPen(QPen(Qt.green, spline_thickness))
+            self.setPen(QPen(Qt.green, line_thickness))
         else:
-            self.setPen(QPen(Qt.blue, spline_thickness))
+            self.setPen(QPen(Qt.blue, line_thickness))
 
     def setKnotPoints(self, points):
         try:
