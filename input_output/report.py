@@ -39,9 +39,8 @@ def report(main_window):
 
     f = open(os.path.splitext(main_window.file_name)[0] + "_report.txt", "w")
     f.write(
-        "Frame\tPos (mm)\tArea (mm\N{SUPERSCRIPT TWO})\tCircumf (mm)"
-        "\tLongest Distance (mm)\t Longest x 1(px)\t Longest y 1(py)\t Longest x 2(px)"
-        "\tShortest Distance (mm)\tElliptic Ratio\tPhase\n"
+        "Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})\tCircumf (mm)"
+        "\tLongest Distance (mm)\tShortest Distance (mm)\tElliptic Ratio\tPhase\n"
     )
 
     for frame, frame in enumerate(contoured_frames):
@@ -286,3 +285,18 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
             plt.show()
 
     return longest_distance, shortest_distance, lumen_area, lumen_circumf
+
+def centroid_center_vector(window, contoured_frames, centroid_x, centroid_y):
+    """Returns the length and angle of a vector from the center of the image to the centroid"""
+    center_x = window.image.shape[1] / 2
+    center_y = window.image.shape[0] / 2
+
+    # now to this for every frame
+
+    vector_x = centroid_x - center_x
+    vector_y = centroid_y - center_y
+
+    vector_length = math.sqrt(vector_x**2 + vector_y**2)
+    vector_angle = math.degrees(math.atan2(vector_y, vector_x))
+
+    return vector_length, vector_angle

@@ -31,8 +31,6 @@ def read(path, frames=[]):
         framelist: list, frames with contours
     """
 
-    logger.info(f'Current version is {version_file_str}, file found with most recent version is {path}')
-    
     tree = ET.parse(path)  # current version
     root = tree.getroot()
     root.attrib

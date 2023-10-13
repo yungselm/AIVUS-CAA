@@ -51,6 +51,23 @@ def readContours(main_window, file_name=None):
             ) = read(file_name)
             main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
             main_window.data['lumen'] = mapToList(main_window.data['lumen'])
+            (  # initialise empty containers
+            main_window.data['lumen_centroid'],
+            main_window.data['farthest_point'],
+            main_window.data['nearest_point'],
+            ) = [
+                (
+                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                )
+                for _ in range(3)
+            ]
+            (
+                main_window.data['lumen_area'],
+                main_window.data['lumen_circumf'],
+                main_window.data['longest_distance'],
+                main_window.data['shortest_distance'],
+            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(4)]
             success = True
 
     elif not main_window.use_xml_files and json_files:  # json files have priority over xml unless desired

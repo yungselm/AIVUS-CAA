@@ -68,7 +68,7 @@ def readDICOM(main_window):
         except FileNotFoundError:
             main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
             main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']
-
+            
             (
                 main_window.data['lumen_area'],
                 main_window.data['lumen_circumf'],
