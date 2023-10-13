@@ -61,9 +61,9 @@ def readDICOM(main_window):
                     for frame in range(main_window.metadata['number_of_frames'])
                     if main_window.data['phases'][frame] == 'S'
                 ]
-            except IndexError:  # old contour files may not have phases attr
+            except KeyError:  # old contour files may not have phases attr
                 pass
-            main_window.gated_frames = main_window.gated_frames_dia
+            main_window.gated_frames = []
             main_window.slider.addGatedFrames(main_window.gated_frames)
         except FileNotFoundError:
             main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
@@ -89,7 +89,28 @@ def readDICOM(main_window):
             ]
 
         if not success:  # else data already set
-            main_window.display.setData(main_window.data['lumen'], main_window.images)
+            main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
+            main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']
+            
+            (
+                main_window.data['lumen_area'],
+                main_window.data['lumen_circumf'],
+                main_window.data['longest_distance'],
+                main_window.data['shortest_distance'],
+            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(4)]
+            (  # initialise empty containers
+                main_window.data['lumen_centroid'],
+                main_window.data['farthest_point'],
+                main_window.data['nearest_point'],
+                main_window.data['lumen'],
+            ) = [
+                (
+                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                )
+                for _ in range(4)
+            ]
+            main_window.display.setData(([], []), main_window.images)
         main_window.image_displayed = True
         main_window.slider.setValue(main_window.metadata['number_of_frames'] - 1)
     main_window.status_bar.showMessage('Waiting for user input')

@@ -120,7 +120,7 @@ class Display(QGraphicsView):
         self.numberOfFrames = images.shape[0]
         self.scaling_factor = self.image_size / images.shape[1]
         if (
-            max([len(lumen[0][frame]) for frame in range(self.numberOfFrames)]) == 500
+            lumen[0] and max([len(lumen[0][frame]) for frame in range(self.numberOfFrames)]) == 500
         ):  # complete contours loaded -> save downsampled version
             self.main_window.data['lumen'] = self.downsample(lumen)
         else:
