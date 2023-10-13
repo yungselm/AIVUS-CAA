@@ -71,9 +71,10 @@ def readDICOM(main_window):
 
             (
                 main_window.data['lumen_area'],
+                main_window.data['lumen_circumf'],
                 main_window.data['longest_distance'],
                 main_window.data['shortest_distance'],
-            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(3)]
+            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(4)]
             (  # initialise empty containers
                 main_window.data['lumen_centroid'],
                 main_window.data['farthest_point'],

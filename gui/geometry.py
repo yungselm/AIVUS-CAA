@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPen, QPainterPath
 class Point(QGraphicsEllipseItem):
     """Class that describes a spline point"""
 
-    def __init__(self, pos, color, line_thickness, point_radius):
+    def __init__(self, pos, line_thickness=1, point_radius=10, color=None):
         super(Point, self).__init__()
         self.line_thickness = line_thickness
         self.point_radius = point_radius
@@ -52,7 +52,7 @@ class Point(QGraphicsEllipseItem):
 class Spline(QGraphicsPathItem):
     """Class that describes a spline"""
 
-    def __init__(self, points, color, line_thickness):
+    def __init__(self, points, line_thickness=1, color=None):
         super().__init__()
         self.knotpoints = None
         self.full_contour = None
@@ -74,12 +74,13 @@ class Spline(QGraphicsPathItem):
             super(Spline, self).__init__(self.path)
 
             self.full_contour = self.interpolate(points)
-            for i in range(0, len(self.full_contour[0])):
-                self.path.lineTo(self.full_contour[0][i], self.full_contour[1][i])
+            if self.full_contour[0] is not None:
+                for i in range(0, len(self.full_contour[0])):
+                    self.path.lineTo(self.full_contour[0][i], self.full_contour[1][i])
 
-            self.setPath(self.path)
-            self.path.closeSubpath()
-            self.knotpoints = points
+                self.setPath(self.path)
+                self.path.closeSubpath()
+                self.knotpoints = points
         except IndexError:  # no points for this frame
             logger.error(points)
             pass
@@ -87,7 +88,10 @@ class Spline(QGraphicsPathItem):
     def interpolate(self, pts):
         """Interpolates the spline points at 500 points along spline"""
         pts = np.array(pts)
-        tck, u = splprep(pts, u=None, s=0.0, per=1)
+        try:
+            tck, u = splprep(pts, u=None, s=0.0, per=1)
+        except ValueError:
+            return (None, None)
         u_new = np.linspace(u.min(), u.max(), 500)
         x_new, y_new = splev(u_new, tck, der=0)
 
