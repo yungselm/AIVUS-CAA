@@ -61,10 +61,9 @@ def readDICOM(main_window):
                     for frame in range(main_window.metadata['number_of_frames'])
                     if main_window.data['phases'][frame] == 'S'
                 ]
-            except KeyError:  # old contour files may not have phases attr
+                main_window.slider.addGatedFrames(main_window.gated_frames_dia)
+            except KeyError:  # old contour files may not have phases attribute
                 pass
-            main_window.gated_frames = []
-            main_window.slider.addGatedFrames(main_window.gated_frames)
         else:
             main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
             main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']

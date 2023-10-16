@@ -50,6 +50,9 @@ class Master(QMainWindow):
         self.contours_drawn = False
         self.segmentation = False
         self.colormap_enabled = False
+        self.gated_frames = []
+        self.gated_frames_dia = []
+        self.gated_frames_sys = []
         self.data = {}  # container to be saved in JSON file later, includes contours, etc.
         self.metadata = {}  # metadata used outside of readDICOM (not saved to JSON file)
         self.images = None
@@ -383,6 +386,7 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
+            self.slider.addGatedFrames(self.gated_frames_dia)            
 
     def toggleSystolicFrame(self, state_true):
         if self.image_displayed:
@@ -401,6 +405,7 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
+            self.slider.addGatedFrames(self.gated_frames_sys)            
 
     def togglePlaqueFrame(self, state_true):
         if self.image_displayed:
