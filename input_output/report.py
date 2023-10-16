@@ -23,13 +23,15 @@ def report(main_window):
         warning.exec_()
         return
 
-    if main_window.segmentation and not main_window.contours_drawn:
-        main_window.errorMessage()
-        return
-
     contoured_frames = [
         frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
     ]
+    if not contoured_frames:
+        warning = QErrorMessage(main_window)
+        warning.setWindowModality(Qt.WindowModal)
+        warning.showMessage('Cannot write report before drawing contours')
+        warning.exec_()
+        return
 
     longest_distances, shortest_distances, lumen_area, lumen_circumf = computeAll(
         main_window, contoured_frames, plot=True, save_as_csv=True
@@ -60,10 +62,14 @@ def computePolygonMetrics(main_window, polygon, frame):
     """Computes lumen area and centroid from contour"""
     lumen_area = polygon.area * main_window.metadata['resolution'] ** 2
     lumen_circumf = polygon.length * main_window.metadata['resolution']
+    centroid_x = polygon.centroid.x
+    centroid_y = polygon.centroid.y
     main_window.data['lumen_area'][frame] = lumen_area
     main_window.data['lumen_circumf'][frame] = lumen_circumf
+    main_window.data['lumen_centroid'][0][frame] = centroid_x
+    main_window.data['lumen_centroid'][1][frame] = centroid_y
 
-    return lumen_area, lumen_circumf
+    return lumen_area, lumen_circumf, centroid_x, centroid_y
 
 
 def findLongestDistanceContour(main_window, exterior_coords, frame):
@@ -166,9 +172,9 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
         polygon = Polygon([(x, y) for x, y in zip(lumen_x[frame], lumen_y[frame])])
         exterior_coords = polygon.exterior.coords
 
-        lumen_area[frame], lumen_circumf[frame] = computePolygonMetrics(main_window, polygon, frame)
-        centroid_x[frame] = polygon.centroid.x()
-        centroid_y[frame] = polygon.centroid.y()
+        lumen_area[frame], lumen_circumf[frame], centroid_x[frame], centroid_y[frame] = computePolygonMetrics(
+            main_window, polygon, frame
+        )
         longest_distance[frame], farthest_x[frame], farthest_y[frame] = findLongestDistanceContour(
             main_window, exterior_coords, frame
         )

@@ -194,7 +194,7 @@ class Display(QGraphicsView):
                     lumen_x = [point / self.scaling_factor for point in self.lumen_spline.full_contour[0]]
                     lumen_y = [point / self.scaling_factor for point in self.lumen_spline.full_contour[1]]
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
-                    lumen_area, lumen_circumf = computePolygonMetrics(self.main_window, polygon, self.frame)
+                    lumen_area, lumen_circumf, _, _ = computePolygonMetrics(self.main_window, polygon, self.frame)
                     longest_distance, _, _ = findLongestDistanceContour(
                         self.main_window, polygon.exterior.coords, self.frame
                     )
