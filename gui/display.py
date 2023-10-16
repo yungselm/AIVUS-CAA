@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPixmap, QImage
 from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
-from input_output.report import computeContourMetrics, findLongestDistanceContour, findShortestDistanceContour
+from input_output.report import computePolygonMetrics, findLongestDistanceContour, findShortestDistanceContour
 
 
 class Display(QGraphicsView):
@@ -194,10 +194,7 @@ class Display(QGraphicsView):
                     lumen_x = [point / self.scaling_factor for point in self.lumen_spline.full_contour[0]]
                     lumen_y = [point / self.scaling_factor for point in self.lumen_spline.full_contour[1]]
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
-                    lumen_area, _, _ = computeContourMetrics(self.main_window, lumen_x, lumen_y, self.frame)
-                    lumen_circumf = polygon.length * self.main_window.metadata['resolution']
-                    self.main_window.data['lumen_circumf'][self.frame] = lumen_circumf
-
+                    lumen_area, lumen_circumf = computePolygonMetrics(self.main_window, polygon, self.frame)
                     longest_distance, _, _ = findLongestDistanceContour(
                         self.main_window, polygon.exterior.coords, self.frame
                     )

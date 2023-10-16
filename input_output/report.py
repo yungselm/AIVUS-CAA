@@ -32,7 +32,7 @@ def report(main_window):
     ]
 
     longest_distances, shortest_distances, lumen_area, lumen_circumf = computeAll(
-        main_window, contoured_frames, plot=False, save_as_csv=True
+        main_window, contoured_frames, plot=True, save_as_csv=True
     )
     if longest_distances is None or shortest_distances is None:  # report was cancelled
         return
@@ -56,18 +56,14 @@ def report(main_window):
     main_window.successMessage("Write report")
 
 
-def computeContourMetrics(main_window, lumen_x, lumen_y, frame):
+def computePolygonMetrics(main_window, polygon, frame):
     """Computes lumen area and centroid from contour"""
-    if lumen_x:
-        lumen_area = contourArea(lumen_x, lumen_y) * main_window.metadata['resolution'] ** 2
-        centroid_x, centroid_y = centroidPolygonSimple(lumen_x, lumen_y)
-        main_window.data['lumen_area'][frame] = lumen_area
-        main_window.data['lumen_centroid'][0][frame] = centroid_x
-        main_window.data['lumen_centroid'][1][frame] = centroid_y
+    lumen_area = polygon.area * main_window.metadata['resolution'] ** 2
+    lumen_circumf = polygon.length * main_window.metadata['resolution']
+    main_window.data['lumen_area'][frame] = lumen_area
+    main_window.data['lumen_circumf'][frame] = lumen_circumf
 
-        return lumen_area, centroid_x, centroid_y
-    else:
-        return None, None, None
+    return lumen_area, lumen_circumf
 
 
 def findLongestDistanceContour(main_window, exterior_coords, frame):
@@ -133,22 +129,6 @@ def findShortestDistanceContour(main_window, polygon, frame):
     return shortest_distance, closest_point_x, closest_point_y
 
 
-def contourArea(x, y):
-    """Calculate contour/polygon area using Shoelace formula"""
-
-    area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-
-    return area
-
-
-def centroidPolygonSimple(x, y):
-    x = np.array(x)
-    centroid_x = np.mean(x)
-    centroid_y = np.mean(y)
-
-    return centroid_x, centroid_y
-
-
 def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
     """compute all metrics and plot if desired"""
     progress = QProgressDialog()
@@ -183,14 +163,12 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
         lumen_spline = Spline([main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]])
         lumen_x[frame] = [point for point in lumen_spline.full_contour[0]]
         lumen_y[frame] = [point for point in lumen_spline.full_contour[1]]
-        lumen_area[frame], centroid_x[frame], centroid_y[frame] = computeContourMetrics(
-            main_window, lumen_x[frame], lumen_y[frame], frame
-        )
         polygon = Polygon([(x, y) for x, y in zip(lumen_x[frame], lumen_y[frame])])
-        lumen_circumf[frame] = polygon.length * main_window.metadata['resolution']
-        main_window.data['lumen_circumf'][frame] = lumen_circumf[frame]
         exterior_coords = polygon.exterior.coords
 
+        lumen_area[frame], lumen_circumf[frame] = computePolygonMetrics(main_window, polygon, frame)
+        centroid_x[frame] = polygon.centroid.x()
+        centroid_y[frame] = polygon.centroid.y()
         longest_distance[frame], farthest_x[frame], farthest_y[frame] = findLongestDistanceContour(
             main_window, exterior_coords, frame
         )
@@ -277,7 +255,7 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
                 arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
             )
 
-            plt.title(f'Frame {frame}')
+            plt.title(f'Frame {frame + 1}')
             plt.legend(loc='upper right')
             plt.gca().invert_yaxis()
             plt.grid()
@@ -285,6 +263,7 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
             plt.show()
 
     return longest_distance, shortest_distance, lumen_area, lumen_circumf
+
 
 def centroid_center_vector(window, contoured_frames, centroid_x, centroid_y):
     """Returns the length and angle of a vector from the center of the image to the centroid"""
