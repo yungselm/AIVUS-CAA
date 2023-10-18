@@ -45,7 +45,7 @@ class UNetSegmentation:
         self.input_shape = (512, 512)
         self.num_classes = 2  # background, lumen
 
-        self.root_dir = config.root_dir
+        self.nifti_dir = config.nifti_dir
         self.batch_size = config.segmentation.batch_size
         self.num_workers = config.segmentation.num_workers
         self.dropout_rate = config.segmentation.dropout_rate
@@ -57,8 +57,8 @@ class UNetSegmentation:
         self.init_transforms()
 
     def __call__(self) -> None:
-        imgs = sorted(glob.glob(os.path.join(self.root_dir, "*frame_*_img.nii.gz")))
-        segs = sorted(glob.glob(os.path.join(self.root_dir, "*frame_*_seg.nii.gz")))
+        imgs = sorted(glob.glob(os.path.join(self.nifti_dir, "*frame_*_img.nii.gz")))
+        segs = sorted(glob.glob(os.path.join(self.nifti_dir, "*frame_*_seg.nii.gz")))
         dataset = ArrayDataset(imgs, self.img_trafos, segs, self.seg_trafos)
         n_train = int(round(self.train_val_ratio * len(imgs)))
         splits = n_train, len(imgs) - n_train

@@ -8,7 +8,7 @@ hydra:
   run:  
     dir: .
 
-root_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
+nifti_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
 train: False
 
 display:
