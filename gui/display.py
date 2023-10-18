@@ -5,7 +5,7 @@ from loguru import logger
 import cv2
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsTextItem
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QColor, QFont
 from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
@@ -126,7 +126,7 @@ class Display(QGraphicsView):
         else:
             self.main_window.data['lumen'] = lumen
         self.images = images
-        self.displayImage(update_image=True, update_splines=True)
+        self.displayImage(update_image=True, update_splines=True, update_phase=True)
 
     def downsample(self, contours, num_points=20):
         """Downsamples input contour data by selecting n points from original contour"""
@@ -141,7 +141,7 @@ class Display(QGraphicsView):
                     downsampled[axis][frame] = [contours[axis][frame][point] for point in points_to_sample]
         return downsampled
 
-    def displayImage(self, update_image=False, update_splines=False):
+    def displayImage(self, update_image=False, update_splines=False, update_phase=False):
         """Clears scene and displays current image and splines"""
         if update_image:
             [
@@ -206,9 +206,36 @@ class Display(QGraphicsView):
                         f"Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n"
                         f"Elliptic ratio:\t{round(elliptic_ratio, 2)}"
                     )
+                    self.text.setFont(QFont('Helvetica', self.image_size / 50))
                     self.graphics_scene.addItem(self.text)
+                    if not update_phase:
+                        self.graphics_scene.addItem(self.phase_text)
             else:  # re-draw old elements to put them in foreground
                 [self.graphics_scene.addItem(item) for item in old_splines]
+
+        if update_phase:
+            if self.main_window.data['phases'][self.frame] == 'D':
+                phase = 'Diastole'
+                color = QColor(
+                    self.main_window.diastole_color[0],
+                    self.main_window.diastole_color[1],
+                    self.main_window.diastole_color[2],
+                )
+            elif self.main_window.data['phases'][self.frame] == 'S':
+                phase = 'Systole'
+                color = QColor(
+                    self.main_window.systole_color[0],
+                    self.main_window.systole_color[1],
+                    self.main_window.systole_color[2],
+                )
+            else:
+                phase = ''
+                color = Qt.white
+            self.phase_text = QGraphicsTextItem(phase)
+            self.phase_text.setDefaultTextColor(color)
+            self.phase_text.setPos(0, self.image_size / 8.5)
+            self.phase_text.setFont(QFont('Helvetica', self.image_size / 50, QFont.Bold))
+            self.graphics_scene.addItem(self.phase_text)
 
     def addInteractiveSplines(self, lumen):
         """Adds lumen splines to scene"""
@@ -288,7 +315,7 @@ class Display(QGraphicsView):
                     self.displayImage(update_splines=True)
 
     def run(self):
-        self.displayImage(update_image=True, update_splines=True)
+        self.displayImage(update_image=True, update_splines=True, update_phase=True)
 
     def new_contour(self, main_window):
         self.main_window = main_window

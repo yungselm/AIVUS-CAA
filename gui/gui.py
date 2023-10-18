@@ -56,6 +56,8 @@ class Master(QMainWindow):
         self.data = {}  # container to be saved in JSON file later, includes contours, etc.
         self.metadata = {}  # metadata used outside of readDICOM (not saved to JSON file)
         self.images = None
+        self.diastole_color = (39, 69, 219)
+        self.systole_color = (209, 55, 38)
         self.initGUI()
 
     def initGUI(self):
@@ -170,7 +172,7 @@ class Master(QMainWindow):
         self.hideBox.setChecked(True)
         self.hideBox.stateChanged[int].connect(self.changeState)
         self.useDiastolicButton = QPushButton('Diastolic Frames')
-        self.useDiastolicButton.setStyleSheet('background-color: #192f91')
+        self.useDiastolicButton.setStyleSheet(f'background-color: rgb{self.diastole_color}')
         self.useDiastolicButton.setCheckable(True)
         self.useDiastolicButton.setChecked(True)
         self.useDiastolicButton.clicked.connect(self.useDiastolic)
@@ -360,11 +362,11 @@ class Master(QMainWindow):
         if self.image_displayed:
             if self.useDiastolicButton.isChecked():
                 self.useDiastolicButton.setText('Diastolic Frames')
-                self.useDiastolicButton.setStyleSheet('background-color: #192f91')
+                self.useDiastolicButton.setStyleSheet(f'background-color: rgb{self.diastole_color}')
                 self.gated_frames = self.gated_frames_dia
             else:
                 self.useDiastolicButton.setText('Systolic Frames')
-                self.useDiastolicButton.setStyleSheet('background-color: #912519')
+                self.useDiastolicButton.setStyleSheet(f'background-color: rgb{self.systole_color}')
                 self.gated_frames = self.gated_frames_sys
 
             self.slider.addGatedFrames(self.gated_frames)
@@ -386,7 +388,9 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.slider.addGatedFrames(self.gated_frames_dia)            
+            self.slider.addGatedFrames(self.gated_frames_dia)
+
+        self.display.displayImage(update_phase=True)
 
     def toggleSystolicFrame(self, state_true):
         if self.image_displayed:
@@ -405,7 +409,9 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.slider.addGatedFrames(self.gated_frames_sys)            
+            self.slider.addGatedFrames(self.gated_frames_sys)    
+                    
+        self.display.displayImage(update_phase=True)
 
     def togglePlaqueFrame(self, state_true):
         if self.image_displayed:
