@@ -31,5 +31,5 @@ def save_as_nifti(main_window):
             sitk.WriteImage(sitk.GetImageFromArray(main_window.images[frame, :, :]), f'{out_path}_frame_{i}_img.nii.gz')
 
         # save entire stack as NIfTI
-        sitk.WriteImage(sitk.GetImageFromArray(mask), f'{out_path}_seg.nii.gz')
-        sitk.WriteImage(sitk.GetImageFromArray(main_window.images[contoured_frames, :, :]), f'{out_path}_img.nii.gz')
+        # sitk.WriteImage(sitk.GetImageFromArray(mask), f'{out_path}_seg.nii.gz')
+        # sitk.WriteImage(sitk.GetImageFromArray(main_window.images[contoured_frames, :, :]), f'{out_path}_img.nii.gz')

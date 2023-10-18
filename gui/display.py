@@ -206,7 +206,7 @@ class Display(QGraphicsView):
                         f"Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n"
                         f"Elliptic ratio:\t{round(elliptic_ratio, 2)}"
                     )
-                    self.text.setFont(QFont('Helvetica', self.image_size / 50))
+                    self.text.setFont(QFont('Helvetica', int(self.image_size / 50)))
                     self.graphics_scene.addItem(self.text)
                     if not update_phase:
                         self.graphics_scene.addItem(self.phase_text)
@@ -234,7 +234,7 @@ class Display(QGraphicsView):
             self.phase_text = QGraphicsTextItem(phase)
             self.phase_text.setDefaultTextColor(color)
             self.phase_text.setPos(0, self.image_size / 8.5)
-            self.phase_text.setFont(QFont('Helvetica', self.image_size / 50, QFont.Bold))
+            self.phase_text.setFont(QFont('Helvetica', int(self.image_size / 50), QFont.Bold))
             self.graphics_scene.addItem(self.phase_text)
 
     def addInteractiveSplines(self, lumen):

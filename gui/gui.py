@@ -273,8 +273,8 @@ class Master(QMainWindow):
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""
-        # if self.image and self.contours:
-        #     self.save_before_close()
+        if self.image_displayed and self.contours_drawn:
+            self.save_before_close()
 
     def save_before_close(self):
         """Save contours, etc before closing program or reading new DICOM file"""
