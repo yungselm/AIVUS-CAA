@@ -28,6 +28,7 @@ def data_preparation(df, window_size=13):
     df['Smoothed Vector'] = df['Vector'].rolling(window=window_size).mean()
     return df
 
+
 def lookup_table_weights_combinations(step=0.01):
     combinations = []
 
@@ -62,6 +63,62 @@ def variance_of_local_extrema_weights(weights, df, comparison_function):
     local_extrema_differences = [local_extrema_indices[i] - local_extrema_indices[i-1] for i in range(1, len(local_extrema_indices))]
 
     return np.var(local_extrema_differences)
+
+
+def optimize_window_size_and_weights(df, min_window_size, max_window_size, step=0.01):
+    df_original = data_preparation(df)
+    min_window_size = min_window_size
+    max_window_size = max_window_size
+    combinations = lookup_table_weights_combinations(step=step)
+
+    variance_maxima = []
+    variance_minima = []
+    weights_greater = []
+    weights_lesser = []
+    window_sizes = []
+    # add up every values at the same index
+
+    for i in range(min_window_size, max_window_size + 1):
+        print(f'{i - min_window_size} of {max_window_size - min_window_size + 1} iterations done')
+        df = df_original.copy()
+        df = data_preparation(df, window_size=i)
+        variance_greater = []
+        for j in combinations:
+            variance_greater.append(variance_of_local_extrema_weights(j, df, np.greater))
+
+        variance_lesser = []
+        for j in combinations:
+            variance_lesser.append(variance_of_local_extrema_weights(j, df, np.less))
+
+        weights_max = combinations[np.argmin(variance_greater)]
+        weights_min = combinations[np.argmin(variance_lesser)]
+
+        variance_max = variance_of_local_extrema_weights(weights_max, df, np.greater)
+        variance_min = variance_of_local_extrema_weights(weights_min, df, np.less)
+
+        weights_greater.append(weights_max)
+        weights_lesser.append(weights_min)
+        variance_maxima.append(variance_max)
+        variance_minima.append(variance_min)
+        window_sizes.append(i)
+    print(f'{max_window_size - min_window_size + 1} of {max_window_size - min_window_size + 1} iterations done')
+
+    # find the minimum variance in the result and return the index
+    sum_var = [sum(x) for x in zip(variance_maxima, variance_minima)]
+    #find min index and use this to find value at same index in window_size
+    print(sum_var)
+    idx = np.argmin(sum_var)
+    window = window_sizes[idx]
+    weights_systole = weights_greater[idx]
+    weigths_diastole = weights_lesser[idx]
+    print(f'optimal window size is {window}')
+    print(f'optimal weights for systole are {weights_systole}')
+    print(f'optimal weights for diastole are {weigths_diastole}')
+    # min_variance_index = np.argmin(result)  # add 1 to get the window size
+
+    return weights_systole, weigths_diastole, window_sizes
+
+weights_systole, weigths_diastole, window_sizes = optimize_window_size_and_weights(df, 2, 5)
 
 
 def column_diastole_systole(df, combinations, variance_greater, variance_lesser):
@@ -127,86 +184,6 @@ def plot_results(df, local_minima_indices, local_maxima_indices):
 # print(df)
 # print(local_minima_differences)
 # print(local_maxima_differences)
-
-def optimize_window_size(df, min_window_size, max_window_size, step=0.01):
-    df_original = data_preparation(df)
-    min_window_size = min_window_size
-    max_window_size = max_window_size
-    combinations = lookup_table_weights_combinations(step=step)
-
-    variance_maxima = []
-    variance_minima = []
-    window_sizes = []
-    # add up every values at the same index
-
-    for i in range(min_window_size, max_window_size + 1):
-        print(f'{i - min_window_size} of {max_window_size - min_window_size + 1} iterations done')
-        df = df_original.copy()
-        df = data_preparation(df, window_size=i)
-        variance_greater = []
-        for j in combinations:
-            variance_greater.append(variance_of_local_extrema_weights(j, df, np.greater))
-
-        variance_lesser = []
-        for j in combinations:
-            variance_lesser.append(variance_of_local_extrema_weights(j, df, np.less))
-
-        weights_greater = combinations[np.argmin(variance_greater)]
-        weights_lesser = combinations[np.argmin(variance_lesser)]
-
-        variance_max = variance_of_local_extrema_weights(weights_greater, df, np.greater)
-        variance_min = variance_of_local_extrema_weights(weights_lesser, df, np.less)
-
-        variance_maxima.append(variance_max)
-        variance_minima.append(variance_min)
-        window_sizes.append(i)
-    print(f'{max_window_size - min_window_size + 1} of {max_window_size - min_window_size + 1} iterations done')
-
-    # find the minimum variance in the result and return the index
-    sum_var = [sum(x) for x in zip(variance_maxima, variance_minima)]
-    #find min index and use this to find value at same index in window_size
-    idx = np.argmin(sum_var)
-    result = window_sizes[idx]
-    print(result)
-    # min_variance_index = np.argmin(result)  # add 1 to get the window size
-
-    return variance_maxima, variance_minima, window_sizes
-
-variance_maxima, variance_minima, window_sizes = optimize_window_size(df, 2, 15)
-print(variance_maxima)
-
-# def optimize_window_size(data, local_extrema_differences, min_window_size, max_window_size, step_size=1):
-#     mean_local_extrema_differences = np.mean(local_extrema_differences)
-#     heartbeats = (mean_local_extrema_differences / 30) * 60 # for 30 fps
-#     target_frequency = 1 / heartbeats
-
-#     best_window_size = None
-#     min_error = float('inf')
-    
-#     for window_size in range(min_window_size, max_window_size + 1, step_size):
-#         smoothed_data = data.rolling(window=window_size).mean().dropna()
-        
-#         # Calculate the FFT of the smoothed data
-#         fft_result = np.fft.fft(smoothed_data)
-#         frequencies = np.fft.fftfreq(len(smoothed_data))
-        
-#         # Find the index of the target frequency
-#         target_frequency_index = np.abs(frequencies - target_frequency).argmin()
-        
-#         # Calculate the error as the magnitude of the complex value at the target frequency index
-#         error = np.abs(fft_result[target_frequency_index])
-        
-#         if error < min_error:
-#             min_error = error
-#             best_window_size = window_size
-    
-#     return best_window_size, min_error
-
-# # call function
-# best_window_size, min_error = optimize_window_size(df['Signal'], local_extrema_differences, 1, 30, 1)
-# print(np.var(local_extrema_differences))
-# print(best_window_size)
-# print(min_error)
 
 # write results to csv file in path directory
 df.to_csv('/home/yungselm/Documents/testreport_long_calc.csv', index=False)
