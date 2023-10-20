@@ -33,8 +33,8 @@ def report(main_window):
         warning.exec_()
         return
 
-    longest_distances, shortest_distances, lumen_area, lumen_circumf = computeAll(
-        main_window, contoured_frames, plot=True, save_as_csv=True
+    longest_distances, shortest_distances, lumen_area, lumen_circumf, vector_angle, vector_length = computeAll(
+        main_window, contoured_frames, plot=False, save_as_csv=True
     )
     if longest_distances is None or shortest_distances is None:  # report was cancelled
         return
@@ -42,7 +42,7 @@ def report(main_window):
     f = open(os.path.splitext(main_window.file_name)[0] + "_report.txt", "w")
     f.write(
         "Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})\tCircumf (mm)"
-        "\tLongest Distance (mm)\tShortest Distance (mm)\tElliptic Ratio\tPhase\n"
+        "\tLongest Distance (mm)\tShortest Distance (mm)\tElliptic Ratio\tPhase\tVector Angle\tVector length\n"
     )
 
     for frame, frame in enumerate(contoured_frames):
@@ -51,7 +51,8 @@ def report(main_window):
             f"{frame+1}\t{main_window.metadata['pullback_length'][frame]:.2f}"
             f"\t{lumen_area[frame]:.2f}\t{lumen_circumf[frame]:.2f}"
             f"\t{longest_distances[frame]:.2f}\t{shortest_distances[frame]:.2f}"
-            f"\t{elliptic_ratio:.2f}\t{main_window.data['phases'][frame]}\n"
+            f"\t{elliptic_ratio:.2f}\t{main_window.data['phases'][frame]}"
+            f"\t{vector_angle[frame]:.2f}\t{vector_length[frame]:.2f}\n"
         )
     f.close()
 
@@ -70,6 +71,27 @@ def computePolygonMetrics(main_window, polygon, frame):
     main_window.data['lumen_centroid'][1][frame] = centroid_y
 
     return lumen_area, lumen_circumf, centroid_x, centroid_y
+
+
+def centroid_center_vector(window, centroid_x, centroid_y):
+    """Returns the length and angle of a vector from the center of the image to the centroid"""
+    center_x = window.images.shape[1] / 2
+    center_y = window.images.shape[2] / 2
+
+    unit_vector = np.array([0, 1])
+    vector = np.array([centroid_x - center_x, centroid_y - center_y])
+
+    vector_length = np.linalg.norm(vector) * window.metadata['resolution']
+
+    vector_dot = np.dot(unit_vector, vector)
+    vector_det = np.linalg.det(np.array([unit_vector, vector]))
+    vector_angle = np.arctan2(vector_det, vector_dot)
+    vector_angle = np.degrees(vector_angle)
+
+    if vector_angle < 0:
+        vector_angle += 360
+
+    return vector_length, vector_angle
 
 
 def findLongestDistanceContour(main_window, exterior_coords, frame):
@@ -159,6 +181,8 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
     lumen_circumf = main_window.data['lumen_circumf']
     centroid_x = main_window.data['lumen_centroid'][0]
     centroid_y = main_window.data['lumen_centroid'][1]
+    vector_length = [0] * main_window.metadata['number_of_frames']
+    vector_angle = [0] * main_window.metadata['number_of_frames']
     lumen_x = [[] for _ in range(main_window.metadata['number_of_frames'])]
     lumen_y = [[] for _ in range(main_window.metadata['number_of_frames'])]
 
@@ -184,6 +208,10 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
         progress.setValue(frame)
         if progress.wasCanceled():
             break
+
+
+    for frame in contoured_frames:
+        vector_length[frame], vector_angle[frame] = centroid_center_vector(main_window, centroid_x[frame], centroid_y[frame])
 
     if save_as_csv:
         # write contours to .csv file
@@ -268,20 +296,4 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
             plt.tight_layout()
             plt.show()
 
-    return longest_distance, shortest_distance, lumen_area, lumen_circumf
-
-
-def centroid_center_vector(window, contoured_frames, centroid_x, centroid_y):
-    """Returns the length and angle of a vector from the center of the image to the centroid"""
-    center_x = window.image.shape[1] / 2
-    center_y = window.image.shape[0] / 2
-
-    # now to this for every frame
-
-    vector_x = centroid_x - center_x
-    vector_y = centroid_y - center_y
-
-    vector_length = math.sqrt(vector_x**2 + vector_y**2)
-    vector_angle = math.degrees(math.atan2(vector_y, vector_x))
-
-    return vector_length, vector_angle
+    return longest_distance, shortest_distance, lumen_area, lumen_circumf, vector_angle, vector_length
