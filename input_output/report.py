@@ -34,7 +34,10 @@ def report(main_window):
         return
 
     longest_distances, shortest_distances, lumen_area, lumen_circumf, vector_angle, vector_length = computeAll(
-        main_window, contoured_frames, plot=False, save_as_csv=True
+        main_window,
+        contoured_frames,
+        plot=main_window.config.report.plot,
+        save_as_csv=main_window.config.report.save_as_csv,
     )
     if longest_distances is None or shortest_distances is None:  # report was cancelled
         return
@@ -209,9 +212,10 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
         if progress.wasCanceled():
             break
 
-
     for frame in contoured_frames:
-        vector_length[frame], vector_angle[frame] = centroid_center_vector(main_window, centroid_x[frame], centroid_y[frame])
+        vector_length[frame], vector_angle[frame] = centroid_center_vector(
+            main_window, centroid_x[frame], centroid_y[frame]
+        )
 
     if save_as_csv:
         # write contours to .csv file

@@ -11,7 +11,7 @@ from segmentation.unet_segmentation import UNetSegmentation
 
 @hydra.main(version_base=None, config_path='.', config_name='config')
 def main(config: DictConfig) -> None:
-    if config.train:
+    if config.segmentation.train:
         unet = UNetSegmentation(config)
         unet()
     else:

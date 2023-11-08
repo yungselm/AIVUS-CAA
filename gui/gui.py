@@ -45,7 +45,7 @@ class Master(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.use_xml_files = False
+        self.use_xml_files = config.save.use_xml_files
         self.image_displayed = False
         self.contours_drawn = False
         self.segmentation = False
@@ -95,7 +95,7 @@ class Master(QMainWindow):
         gatingButton.setToolTip("Extract diastolic and systolic images from pullback")
         segmentButton.setToolTip("Run deep learning based segmentation of lumen")
         splineButton.setToolTip("Manually draw new contour for lumen")
-        writeButton.setToolTip("Save contours in .xml file")
+        writeButton.setToolTip("Manually save contours in .json file")
         reportButton.setToolTip("Write report to .txt file")
 
         hideHeader1 = QHeaderView(Qt.Vertical)
@@ -127,7 +127,7 @@ class Master(QMainWindow):
                 'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
                 'Press E to draw a new Lumen contour.\n'
                 'Hold the right mouse button for windowing (can be reset by pressing R).\n'
-                f'Press C to toggle color mode.\n'
+                'Press C to toggle color mode.\n'
                 'Press H to hide all contours.\n'
                 'Press J to jiggle around the current frame.\n'
                 'Press Q to close the program.\n'
@@ -273,7 +273,7 @@ class Master(QMainWindow):
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""
-        if self.image_displayed and self.contours_drawn:
+        if self.image_displayed:
             self.save_before_close()
 
     def save_before_close(self):

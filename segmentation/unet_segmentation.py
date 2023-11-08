@@ -45,7 +45,7 @@ class UNetSegmentation:
         self.input_shape = (512, 512)
         self.num_classes = 2  # background, lumen
 
-        self.nifti_dir = config.nifti_dir
+        self.nifti_dir = config.save.nifti_dir
         self.batch_size = config.segmentation.batch_size
         self.num_workers = config.segmentation.num_workers
         self.dropout_rate = config.segmentation.dropout_rate

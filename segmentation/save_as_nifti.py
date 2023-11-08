@@ -2,7 +2,7 @@ import os
 
 from loguru import logger
 import SimpleITK as sitk
-from PyQt5.QtWidgets import QErrorMessage, QProgressDialog
+from PyQt5.QtWidgets import QErrorMessage, QProgressDialog, QApplication
 from PyQt5.QtCore import Qt
 
 from input_output.contours import contoursToMask
@@ -16,39 +16,56 @@ def save_as_nifti(main_window):
         warning.exec_()
         return
 
-    contoured_frames = [
-        frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
-    ]  # find frames with contours (no need to save the others)
+    out_path = f'{main_window.config.save.nifti_dir}_{main_window.config.save.save_niftis}_frames'
+    if main_window.config.save.save_niftis == 'contoured':
+        frames_to_save = [
+            frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
+        ]  # find frames with contours (no need to save the others)
+    elif main_window.config.save.save_niftis == 'all':
+        frames_to_save = range(main_window.metadata['number_of_frames'])
+    else:
+        return  # nothing to save
 
-    if contoured_frames:
+    if frames_to_save:
         file_name = os.path.splitext(os.path.basename(main_window.file_name))[0]  # remove file extension
-        out_path = main_window.config.nifti_dir
         os.makedirs(out_path, exist_ok=True)
-        mask = contoursToMask(main_window.images[contoured_frames], contoured_frames, main_window.data['lumen'])
+        mask = contoursToMask(main_window.images[frames_to_save], frames_to_save, main_window.data['lumen'])
 
         progress = QProgressDialog()
         progress.setWindowFlags(Qt.Dialog)
         progress.setModal(True)
         progress.setMinimum(0)
-        progress.setMaximum(len(contoured_frames))
+        progress_max = len(frames_to_save) * main_window.config.save.save_2d + main_window.config.save.save_3d
+        progress.setMaximum(progress_max)
         progress.resize(500, 100)
         progress.setValue(0)
         progress.setValue(1)
         progress.setValue(0)  # trick to make progress bar appear
-        progress.setWindowTitle("Saving contoured frames as NIfTI files...")
+        progress.setWindowTitle("Saving frames as NIfTI files...")
         progress.show()
 
-        for i, frame in enumerate(contoured_frames):  # save individual frames as NIfTI
-            progress.setValue(i)
-            if progress.wasCanceled():
-                break
-            
+        if main_window.config.save.save_2d:
+            for i, frame in enumerate(frames_to_save):  # save individual frames as NIfTI
+                progress.setValue(i)
+                QApplication.processEvents()
+                if progress.wasCanceled():
+                    break
+                if main_window.data['lumen'][0][frame]:  # only save mask if contour exists
+                    sitk.WriteImage(
+                        sitk.GetImageFromArray(mask[i, :, :]),
+                        os.path.join(out_path, f'{file_name}_frame_{i}_seg.nii.gz'),
+                    )
+                sitk.WriteImage(
+                    sitk.GetImageFromArray(main_window.images[frame, :, :]),
+                    os.path.join(out_path, f'{file_name}_frame_{i}_img.nii.gz'),
+                )
+        if main_window.config.save.save_3d:
+            if any(main_window.data['lumen'][0]):  # only save mask if any contour exists
+                sitk.WriteImage(sitk.GetImageFromArray(mask), os.path.join(out_path, f'{file_name}_seg.nii.gz'))
             sitk.WriteImage(
-                sitk.GetImageFromArray(mask[i, :, :]), os.path.join(out_path, f'{file_name}_frame_{i}_seg.nii.gz')
+                sitk.GetImageFromArray(main_window.images), os.path.join(out_path, f'{file_name}_img.nii.gz')
             )
-            sitk.WriteImage(
-                sitk.GetImageFromArray(main_window.images[frame, :, :]),
-                os.path.join(out_path, f'{file_name}_frame_{i}_img.nii.gz'),
-            )
+            progress.setValue(len(frames_to_save) * main_window.config.save.save_2d + 1)
+            QApplication.processEvents()
 
         progress.close()
