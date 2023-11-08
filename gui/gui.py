@@ -45,6 +45,7 @@ class Master(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        self.autosave_interval = config.save.autosave_interval
         self.use_xml_files = config.save.use_xml_files
         self.image_displayed = False
         self.contours_drawn = False
@@ -117,7 +118,6 @@ class Master(QMainWindow):
         self.infoTable.setHorizontalHeader(hideHeader2)
         self.infoTable.horizontalHeader().setStretchLastSection(True)
 
-        autoSaveInterval = 10000  # milliseconds
         self.shortcutInfo = QLabel()
         self.shortcutInfo.setText(
             (
@@ -221,7 +221,7 @@ class Master(QMainWindow):
         # pipe.communicate() # block until process completes.
         timer = QTimer(self)
         timer.timeout.connect(self.autoSave)
-        timer.start(autoSaveInterval)  # autosave interval in milliseconds
+        timer.start(self.autosave_interval)  # autosave interval in milliseconds
 
     def keyPressEvent(self, event):
         key = event.key()
