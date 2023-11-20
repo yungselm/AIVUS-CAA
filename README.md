@@ -24,7 +24,7 @@ This application is designed for IVUS images in DICOM format and offers the foll
 - Manually tag diastolic/systolic frames and frames with plaque
 - **Auto-save** of contours and tags enabled by default with user-definable interval
 - Generation of report file containing detailed metrics for each frame
-- Ability to save images and segmentations as **NIfTI files**, e.g. to train a machine learning model
+- Ability to save images and segmentations as **NIfTi files**, e.g. to train a machine learning model
 - (unfinished) Automatically extract diastolic/systolic frames
 - (unfinished) Automatical segmentation of lumen for all frames
 

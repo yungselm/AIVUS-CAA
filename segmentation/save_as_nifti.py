@@ -12,7 +12,7 @@ def save_as_nifti(main_window):
     if not main_window.image_displayed:
         warning = QErrorMessage(main_window)
         warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot save as NIfTI before reading DICOM file')
+        warning.showMessage('Cannot save as NIfTi before reading DICOM file')
         warning.exec_()
         return
 
@@ -41,11 +41,11 @@ def save_as_nifti(main_window):
         progress.setValue(0)
         progress.setValue(1)
         progress.setValue(0)  # trick to make progress bar appear
-        progress.setWindowTitle("Saving frames as NIfTI files...")
+        progress.setWindowTitle("Saving frames as NIfTi files...")
         progress.show()
 
         if main_window.config.save.save_2d:
-            for i, frame in enumerate(frames_to_save):  # save individual frames as NIfTI
+            for i, frame in enumerate(frames_to_save):  # save individual frames as NIfTi
                 progress.setValue(i)
                 QApplication.processEvents()
                 if progress.wasCanceled():

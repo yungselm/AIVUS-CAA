@@ -24,7 +24,7 @@ from PyQt5.QtGui import QIcon
 
 from gui.display import Display
 from gui.slider import Slider, Communicate
-from input_output.read_dicom import readDICOM
+from input_output.read_image import readImage
 from input_output.contours import writeContours, segment, newSpline
 from input_output.report import report
 from preprocessing.preprocessing import PreProcessing
@@ -85,14 +85,14 @@ class Master(QMainWindow):
         layout.addLayout(vbox1)
         layout.addLayout(vbox2)
 
-        dicomButton = QPushButton('Read DICOM')
+        imageButton = QPushButton('Read DICOM/NIfTi')
         gatingButton = QPushButton('Extract Diastolic and Systolic Frames')
         segmentButton = QPushButton('Segment')
         splineButton = QPushButton('Manual Contour')
         writeButton = QPushButton('Write Contours')
         reportButton = QPushButton('Write Report')
 
-        dicomButton.setToolTip("Load images in .dcm format")
+        imageButton.setToolTip("Load images in .dcm format")
         gatingButton.setToolTip("Extract diastolic and systolic images from pullback")
         segmentButton.setToolTip("Run deep learning based segmentation of lumen")
         splineButton.setToolTip("Manually draw new contour for lumen")
@@ -122,7 +122,7 @@ class Master(QMainWindow):
         self.shortcutInfo.setText(
             (
                 '\n'
-                'First, load a DICOM file using the button below.\n'
+                'First, load a DICOM/NIfTi file using the button below.\n'
                 'If available, contours for that file will be read automatically.\n'
                 'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
                 'Press E to draw a new Lumen contour.\n'
@@ -134,7 +134,7 @@ class Master(QMainWindow):
             )
         )
 
-        dicomButton.clicked.connect(lambda _: readDICOM(self))
+        imageButton.clicked.connect(lambda _: readImage(self))
         gatingButton.clicked.connect(self.gate)
         segmentButton.clicked.connect(lambda _: segment(self))
         splineButton.clicked.connect(lambda _: newSpline(self))
@@ -198,7 +198,7 @@ class Master(QMainWindow):
 
         vbox2.addWidget(self.hideBox)
         vbox2.addWidget(self.useDiastolicButton)
-        vbox2.addWidget(dicomButton)
+        vbox2.addWidget(imageButton)
         vbox2.addWidget(gatingButton)
         vbox2.addWidget(segmentButton)
         vbox2.addWidget(splineButton)
@@ -210,11 +210,11 @@ class Master(QMainWindow):
         centralWidget = QWidget()
         centralWidget.setLayout(layout)
         self.setWindowIcon(QIcon('Media/thumbnail.png'))
-        self.setWindowTitle('DeepIVUS')
+        self.setWindowTitle('AAOCA Segmentation Tool')
         self.setCentralWidget(centralWidget)
         self.show()
         # disclaimer = QMessageBox.about(
-        #     self, 'DeepIVUS', 'DeepIVUS is not FDA approved and should not be used for medical decisions.'
+        #     self, 'AAOCASeg', 'AAOCASeg is not FDA approved and should not be used for medical decisions.'
         # )
 
         # pipe = subprocess.Popen(["rm","-r","some.file"])
@@ -278,7 +278,7 @@ class Master(QMainWindow):
 
     def save_before_close(self):
         """Save contours, etc before closing program or reading new DICOM file"""
-        self.status_bar.showMessage('Saving contours and NIfTI files...')
+        self.status_bar.showMessage('Saving contours and NIfTi files...')
         writeContours(self)
         save_as_nifti(self)
         self.status_bar.showMessage('Waiting for user input')

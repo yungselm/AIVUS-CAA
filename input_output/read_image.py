@@ -1,6 +1,7 @@
 import os
 
 import pydicom as dcm
+import SimpleITK as sitk
 import numpy as np
 from loguru import logger
 from PyQt5.QtWidgets import (
@@ -15,13 +16,14 @@ from PyQt5.QtCore import Qt
 from input_output.contours import readContours
 
 
-def readDICOM(main_window):
-    """Reads DICOM images.
+def readImage(main_window):
+    """
+    Reads DICOM or NIfTi images.
 
-    Reads the dicom images and metadata. Places metatdata in a table.
+    Reads the DICOM/NIfTi images and metadata. Places metatdata in a table.
     Images are displayed in the graphics scene.
     """
-    main_window.status_bar.showMessage('Reading DICOM file...')
+    main_window.status_bar.showMessage('Reading image file...')
     options = QFileDialog.Options()
     options = QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(
@@ -29,23 +31,27 @@ def readDICOM(main_window):
     )
 
     if fileName:
-        try:
+        main_window.file_name = os.path.splitext(fileName)[0]  # remove file extension
+        try:  # DICOM
             main_window.dicom = dcm.read_file(fileName, force=True)
             main_window.images = main_window.dicom.pixel_array
-            main_window.file_name = os.path.splitext(fileName)[0]  # remove file extension
-        except:
-            error = QMessageBox()
-            error.setIcon(QMessageBox.Critical)
-            error.setWindowTitle("Error")
-            error.setModal(True)
-            error.setWindowModality(Qt.WindowModal)
-            error.setText("File is not a valid IVUS file and could not be loaded")
-            error.exec_()
-            return None
+            parseDICOM(main_window)
+        except AttributeError:
+            try:  # NIfTi
+                main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(fileName))
+                main_window.file_name = main_window.file_name.split('_')[0]  # remove _img suffix
+            except:
+                error = QMessageBox()
+                error.setIcon(QMessageBox.Critical)
+                error.setWindowTitle("Error")
+                error.setModal(True)
+                error.setWindowModality(Qt.WindowModal)
+                error.setText("File is not a valid IVUS file and could not be loaded (DICOM or NIfTi supported)")
+                error.exec_()
+                return None
 
-        main_window.metadata['number_of_frames'] = int(main_window.dicom.NumberOfFrames)
+        main_window.metadata['number_of_frames'] = main_window.images.shape[0]
         main_window.slider.setMaximum(main_window.metadata['number_of_frames'] - 1)
-        parseDICOM(main_window)
 
         success = readContours(main_window, main_window.file_name)
         if success:
@@ -67,7 +73,7 @@ def readDICOM(main_window):
         else:
             main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
             main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']
-            
+
             (
                 main_window.data['lumen_area'],
                 main_window.data['lumen_circumf'],
