@@ -23,7 +23,7 @@ save:
   autosave_interval: 10000  # in ms
   use_xml_files: False  # set True to use .xml files instead of .json to save contours, etc.
   nifti_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
-  save_niftis: 'contoured'  # 'contoured', 'all', 'none' (which frames to save as NIfTI)
+  save_niftis: 'contoured'  # 'contoured', 'all', 'none' (which frames to save as NIfTi)
   save_2d: True
   save_3d: False
 

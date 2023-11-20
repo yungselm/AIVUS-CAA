@@ -39,7 +39,7 @@ def readImage(main_window):
         except AttributeError:
             try:  # NIfTi
                 main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(fileName))
-                main_window.file_name = main_window.file_name.split('_')[0]  # remove _img suffix
+                main_window.file_name = main_window.file_name.split('_')[0]  # remove _img.nii suffix
             except:
                 error = QMessageBox()
                 error.setIcon(QMessageBox.Critical)
