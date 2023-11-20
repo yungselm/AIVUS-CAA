@@ -36,5 +36,16 @@ After the config file is set up properly, you can run the application using:
 ```
 python3 main.py
 ```
-
+This will open a graphical user interface (GUI) in which you have access to the above-mentioned functionalities.
 ## Keyboard shortcuts
+For ease-of-use, this application contains several keyboard shortcuts.\
+In the current state, these cannot be changed by the user (at least not without changing the source code).
+- Use the <kbd>A</kbd> and <kbd>D</kbd> keys to move through the IVUS images frame-by-frame
+- If gated (diastolic/systolic) frames are available, you can move through those using <kbd>S</kbd> and <kbd>W</kbd>\
+  Make sure to select which gated frames you want to traverse using the corresponding button (blue for diastolic, red for systolic)
+- Press <kbd>E</kbd> to manually draw a new lumen contour
+- Hold the right mouse button <kbd>RMB</kbd> for windowing (can be reset by pressing <kbd>R</kbd>)
+- Press <kbd>C</kbd> to toggle color mode
+- Press <kbd>H</kbd> to hide all contours
+- Press <kbd>J</kbd> to jiggle around the current frame
+- Press <kbd>Q</kbd> to close the program
