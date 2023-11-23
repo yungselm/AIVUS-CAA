@@ -14,7 +14,7 @@ from PyQt5.QtCore import Qt
 
 from version import version_file_str
 from input_output.read_xml import read
-from input_output.write_xml import write_xml, mask_image, get_contours
+from input_output.write_xml import write_xml, get_contours
 
 
 def readContours(main_window, file_name=None):
@@ -51,9 +51,9 @@ def readContours(main_window, file_name=None):
             main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
             main_window.data['lumen'] = mapToList(main_window.data['lumen'])
             (  # initialise empty containers
-            main_window.data['lumen_centroid'],
-            main_window.data['farthest_point'],
-            main_window.data['nearest_point'],
+                main_window.data['lumen_centroid'],
+                main_window.data['farthest_point'],
+                main_window.data['nearest_point'],
             ) = [
                 (
                     [[] for _ in range(main_window.metadata['number_of_frames'])],
@@ -172,38 +172,10 @@ def segment(main_window):
         main_window.status_bar.showMessage('Waiting for user input')
         return
 
-    save_path = os.path.join(os.getcwd(), "model", "saved_model.pb")
-    if not os.path.isfile(save_path):
-        message = "No saved weights have been found, check that weights are saved in {}".format(
-            os.path.join(os.getcwd(), "model")
-        )
-        error = QMessageBox()
-        error.setIcon(QMessageBox.Critical)
-        error.setWindowTitle("Error")
-        error.setModal(True)
-        error.setWindowModality(Qt.WindowModal)
-        error.setText(message)
-        error.exec_()
-        main_window.status_bar.showMessage('Waiting for user input')
-        return -1
-
-    image_dim = main_window.images.shape
-
-    if hasattr(main_window, 'masks'):  # keep previous segmentation
-        masks = main_window.masks
-    else:  # perform first segmentation
-        masks = np.zeros((main_window.metadata['number_of_frames'], image_dim[1], image_dim[2]), dtype=np.uint8)
-
-    # masks[main_window.gated_frames, :, :] = predict(main_window.images[main_window.gated_frames, :, :])
-    main_window.masks = masks
-
-    # compute metrics such as plaque burden
+    masks = main_window.predictor(main_window.images)
     main_window.metrics = computeMetrics(main_window, masks)
-
-    # convert masks to contours
     main_window.data['lumen'] = maskToContours(masks)
     main_window.contours_drawn = True
-
     main_window.display.setData(main_window.data['lumen'], main_window.images)
     main_window.hideBox.setChecked(False)
     main_window.status_bar.showMessage('Waiting for user input')
@@ -227,12 +199,24 @@ def newSpline(main_window):
 def maskToContours(masks):
     """Convert numpy mask to IVUS contours"""
 
-    levels = [1.5, 2.5]
-    image_shape = masks.shape[1:3]
-    masks = mask_image(masks, catheter=0)
-    _, _, lumen_pred = get_contours(masks, levels, image_shape)
+    lumen_pred = get_contours(masks, image_shape=masks.shape[1:3])
+    lumen_pred = downsample(lumen_pred)
 
     return lumen_pred
+
+
+def downsample(contours, num_points=20):
+    """Downsamples input contour data by selecting n points from original contour"""
+
+    num_frames = len(contours[0])
+    downsampled = [[] for _ in range(num_frames)], [[] for _ in range(num_frames)]
+
+    for frame in range(num_frames):
+        if contours[0][frame]:
+            points_to_sample = range(0, len(contours[0][frame]), len(contours[0][frame]) // num_points)
+            for axis in range(2):
+                downsampled[axis][frame] = [contours[axis][frame][point] for point in points_to_sample]
+    return downsampled
 
 
 def contoursToMask(images, contoured_frames, lumen):

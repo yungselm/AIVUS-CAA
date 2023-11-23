@@ -1,10 +1,7 @@
 import xml.etree.ElementTree as et
 import os
-import re
-import argparse
 import datetime
 import numpy as np
-import PIL.Image as im
 import matplotlib.path as mplPath
 from loguru import logger
 from skimage import measure
@@ -12,26 +9,12 @@ from skimage import measure
 from version import version_file_str
 
 
-def mask_image(mask, catheter):
-    # mask values outside perivascular as the image max
-    mask.setflags(write=1)
-
-    # set catheter values equal to lumen values
-    if catheter == 1:
-        mask[mask == 1] = 2
-        mask[mask < 2] = mask.max()
-    else:
-        mask[mask < 1] = mask.max()
-
-    return mask
-
-
-def label_contours(image, levels):
+def label_contours(image):
     """generate contours for labels"""
     # Find contours at a constant value
-    contours1 = measure.find_contours(image, levels[0])
+    contours = measure.find_contours(image)
     lumen = []
-    for contour in contours1:
+    for contour in contours:
         lumen.append(np.array((contour[:, 0], contour[:, 1])))
 
     return lumen
@@ -57,38 +40,23 @@ def keep_valid_contour(contour, image_shape):
     return bbPath.contains_point(centroid)
 
 
-def keep_central_contour(contours, image_shape):
-    # deprecated, this function returns the contour with its centroid closest to the image centroid
-    centroids = np.zeros((len(contours), 2))
-    for j, contour in enumerate(contours):
-        centroids[j, :] = [np.mean(contour[0, :]), np.mean(contour[1, :])]
-    # find distance from image centroid to all centroids
-    dist = np.sqrt((centroids[:, 0] - image_shape[0] // 2) ** 2 + (centroids[:, 1] - image_shape[1] // 2) ** 2)
-    keep_contour = contours[np.argmin(dist)]
-    return keep_contour
-
-
-def get_contours(preds, levels, image_shape):
+def get_contours(preds, image_shape):
     """Extracts contours from masked images. Returns x and y coodinates"""
     # get contours for each image
     lumen_pred = [[], []]
-    x = []
-    y = []
-    # convert contours to x and y points where every second entry in x and y are outer contours
-    for i in range(preds.shape[0]):
-        if np.any(preds[i, :, :] == 1):
-            lumen = label_contours(preds[i, :, :], levels)
+    # convert contours to x and y points
+    for frame in range(preds.shape[0]):
+        if np.any(preds[frame, :, :] == 1):
+            lumen = label_contours(preds[frame, :, :])
             # return the contour with the largest number of points
             keep_lumen_x, keep_lumen_y = keep_largest_contour(lumen, image_shape)
-            x.append(keep_lumen_x)
-            y.append(keep_lumen_y)
+            lumen_pred[0].append(keep_lumen_x)
+            lumen_pred[1].append(keep_lumen_y)
         else:
-            x.append([])
-            y.append([])
-        lumen_pred[0].append(x[-2])
-        lumen_pred[1].append(y[-2])
+            lumen_pred[0].append([])
+            lumen_pred[1].append([])
 
-    return x, y, lumen_pred
+    return lumen_pred
 
 
 def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
@@ -111,7 +79,6 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
     analyzedfilename.text = 'FILE0000'
     analyzedfilenamefullpath = et.SubElement(root, 'AnalyzedFileNameFullPath')
     analyzedfilenamefullpath.text = 'D:\CASE0000\FILE0000'
-    previousanalysisstate = et.SubElement(root, 'PreviousAnalysisState')
     username = et.SubElement(root, 'UserName')
     username.text = 'ICViewAdmin'
     computername = et.SubElement(root, 'ComputerName')
@@ -204,54 +171,3 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
 
     tree = et.ElementTree(root)
     tree.write(out_path + f'_contours_{version_file_str}.xml')
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate xml file from labelmaps that can be read by Echoplaque')
-    parser.add_argument('--dir', type=str, help="Enter the directory containing the labels")
-    parser.add_argument('--res', default=0.02, type=float, help="Enter the image resolution")
-    parser.add_argument('--frames', type=int, help="Enter the total number of frames in the pullback")
-    parser.add_argument('--gated', default='', type=str, help="Enter the path to the file with the gated frames")
-    parser.add_argument('--speed', default=0.5, type=float, help="Enter the pullback speed")
-
-    # this code reads in a directory containing prediction images and outputs an xml file readable by EchoPlaque
-    full_path = os.getcwd()
-
-    args = parser.parse_args()
-    pred_dir = args.dir
-    resolution = args.res
-    num_frames = args.frames
-    gated = args.gated
-    speed = args.speed
-
-    pname = os.path.split(pred_dir)[-1]
-
-    # read prediction images
-    pred_files = os.listdir(pred_dir)
-    pred_files = [pred for pred in pred_files if '.png' in pred]
-    pred_files.sort(key=lambda var: [int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
-
-    frames = [int(file.split('pred_image')[1].split('.png')[0]) for file in pred_files]
-    # read gated frames
-    if gated != '':
-        f = open(gated, 'r')
-        data = f.read()
-        data = data.split('\n')
-        data = [int(val) for val in data if val]
-    f.close()
-    frames = data
-
-    # open first image to determine image size
-    catheter = 0
-    if catheter == 1:
-        levels = [2.5, 3.5]
-    else:
-        levels = [1.5, 2.5]
-    image_shape = im.open(os.path.join(pred_dir, pred_files[0])).size
-    preds = np.zeros((len(pred_files), image_shape[0], image_shape[1]), dtype=np.uint8)
-    for i, pred_file in enumerate(pred_files):
-        preds[i, :, :] = np.asarray(im.open(os.path.join(pred_dir, pred_file)))
-    preds = mask_image(preds, catheter)
-
-    x, y, lumen_pred, plaque_pred = get_contours(preds, levels, image_shape)
-    write_xml(x, y, preds.shape, resolution, speed, frames, pname)

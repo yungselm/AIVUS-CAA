@@ -24,10 +24,11 @@ from PyQt5.QtGui import QIcon
 
 from gui.display import Display
 from gui.slider import Slider, Communicate
+from preprocessing.preprocessing import PreProcessing
+from segmentation.predict import Predict
 from input_output.read_image import readImage
 from input_output.contours import writeContours, segment, newSpline
 from input_output.report import report
-from preprocessing.preprocessing import PreProcessing
 from segmentation.save_as_nifti import save_as_nifti
 
 
@@ -47,6 +48,7 @@ class Master(QMainWindow):
         self.config = config
         self.autosave_interval = config.save.autosave_interval
         self.use_xml_files = config.save.use_xml_files
+        self.predictor = Predict(config)
         self.image_displayed = False
         self.contours_drawn = False
         self.segmentation = False

@@ -10,7 +10,7 @@ from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
 from input_output.report import computePolygonMetrics, findLongestDistanceContour, findShortestDistanceContour
-
+from input_output.contours import downsample
 
 class Display(QGraphicsView):
     """Displays images and contours.
@@ -122,24 +122,11 @@ class Display(QGraphicsView):
         if (
             lumen[0] and max([len(lumen[0][frame]) for frame in range(self.numberOfFrames)]) == 500
         ):  # complete contours loaded -> save downsampled version
-            self.main_window.data['lumen'] = self.downsample(lumen)
+            self.main_window.data['lumen'] = downsample(lumen)
         else:
             self.main_window.data['lumen'] = lumen
         self.images = images
         self.displayImage(update_image=True, update_splines=True, update_phase=True)
-
-    def downsample(self, contours, num_points=20):
-        """Downsamples input contour data by selecting n points from original contour"""
-
-        num_frames = len(contours[0])
-        downsampled = [[] for _ in range(num_frames)], [[] for _ in range(num_frames)]
-
-        for frame in range(num_frames):
-            if contours[0][frame]:
-                points_to_sample = range(0, len(contours[0][frame]), len(contours[0][frame]) // num_points)
-                for axis in range(2):
-                    downsampled[axis][frame] = [contours[axis][frame][point] for point in points_to_sample]
-        return downsampled
 
     def displayImage(self, update_image=False, update_splines=False, update_phase=False):
         """Clears scene and displays current image and splines"""
@@ -301,7 +288,7 @@ class Display(QGraphicsView):
                     self.draw = False
                     self.drawPoints = []
                     if self.newSpline is not None:
-                        downsampled = self.downsample(
+                        downsampled = downsample(
                             ([self.newSpline.full_contour[0].tolist()], [self.newSpline.full_contour[1].tolist()])
                         )
                         self.main_window.data['lumen'][0][self.frame] = [
