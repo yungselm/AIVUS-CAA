@@ -8,13 +8,12 @@ from loguru import logger
 from skimage.draw import polygon2mask
 from PyQt5.QtWidgets import (
     QErrorMessage,
-    QFileDialog,
 )
 from PyQt5.QtCore import Qt
 from skimage import measure
 
 from version import version_file_str
-from input_output.read_xml import read
+from input_output.read_xml import read_xml
 from input_output.write_xml import write_xml
 
 
@@ -24,90 +23,27 @@ def read_contours(main_window, file_name=None):
     json_files = glob.glob(f'{file_name}_contours*.json')
     xml_files = glob.glob(f'{file_name}_contours*.xml')
 
-    if file_name is None:  # call by manual button click
-        if not main_window.image_displayed:
-            warning = QErrorMessage(main_window)
-            warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage('Reading of contours failed. Images must be loaded prior to loading contours')
-            warning.exec_()
-            return
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getOpenFileName(
-            main_window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
-        )
-
-        if os.path.splitext(file_name)[1] == '.json':
-            with open(file_name, 'r') as in_file:
-                main_window.data = json.load(in_file)
-            success = True
-        elif os.path.splitext(file_name)[1] == '.xml':
-            (
-                main_window.data['lumen'],
-                main_window.metadata['resolution'],
-                _,
-                main_window.data['plaque_frames'],
-                main_window.data['phases'],
-            ) = read(file_name)
-            main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
-            main_window.data['lumen'] = map_to_list(main_window.data['lumen'])
-            (  # initialise empty containers
-                main_window.data['lumen_centroid'],
-                main_window.data['farthest_point'],
-                main_window.data['nearest_point'],
-            ) = [
-                (
-                    [[] for _ in range(main_window.metadata['num_frames'])],
-                    [[] for _ in range(main_window.metadata['num_frames'])],
-                )
-                for _ in range(3)
-            ]
-            (
-                main_window.data['lumen_area'],
-                main_window.data['lumen_circumf'],
-                main_window.data['longest_distance'],
-                main_window.data['shortest_distance'],
-            ) = [[0] * main_window.metadata['num_frames'] for _ in range(4)]
-            success = True
-
-    elif not main_window.use_xml_files and json_files:  # json files have priority over xml unless desired
+    if not main_window.use_xml_files and json_files:  # json files have priority over xml unless desired
         newest_json = max(json_files)  # find file with most recent version
         logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_json}')
         with open(newest_json, 'r') as in_file:
             main_window.data = json.load(in_file)
-        if 'lumen_circumf' not in main_window.data.keys():
-            main_window.data['lumen_circumf'] = [0] * main_window.metadata['num_frames']
         success = True
 
     elif xml_files:
         newest_xml = max(xml_files)  # find file with most recent version
         logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_xml}')
-        (
-            main_window.data['lumen'],
-            main_window.metadata['resolution'],
-            _,
-            main_window.data['plaque_frames'],
-            main_window.data['phases'],
-        ) = read(newest_xml)
-        main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
+        read_xml(main_window, newest_xml)
         main_window.data['lumen'] = map_to_list(main_window.data['lumen'])
-        (  # initialise empty containers
-            main_window.data['lumen_centroid'],
-            main_window.data['farthest_point'],
-            main_window.data['nearest_point'],
-        ) = [
-            (
+        for key in ['lumen_area', 'lumen_circumf', 'longest_distance', 'shortest_distance']:
+            main_window.data[key] = [0] * main_window.metadata[
+                'num_frames'
+            ]  # initialise empty containers for data not stored in xml
+        for key in ['lumen_centroid', 'farthest_point', 'nearest_point']:
+            main_window.data[key] = (
                 [[] for _ in range(main_window.metadata['num_frames'])],
                 [[] for _ in range(main_window.metadata['num_frames'])],
-            )
-            for _ in range(3)
-        ]
-        (
-            main_window.data['lumen_area'],
-            main_window.data['lumen_circumf'],
-            main_window.data['longest_distance'],
-            main_window.data['shortest_distance'],
-        ) = [[0] * main_window.metadata['num_frames'] for _ in range(4)]
+            )  # initialise empty containers for data not stored in xml
         success = True
 
     if success:
@@ -157,11 +93,6 @@ def write_contours(main_window):
             json.dump(main_window.data, out_file)
 
 
-def reset_contours(main_window):
-    main_window.contours_drawn = False
-    main_window.data['lumen'] = None
-
-
 def segment(main_window):
     """Segmentation and phenotyping of IVUS images"""
     main_window.status_bar.showMessage('Segmenting all gated frames...')
@@ -174,7 +105,7 @@ def segment(main_window):
         return
 
     masks = main_window.predictor(main_window.images)
-    main_window.metrics = compute_metrics(main_window, masks)
+    main_window.metrics = compute_area(main_window, masks)
     main_window.data['lumen'] = mask_to_contours(masks)
     main_window.contours_drawn = True
     main_window.display.set_data(main_window.data['lumen'], main_window.images)
@@ -183,8 +114,6 @@ def segment(main_window):
 
 
 def new_spline(main_window):
-    """Create a message box to choose what spline to create"""
-
     if not main_window.image_displayed:
         warning = QErrorMessage(main_window)
         warning.setWindowModality(Qt.WindowModal)
@@ -199,21 +128,18 @@ def new_spline(main_window):
 
 def mask_to_contours(masks):
     """Convert numpy mask to IVUS contours"""
-
     lumen_pred = get_contours(masks, image_shape=masks.shape[1:3])
     lumen_pred = downsample(lumen_pred)
 
     return lumen_pred
 
+
 def get_contours(preds, image_shape):
     """Extracts contours from masked images. Returns x and y coodinates"""
-    # get contours for each image
     lumen_pred = [[], []]
-    # convert contours to x and y points
     for frame in range(preds.shape[0]):
         if np.any(preds[frame, :, :] == 1):
             lumen = label_contours(preds[frame, :, :])
-            # return the contour with the largest number of points
             keep_lumen_x, keep_lumen_y = keep_largest_contour(lumen, image_shape)
             lumen_pred[0].append(keep_lumen_x)
             lumen_pred[1].append(keep_lumen_y)
@@ -226,7 +152,6 @@ def get_contours(preds, image_shape):
 
 def label_contours(image):
     """generate contours for labels"""
-    # Find contours at a constant value
     contours = measure.find_contours(image)
     lumen = []
     for contour in contours:
@@ -236,7 +161,6 @@ def label_contours(image):
 
 
 def keep_largest_contour(contours, image_shape):
-    # this function returns the largest contour (num of points) as a numpy array
     max_length = 0
     keep_contour = [[], []]
     for contour in contours:
@@ -249,14 +173,14 @@ def keep_largest_contour(contours, image_shape):
 
 
 def keep_valid_contour(contour, image_shape):
-    # this function check that the contour is valid if the image centroid is contained within the mask region
+    """Contour is valid if it contains the centroid of the image"""
     bbPath = mplPath.Path(np.transpose(contour))
     centroid = [image_shape[0] // 2, image_shape[1] // 2]
     return bbPath.contains_point(centroid)
 
+
 def downsample(contours, num_points=20):
     """Downsamples input contour data by selecting n points from original contour"""
-
     num_frames = len(contours[0])
     downsampled = [[] for _ in range(num_frames)], [[] for _ in range(num_frames)]
 
@@ -283,8 +207,7 @@ def contours_to_mask(images, contoured_frames, lumen):
     return mask
 
 
-def compute_metrics(main_window, masks):
-    """Measures lumen area"""
+def compute_area(main_window, masks):
     lumen_area = np.sum(masks == 1, axis=(1, 2)) * main_window.metadata['resolution'] ** 2
 
     return lumen_area

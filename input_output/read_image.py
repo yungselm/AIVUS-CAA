@@ -70,28 +70,15 @@ def read_image(main_window):
                 main_window.display_slider.set_gated_frames(main_window.gated_frames_dia)
             except KeyError:  # old contour files may not have phases attribute
                 pass
-        else:
-            main_window.data['plaque_frames'] = ['0'] * main_window.metadata['num_frames']
+        else:  # initialise empty containers
+            for key in ['plaque_frames', 'lumen_area', 'lumen_circumf', 'longest_distance', 'shortest_distance']:
+                main_window.data[key] = [0] * main_window.metadata['num_frames']
             main_window.data['phases'] = ['-'] * main_window.metadata['num_frames']
-
-            (
-                main_window.data['lumen_area'],
-                main_window.data['lumen_circumf'],
-                main_window.data['longest_distance'],
-                main_window.data['shortest_distance'],
-            ) = [[0] * main_window.metadata['num_frames'] for _ in range(4)]
-            (  # initialise empty containers
-                main_window.data['lumen_centroid'],
-                main_window.data['farthest_point'],
-                main_window.data['nearest_point'],
-                main_window.data['lumen'],
-            ) = [
-                (
-                    [[] for _ in range(main_window.metadata['num_frames'])],
-                    [[] for _ in range(main_window.metadata['num_frames'])],
-                )
-                for _ in range(4)
-            ]
+            for key in ['lumen_centroid', 'farthest_point', 'nearest_point', 'lumen']:
+                main_window.data[key] = (
+                [[] for _ in range(main_window.metadata['num_frames'])],
+                [[] for _ in range(main_window.metadata['num_frames'])],
+            )
             main_window.display.set_data(main_window.data['lumen'], main_window.images)
 
         main_window.image_displayed = True

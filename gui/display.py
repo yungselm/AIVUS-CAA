@@ -12,6 +12,7 @@ from gui.geometry import Point, Spline
 from input_output.report import compute_polygon_metrics, farthest_points, closest_points
 from input_output.contours import downsample
 
+
 class Display(QGraphicsView):
     """Displays images and contours.
 
@@ -61,60 +62,6 @@ class Display(QGraphicsView):
         self.frame_metrics_text = None
         self.graphics_scene.addItem(self.image)
         self.setScene(self.graphics_scene)
-
-    def mousePressEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            if self.draw:
-                pos = self.mapToScene(event.pos())
-                self.add_manual_spline(pos)
-            else:
-                # identify which point has been clicked
-                items = self.items(event.pos())
-                for item in items:
-                    if item in self.lumen_points:
-                        self.main_window.setCursor(Qt.BlankCursor)  # remove cursor for precise spline changes
-                        # Convert mouse position to item position
-                        # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                        self.point_index = self.lumen_points.index(item)
-                        item.update_color()
-                        self.enable_drag = True
-                        self.active_point = item
-
-        elif event.buttons() == Qt.MouseButton.RightButton:
-            self.mouse_x = event.x()
-            self.mouse_y = event.y()
-
-    def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            if self.point_index is not None:
-                item = self.active_point
-                mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
-                new_point = item.update_pos(mouse_position)
-                self.lumen_spline.update(new_point, self.point_index)
-
-        elif event.buttons() == Qt.MouseButton.RightButton:
-            self.setMouseTracking(True)
-            # Right-click drag for adjusting window level and window width
-            self.window_level += (event.x() - self.mouse_x) * self.windowing_sensitivity
-            self.window_width += (event.y() - self.mouse_y) * self.windowing_sensitivity
-            self.display_image(update_image=True)
-            self.setMouseTracking(False)
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:  # for some reason event.buttons() does not work here
-            if self.point_index is not None:
-                self.main_window.setCursor(Qt.ArrowCursor)
-                item = self.active_point
-                item.reset_color()
-
-                self.main_window.data['lumen'][0][self.frame] = [
-                    point / self.scaling_factor for point in self.lumen_spline.knot_points[0]
-                ]
-                self.main_window.data['lumen'][1][self.frame] = [
-                    point / self.scaling_factor for point in self.lumen_spline.knot_points[1]
-                ]
-                self.display_image(update_splines=True)
-                self.point_index = None
 
     def set_data(self, lumen, images):
         self.num_frames = images.shape[0]
@@ -182,9 +129,7 @@ class Display(QGraphicsView):
                     lumen_y = [point / self.scaling_factor for point in self.lumen_spline.full_contour[1]]
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
                     lumen_area, lumen_circumf, _, _ = compute_polygon_metrics(self.main_window, polygon, self.frame)
-                    longest_distance, _, _ = farthest_points(
-                        self.main_window, polygon.exterior.coords, self.frame
-                    )
+                    longest_distance, _, _ = farthest_points(self.main_window, polygon.exterior.coords, self.frame)
                     shortest_distance, _, _ = closest_points(self.main_window, polygon, self.frame)
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
@@ -320,3 +265,57 @@ class Display(QGraphicsView):
 
     def set_display(self, hide_contours):
         self.hide_contours = hide_contours
+
+    def mousePressEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            if self.draw:
+                pos = self.mapToScene(event.pos())
+                self.add_manual_spline(pos)
+            else:
+                # identify which point has been clicked
+                items = self.items(event.pos())
+                for item in items:
+                    if item in self.lumen_points:
+                        self.main_window.setCursor(Qt.BlankCursor)  # remove cursor for precise spline changes
+                        # Convert mouse position to item position
+                        # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
+                        self.point_index = self.lumen_points.index(item)
+                        item.update_color()
+                        self.enable_drag = True
+                        self.active_point = item
+
+        elif event.buttons() == Qt.MouseButton.RightButton:
+            self.mouse_x = event.x()
+            self.mouse_y = event.y()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            if self.point_index is not None:
+                item = self.active_point
+                mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
+                new_point = item.update_pos(mouse_position)
+                self.lumen_spline.update(new_point, self.point_index)
+
+        elif event.buttons() == Qt.MouseButton.RightButton:
+            self.setMouseTracking(True)
+            # Right-click drag for adjusting window level and window width
+            self.window_level += (event.x() - self.mouse_x) * self.windowing_sensitivity
+            self.window_width += (event.y() - self.mouse_y) * self.windowing_sensitivity
+            self.display_image(update_image=True)
+            self.setMouseTracking(False)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:  # for some reason event.buttons() does not work here
+            if self.point_index is not None:
+                self.main_window.setCursor(Qt.ArrowCursor)
+                item = self.active_point
+                item.reset_color()
+
+                self.main_window.data['lumen'][0][self.frame] = [
+                    point / self.scaling_factor for point in self.lumen_spline.knot_points[0]
+                ]
+                self.main_window.data['lumen'][1][self.frame] = [
+                    point / self.scaling_factor for point in self.lumen_spline.knot_points[1]
+                ]
+                self.display_image(update_splines=True)
+                self.point_index = None

@@ -13,7 +13,7 @@ def split_x_y(points):
     return points_x, points_y
 
 
-def read(path, frames=[]):
+def read_xml(main_window, path, frames=[]):
     tree = ET.parse(path)  # current version
     root = tree.getroot()
     root.attrib
@@ -25,15 +25,12 @@ def read(path, frames=[]):
 
     for child in root:
         for image_state in child.iter('ImageState'):
-            dim_x = image_state.find('Xdim').text
-            dim_y = image_state.find('Ydim').text
             dim_z = image_state.find('NumberOfFrames').text
             if not frames:
                 frames = range(int(dim_z))
 
         for image_calibration in child.iter('ImageCalibration'):
             res_x = image_calibration.find('XCalibration').text
-            res_y = image_calibration.find('YCalibration').text
 
         for _ in child.iter('FrameState'):
             for frame in child.iter('Fm'):
@@ -63,9 +60,7 @@ def read(path, frames=[]):
                     lumen_points.append(lumen_subpoints)
                     lumen[frame_number] = lumen_subpoints
 
-    Lx, Ly = split_x_y(lumen_points)
-
-    # return unique frames as we have entry for each inner and outer contour
-    frame_list = list(sorted(set(map(int, frame_list))))
-
-    return (Lx, Ly), [res_x, res_y], [dim_x, dim_y, dim_z], plaque_frames, phases
+    main_window.data['lumen'] = split_x_y(lumen_points)
+    main_window.data['plaque_frames'] = plaque_frames
+    main_window.data['phases'] = phases
+    main_window.metadata['resolution'] = res_x
