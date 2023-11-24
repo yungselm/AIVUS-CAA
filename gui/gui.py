@@ -48,7 +48,7 @@ class Master(QMainWindow):
         self.config = config
         self.autosave_interval = config.save.autosave_interval
         self.use_xml_files = config.save.use_xml_files
-        self.predictor = Predict(config)
+        self.predictor = Predict(self)
         self.image_displayed = False
         self.contours_drawn = False
         self.segmentation = False
