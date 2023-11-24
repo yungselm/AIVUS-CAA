@@ -8,7 +8,6 @@ from skimage.draw import polygon2mask
 from PyQt5.QtWidgets import (
     QErrorMessage,
     QFileDialog,
-    QMessageBox,
 )
 from PyQt5.QtCore import Qt
 
@@ -17,7 +16,7 @@ from input_output.read_xml import read
 from input_output.write_xml import write_xml, get_contours
 
 
-def readContours(main_window, file_name=None):
+def read_contours(main_window, file_name=None):
     """Reads contours saved in json/xml format and displays the contours in the graphics scene"""
     success = False
     json_files = glob.glob(f'{file_name}_contours*.json')
@@ -49,7 +48,7 @@ def readContours(main_window, file_name=None):
                 main_window.data['phases'],
             ) = read(file_name)
             main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
-            main_window.data['lumen'] = mapToList(main_window.data['lumen'])
+            main_window.data['lumen'] = map_to_list(main_window.data['lumen'])
             (  # initialise empty containers
                 main_window.data['lumen_centroid'],
                 main_window.data['farthest_point'],
@@ -89,7 +88,7 @@ def readContours(main_window, file_name=None):
             main_window.data['phases'],
         ) = read(newest_xml)
         main_window.metadata['resolution'] = float(main_window.metadata['resolution'][0])
-        main_window.data['lumen'] = mapToList(main_window.data['lumen'])
+        main_window.data['lumen'] = map_to_list(main_window.data['lumen'])
         (  # initialise empty containers
             main_window.data['lumen_centroid'],
             main_window.data['farthest_point'],
@@ -112,12 +111,12 @@ def readContours(main_window, file_name=None):
     if success:
         main_window.contours_drawn = True
         main_window.display.setData(main_window.data['lumen'], main_window.images)
-        main_window.hideBox.setChecked(False)
+        main_window.hide_contours_box.setChecked(False)
 
     return success
 
 
-def writeContours(main_window):
+def write_contours(main_window):
     """Writes contours to a json/xml file"""
 
     if not main_window.image_displayed:
@@ -173,11 +172,11 @@ def segment(main_window):
         return
 
     masks = main_window.predictor(main_window.images)
-    main_window.metrics = computeMetrics(main_window, masks)
-    main_window.data['lumen'] = maskToContours(masks)
+    main_window.metrics = compute_metrics(main_window, masks)
+    main_window.data['lumen'] = mask_to_contours(masks)
     main_window.contours_drawn = True
     main_window.display.setData(main_window.data['lumen'], main_window.images)
-    main_window.hideBox.setChecked(False)
+    main_window.hide_contours_box.setChecked(False)
     main_window.status_bar.showMessage('Waiting for user input')
 
 
@@ -192,11 +191,11 @@ def newSpline(main_window):
         return
 
     main_window.display.new_contour(main_window)
-    main_window.hideBox.setChecked(False)
+    main_window.hide_contours_box.setChecked(False)
     main_window.contours_drawn = True
 
 
-def maskToContours(masks):
+def mask_to_contours(masks):
     """Convert numpy mask to IVUS contours"""
 
     lumen_pred = get_contours(masks, image_shape=masks.shape[1:3])
@@ -219,7 +218,7 @@ def downsample(contours, num_points=20):
     return downsampled
 
 
-def contoursToMask(images, contoured_frames, lumen):
+def contours_to_mask(images, contoured_frames, lumen):
     """Convert IVUS contours to numpy mask"""
     image_shape = images.shape[1:3]
     mask = np.zeros_like(images)
@@ -234,14 +233,14 @@ def contoursToMask(images, contoured_frames, lumen):
     return mask
 
 
-def computeMetrics(main_window, masks):
+def compute_metrics(main_window, masks):
     """Measures lumen area"""
     lumen_area = np.sum(masks == 1, axis=(1, 2)) * main_window.metadata['resolution'] ** 2
 
     return lumen_area
 
 
-def mapToList(contours):
+def map_to_list(contours):
     """Converts map to list"""
     x, y = contours
     x = [list(x[i]) for i in range(0, len(x))]

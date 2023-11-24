@@ -85,11 +85,11 @@ class Spline(QGraphicsPathItem):
             logger.error(points)
             pass
 
-    def interpolate(self, pts):
+    def interpolate(self, points):
         """Interpolates the spline points at 500 points along spline"""
-        pts = np.array(pts)
+        points = np.array(points)
         try:
-            tck, u = splprep(pts, u=None, s=0.0, per=1)
+            tck, u = splprep(points, u=None, s=0.0, per=1)
         except ValueError:
             return (None, None)
         u_new = np.linspace(u.min(), u.max(), 500)

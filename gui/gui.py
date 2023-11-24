@@ -26,8 +26,8 @@ from gui.display import Display
 from gui.slider import Slider, Communicate
 from preprocessing.preprocessing import PreProcessing
 from segmentation.predict import Predict
-from input_output.read_image import readImage
-from input_output.contours import writeContours, segment, newSpline
+from input_output.read_image import read_image
+from input_output.contours import write_contours, segment, newSpline
 from input_output.report import report
 from segmentation.save_as_nifti import save_as_nifti
 
@@ -61,67 +61,67 @@ class Master(QMainWindow):
         self.images = None
         self.diastole_color = (39, 69, 219)
         self.systole_color = (209, 55, 38)
-        self.initGUI()
+        self.init_gui()
 
-    def initGUI(self):
+    def init_gui(self):
         spacing = 5
         self.setGeometry(spacing, spacing, 1200, 1200)
-        self.display_size = 800
-        self.addToolBar("MY Window")
+        self.addToolBar("My Window")
         self.showMaximized()
 
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage('Waiting for user input...')
-        layout = QHBoxLayout()
-        vbox1 = QVBoxLayout()
-        vbox2 = QVBoxLayout()
-        vbox1hbox1 = QHBoxLayout()
 
-        vbox1.setContentsMargins(0, 0, spacing, spacing)
-        vbox2.setContentsMargins(spacing, 0, 0, spacing)
-        vbox2hbox1 = QHBoxLayout()
-        vbox2hbox2 = QHBoxLayout()
-        vbox2.addLayout(vbox2hbox1)
-        vbox2.addLayout(vbox2hbox2)
-        layout.addLayout(vbox1)
-        layout.addLayout(vbox2)
+        main_window_hbox = QHBoxLayout()
+        left_vbox = QVBoxLayout()
+        right_vbox = QVBoxLayout()
+        left_lower_hbox = QHBoxLayout()
 
-        imageButton = QPushButton('Read DICOM/NIfTi')
-        gatingButton = QPushButton('Extract Diastolic and Systolic Frames')
-        segmentButton = QPushButton('Segment')
-        splineButton = QPushButton('Manual Contour')
-        writeButton = QPushButton('Write Contours')
-        reportButton = QPushButton('Write Report')
+        left_vbox.setContentsMargins(0, 0, spacing, spacing)
+        right_vbox.setContentsMargins(spacing, 0, 0, spacing)
+        right_upper_hbox = QHBoxLayout()
+        right_lower_hbox = QHBoxLayout()
+        right_vbox.addLayout(right_upper_hbox)
+        right_vbox.addLayout(right_lower_hbox)
+        main_window_hbox.addLayout(left_vbox)
+        main_window_hbox.addLayout(right_vbox)
 
-        imageButton.setToolTip("Load images in .dcm format")
-        gatingButton.setToolTip("Extract diastolic and systolic images from pullback")
-        segmentButton.setToolTip("Run deep learning based segmentation of lumen")
-        splineButton.setToolTip("Manually draw new contour for lumen")
-        writeButton.setToolTip("Manually save contours in .json file")
-        reportButton.setToolTip("Write report to .txt file")
+        image_button = QPushButton('Read DICOM/NIfTi')
+        gating_button = QPushButton('Extract Diastolic and Systolic Frames')
+        segment_button = QPushButton('Segment')
+        spline_button = QPushButton('Manual Contour')
+        write_button = QPushButton('Write Contours')
+        report_button = QPushButton('Write Report')
 
-        hideHeader1 = QHeaderView(Qt.Vertical)
-        hideHeader1.hide()
-        hideHeader2 = QHeaderView(Qt.Horizontal)
-        hideHeader2.hide()
-        self.infoTable = QTableWidget()
-        self.infoTable.setRowCount(8)
-        self.infoTable.setColumnCount(2)
-        self.infoTable.setItem(0, 0, QTableWidgetItem('Patient Name'))
-        self.infoTable.setItem(1, 0, QTableWidgetItem('Patient DOB'))
-        self.infoTable.setItem(2, 0, QTableWidgetItem('Patient Sex'))
-        self.infoTable.setItem(3, 0, QTableWidgetItem('Pullback Speed'))
-        self.infoTable.setItem(4, 0, QTableWidgetItem('Resolution (mm)'))
-        self.infoTable.setItem(5, 0, QTableWidgetItem('Dimensions'))
-        self.infoTable.setItem(6, 0, QTableWidgetItem('Manufacturer'))
-        self.infoTable.setItem(7, 0, QTableWidgetItem('Model'))
-        self.infoTable.setVerticalHeader(hideHeader1)
-        self.infoTable.setHorizontalHeader(hideHeader2)
-        self.infoTable.horizontalHeader().setStretchLastSection(True)
+        image_button.setToolTip("Load images in .dcm format")
+        gating_button.setToolTip("Extract diastolic and systolic images from pullback")
+        segment_button.setToolTip("Run deep learning based segmentation of lumen")
+        spline_button.setToolTip("Manually draw new contour for lumen")
+        write_button.setToolTip("Manually save contours in .json file")
+        report_button.setToolTip("Write report to .txt file")
 
-        self.shortcutInfo = QLabel()
-        self.shortcutInfo.setText(
+        vertical_header = QHeaderView(Qt.Vertical)
+        vertical_header.hide()
+        horizontal_header = QHeaderView(Qt.Horizontal)
+        horizontal_header.hide()
+        self.info_table = QTableWidget()
+        self.info_table.setRowCount(8)
+        self.info_table.setColumnCount(2)
+        self.info_table.setItem(0, 0, QTableWidgetItem('Patient Name'))
+        self.info_table.setItem(1, 0, QTableWidgetItem('Patient DOB'))
+        self.info_table.setItem(2, 0, QTableWidgetItem('Patient Sex'))
+        self.info_table.setItem(3, 0, QTableWidgetItem('Pullback Speed'))
+        self.info_table.setItem(4, 0, QTableWidgetItem('Resolution (mm)'))
+        self.info_table.setItem(5, 0, QTableWidgetItem('Dimensions'))
+        self.info_table.setItem(6, 0, QTableWidgetItem('Manufacturer'))
+        self.info_table.setItem(7, 0, QTableWidgetItem('Model'))
+        self.info_table.setVerticalHeader(vertical_header)
+        self.info_table.setHorizontalHeader(horizontal_header)
+        self.info_table.horizontalHeader().setStretchLastSection(True)
+
+        self.shortcut_info = QLabel()
+        self.shortcut_info.setText(
             (
                 '\n'
                 'First, load a DICOM/NIfTi file using the button below.\n'
@@ -136,142 +136,89 @@ class Master(QMainWindow):
             )
         )
 
-        imageButton.clicked.connect(lambda _: readImage(self))
-        gatingButton.clicked.connect(self.gate)
-        segmentButton.clicked.connect(lambda _: segment(self))
-        splineButton.clicked.connect(lambda _: newSpline(self))
-        writeButton.clicked.connect(lambda _: writeContours(self))
-        reportButton.clicked.connect(lambda _: report(self))
+        image_button.clicked.connect(lambda _: read_image(self))
+        gating_button.clicked.connect(self.gate)
+        segment_button.clicked.connect(lambda _: segment(self))
+        spline_button.clicked.connect(lambda _: newSpline(self))
+        write_button.clicked.connect(lambda _: write_contours(self))
+        report_button.clicked.connect(lambda _: report(self))
 
-        self.playButton = QPushButton()
-        pixmapi1 = getattr(QStyle, 'SP_MediaPlay')
-        pixmapi2 = getattr(QStyle, 'SP_MediaPause')
-        self.playIcon = self.style().standardIcon(pixmapi1)
-        self.pauseIcon = self.style().standardIcon(pixmapi2)
-        self.playButton.setIcon(self.playIcon)
-        self.playButton.setMaximumWidth(30)
-        self.playButton.clicked.connect(self.play)
+        self.play_button = QPushButton()
+        media_play = getattr(QStyle, 'SP_MediaPlay')
+        media_pause = getattr(QStyle, 'SP_MediaPause')
+        self.play_icon = self.style().standardIcon(media_play)
+        self.pause_icon = self.style().standardIcon(media_pause)
+        self.play_button.setIcon(self.play_icon)
+        self.play_button.setMaximumWidth(30)
+        self.play_button.clicked.connect(self.play)
         self.paused = True
 
-        self.slider = Slider(Qt.Horizontal)
-        self.slider.valueChanged[int].connect(self.changeValue)
+        self.display_slider = Slider(Qt.Horizontal)
+        self.display_slider.valueChanged[int].connect(self.change_value)
 
         max_box_width = 130
-        self.diastolicFrameBox = QCheckBox('Diastolic Frame')
-        self.diastolicFrameBox.setMaximumWidth(max_box_width)
-        self.diastolicFrameBox.setChecked(False)
-        self.diastolicFrameBox.stateChanged[int].connect(self.toggleDiastolicFrame)
-        self.systolicFrameBox = QCheckBox('Systolic Frame')
-        self.systolicFrameBox.setMaximumWidth(max_box_width)
-        self.systolicFrameBox.setChecked(False)
-        self.systolicFrameBox.stateChanged[int].connect(self.toggleSystolicFrame)
-        self.plaqueFrameBox = QCheckBox('Plaque')
-        self.plaqueFrameBox.setMaximumWidth(max_box_width)
-        self.plaqueFrameBox.setChecked(False)
-        self.plaqueFrameBox.stateChanged[int].connect(self.togglePlaqueFrame)
+        self.diastolic_frame_box = QCheckBox('Diastolic Frame')
+        self.diastolic_frame_box.setMaximumWidth(max_box_width)
+        self.diastolic_frame_box.setChecked(False)
+        self.diastolic_frame_box.stateChanged[int].connect(self.toggle_diastolic_frame)
+        self.systolic_frame_box = QCheckBox('Systolic Frame')
+        self.systolic_frame_box.setMaximumWidth(max_box_width)
+        self.systolic_frame_box.setChecked(False)
+        self.systolic_frame_box.stateChanged[int].connect(self.toggle_systolic_frame)
+        self.plaque_frame_box = QCheckBox('Plaque')
+        self.plaque_frame_box.setMaximumWidth(max_box_width)
+        self.plaque_frame_box.setChecked(False)
+        self.plaque_frame_box.stateChanged[int].connect(self.toggle_plaque_frame)
 
-        self.hideBox = QCheckBox('&Hide Contours')
-        self.hideBox.setChecked(True)
-        self.hideBox.stateChanged[int].connect(self.changeState)
-        self.useDiastolicButton = QPushButton('Diastolic Frames')
-        self.useDiastolicButton.setStyleSheet(f'background-color: rgb{self.diastole_color}')
-        self.useDiastolicButton.setCheckable(True)
-        self.useDiastolicButton.setChecked(True)
-        self.useDiastolicButton.clicked.connect(self.useDiastolic)
-        self.useDiastolicButton.setToolTip("Press button to switch between diastolic and systolic frames")
+        self.hide_contours_box = QCheckBox('&Hide Contours')
+        self.hide_contours_box.setChecked(True)
+        self.hide_contours_box.stateChanged[int].connect(self.change_state)
+        self.use_diastolic_button = QPushButton('Diastolic Frames')
+        self.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.diastole_color}')
+        self.use_diastolic_button.setCheckable(True)
+        self.use_diastolic_button.setChecked(True)
+        self.use_diastolic_button.clicked.connect(self.use_diastolic)
+        self.use_diastolic_button.setToolTip("Press button to switch between diastolic and systolic frames")
 
         self.display = Display(self, self.config)
-        self.comms = Communicate()
-        self.comms.updateBW[int].connect(self.display.setFrame)
-        self.comms.updateBool[bool].connect(self.display.setDisplay)
+        self.display_frame_comms = Communicate()
+        self.display_frame_comms.updateBW[int].connect(self.display.setFrame)
+        self.display_frame_comms.updateBool[bool].connect(self.display.setDisplay)
 
-        self.text = QLabel()
-        self.text.setAlignment(Qt.AlignCenter)
-        self.text.setText("Frame {}".format(self.slider.value() + 1))
+        self.frame_number_label = QLabel()
+        self.frame_number_label.setAlignment(Qt.AlignCenter)
+        self.frame_number_label.setText("Frame {}".format(self.display_slider.value() + 1))
 
-        vbox1.addWidget(self.display)
-        vbox1hbox1.addWidget(self.playButton)
-        vbox1hbox1.addWidget(self.slider)
-        vbox1hbox1.addWidget(self.diastolicFrameBox)
-        vbox1hbox1.addWidget(self.systolicFrameBox)
-        vbox1hbox1.addWidget(self.plaqueFrameBox)
-        vbox1.addLayout(vbox1hbox1)
-        vbox1.addWidget(self.text)
+        left_vbox.addWidget(self.display)
+        left_lower_hbox.addWidget(self.play_button)
+        left_lower_hbox.addWidget(self.display_slider)
+        left_lower_hbox.addWidget(self.diastolic_frame_box)
+        left_lower_hbox.addWidget(self.systolic_frame_box)
+        left_lower_hbox.addWidget(self.plaque_frame_box)
+        left_vbox.addLayout(left_lower_hbox)
+        left_vbox.addWidget(self.frame_number_label)
 
-        vbox2.addWidget(self.hideBox)
-        vbox2.addWidget(self.useDiastolicButton)
-        vbox2.addWidget(imageButton)
-        vbox2.addWidget(gatingButton)
-        vbox2.addWidget(segmentButton)
-        vbox2.addWidget(splineButton)
-        vbox2.addWidget(writeButton)
-        vbox2.addWidget(reportButton)
-        vbox2hbox1.addWidget(self.infoTable)
-        vbox2hbox2.addWidget(self.shortcutInfo)
+        right_vbox.addWidget(self.hide_contours_box)
+        right_vbox.addWidget(self.use_diastolic_button)
+        right_vbox.addWidget(image_button)
+        right_vbox.addWidget(gating_button)
+        right_vbox.addWidget(segment_button)
+        right_vbox.addWidget(spline_button)
+        right_vbox.addWidget(write_button)
+        right_vbox.addWidget(report_button)
+        right_upper_hbox.addWidget(self.info_table)
+        right_lower_hbox.addWidget(self.shortcut_info)
 
-        centralWidget = QWidget()
-        centralWidget.setLayout(layout)
+        central_widget = QWidget()
+        central_widget.setLayout(main_window_hbox)
         self.setWindowIcon(QIcon('Media/thumbnail.png'))
         self.setWindowTitle('AAOCA Segmentation Tool')
-        self.setCentralWidget(centralWidget)
+        self.setCentralWidget(central_widget)
         self.show()
-        # disclaimer = QMessageBox.about(
-        #     self, 'AAOCASeg', 'AAOCASeg is not FDA approved and should not be used for medical decisions.'
-        # )
 
-        # pipe = subprocess.Popen(["rm","-r","some.file"])
-        # pipe.communicate() # block until process completes.
         timer = QTimer(self)
-        timer.timeout.connect(self.autoSave)
+        timer.timeout.connect(self.auto_save)
         timer.start(self.autosave_interval)  # autosave interval in milliseconds
-
-    def keyPressEvent(self, event):
-        key = event.key()
-        if key == Qt.Key_Q:
-            self.close()
-        elif key == Qt.Key_H:
-            if self.image_displayed:
-                if not self.hideBox.isChecked():
-                    self.hideBox.setChecked(True)
-                elif self.hideBox.isChecked():
-                    self.hideBox.setChecked(False)
-                self.hideBox.setChecked(self.hideBox.isChecked())
-        elif key == Qt.Key_J:
-            if self.image_displayed:
-                currentFrame = self.slider.value()
-                self.slider.setValue(currentFrame + 1)
-                QApplication.processEvents()
-                time.sleep(0.1)
-                self.slider.setValue(currentFrame)
-                QApplication.processEvents()
-                time.sleep(0.1)
-                self.slider.setValue(currentFrame - 1)
-                QApplication.processEvents()
-                time.sleep(0.1)
-                self.slider.setValue(currentFrame)
-                QApplication.processEvents()
-        elif key == Qt.Key_W or key == Qt.Key_Up:
-            self.slider.next_gated_frame()
-        elif key == Qt.Key_S or key == Qt.Key_Down:
-            self.slider.last_gated_frame()
-        elif key == Qt.Key_D or key == Qt.Key_Right:
-            self.slider.setValue(self.slider.value() + 1)
-        elif key == Qt.Key_A or key == Qt.Key_Left:
-            self.slider.setValue(self.slider.value() - 1)
-        elif key == Qt.Key_E:
-            if self.image_displayed:
-                self.display.new_contour(self)  # start new manual Lumen contour
-                self.hideBox.setChecked(False)
-                self.contours_drawn = True
-        if event.key() == Qt.Key.Key_R:
-            # Reset window level and window width to initial values
-            self.display.window_level = self.display.initial_window_level
-            self.display.window_width = self.display.initial_window_width
-            self.display.displayImage(update_image=True)
-        elif event.key() == Qt.Key.Key_C:
-            # Toggle colormap
-            self.colormap_enabled = not self.colormap_enabled
-            self.display.displayImage(update_image=True)
 
     def closeEvent(self, event):
         """Tasks to be performed before actually closing the program"""
@@ -281,29 +228,29 @@ class Master(QMainWindow):
     def save_before_close(self):
         """Save contours, etc before closing program or reading new DICOM file"""
         self.status_bar.showMessage('Saving contours and NIfTi files...')
-        writeContours(self)
+        write_contours(self)
         save_as_nifti(self)
         self.status_bar.showMessage('Waiting for user input')
 
     def play(self):
         """Plays all frames until end of pullback starting from currently selected frame"""
-        start_frame = self.slider.value()
+        start_frame = self.display_slider.value()
 
         if self.paused:
             self.paused = False
-            self.playButton.setIcon(self.pauseIcon)
+            self.play_button.setIcon(self.pause_icon)
         else:
             self.paused = True
-            self.playButton.setIcon(self.playIcon)
+            self.play_button.setIcon(self.play_icon)
 
         for frame in range(start_frame, self.metadata['number_of_frames']):
             if not self.paused:
-                self.slider.setValue(frame)
+                self.display_slider.setValue(frame)
                 QApplication.processEvents()
                 time.sleep(0.05)
-                self.text.setText("Frame {}".format(frame + 1))
+                self.frame_number_label.setText("Frame {}".format(frame + 1))
 
-        self.playButton.setIcon(self.playIcon)
+        self.play_button.setIcon(self.play_icon)
 
     def gate(self):
         """Extract end diastolic frames and stores in new variable"""
@@ -319,69 +266,69 @@ class Master(QMainWindow):
             return
 
         if self.gated_frames is not None:
-            self.slider.addGatedFrames(self.gated_frames)
-            self.useDiastolicButton.setChecked(True)
+            self.display_slider.addGatedFrames(self.gated_frames)
+            self.use_diastolic_button.setChecked(True)
         else:
             warning = QErrorMessage(self)
             warning.setWindowModality(Qt.WindowModal)
             warning.showMessage("Diastolic/Systolic frame extraction was unsuccessful")
             warning.exec_()
 
-    def autoSave(self):
+    def auto_save(self):
         """Automatically saves contours to a temporary file every autoSaveInterval seconds"""
         if self.image_displayed:
-            writeContours(self)
+            write_contours(self)
 
-    def changeValue(self, value):
-        self.comms.updateBW.emit(value)
+    def change_value(self, value):
+        self.display_frame_comms.updateBW.emit(value)
         self.display.run()
-        self.text.setText("Frame {}".format(value + 1))
+        self.frame_number_label.setText("Frame {}".format(value + 1))
         try:
             if self.data['plaque_frames'][value] == '1':
-                self.plaqueFrameBox.setChecked(True)
+                self.plaque_frame_box.setChecked(True)
             else:
-                self.plaqueFrameBox.setChecked(False)
+                self.plaque_frame_box.setChecked(False)
         except IndexError:
             pass
 
         try:
             if value in self.gated_frames_dia:
-                self.diastolicFrameBox.setChecked(True)
+                self.diastolic_frame_box.setChecked(True)
             else:
-                self.diastolicFrameBox.setChecked(False)
+                self.diastolic_frame_box.setChecked(False)
                 if value in self.gated_frames_sys:
-                    self.systolicFrameBox.setChecked(True)
+                    self.systolic_frame_box.setChecked(True)
                 else:
-                    self.systolicFrameBox.setChecked(False)
+                    self.systolic_frame_box.setChecked(False)
         except AttributeError:
             pass
 
-    def changeState(self, value):
-        self.comms.updateBool.emit(value)
+    def change_state(self, value):
+        self.display_frame_comms.updateBool.emit(value)
         self.display.run()
 
-    def useDiastolic(self):
+    def use_diastolic(self):
         if self.image_displayed:
-            if self.useDiastolicButton.isChecked():
-                self.useDiastolicButton.setText('Diastolic Frames')
-                self.useDiastolicButton.setStyleSheet(f'background-color: rgb{self.diastole_color}')
+            if self.use_diastolic_button.isChecked():
+                self.use_diastolic_button.setText('Diastolic Frames')
+                self.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.diastole_color}')
                 self.gated_frames = self.gated_frames_dia
             else:
-                self.useDiastolicButton.setText('Systolic Frames')
-                self.useDiastolicButton.setStyleSheet(f'background-color: rgb{self.systole_color}')
+                self.use_diastolic_button.setText('Systolic Frames')
+                self.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.systole_color}')
                 self.gated_frames = self.gated_frames_sys
 
-            self.slider.addGatedFrames(self.gated_frames)
+            self.display_slider.addGatedFrames(self.gated_frames)
 
-    def toggleDiastolicFrame(self, state_true):
+    def toggle_diastolic_frame(self, state_true):
         if self.image_displayed:
-            frame = self.slider.value()
+            frame = self.display_slider.value()
             if state_true:
                 if frame not in self.gated_frames_dia:
                     bisect.insort_left(self.gated_frames_dia, frame)
                     self.data['phases'][frame] = 'D'
                 try:  # frame cannot be diastolic and systolic at the same time
-                    self.systolicFrameBox.setChecked(False)
+                    self.systolic_frame_box.setChecked(False)
                 except ValueError:
                     pass
             else:
@@ -390,19 +337,19 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.slider.addGatedFrames(self.gated_frames_dia)
+            self.display_slider.addGatedFrames(self.gated_frames_dia)
 
         self.display.displayImage(update_phase=True)
 
-    def toggleSystolicFrame(self, state_true):
+    def toggle_systolic_frame(self, state_true):
         if self.image_displayed:
-            frame = self.slider.value()
+            frame = self.display_slider.value()
             if state_true:
                 if frame not in self.gated_frames_sys:
                     bisect.insort_left(self.gated_frames_sys, frame)
                     self.data['phases'][frame] = 'S'
                 try:  # frame cannot be diastolic and systolic at the same time
-                    self.diastolicFrameBox.setChecked(False)
+                    self.diastolic_frame_box.setChecked(False)
                 except ValueError:
                     pass
             else:
@@ -411,13 +358,13 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.slider.addGatedFrames(self.gated_frames_sys)    
-                    
+            self.display_slider.addGatedFrames(self.gated_frames_sys)
+
         self.display.displayImage(update_phase=True)
 
-    def togglePlaqueFrame(self, state_true):
+    def toggle_plaque_frame(self, state_true):
         if self.image_displayed:
-            frame = self.slider.value()
+            frame = self.display_slider.value()
             if state_true:
                 self.data['plaque_frames'][frame] = '1'
             else:
@@ -440,3 +387,51 @@ class Master(QMainWindow):
         success.setWindowTitle("Status")
         success.setText(task + " has been successfully completed")
         success.exec_()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Q:
+            self.close()
+        elif key == Qt.Key_H:
+            if self.image_displayed:
+                if not self.hide_contours_box.isChecked():
+                    self.hide_contours_box.setChecked(True)
+                elif self.hide_contours_box.isChecked():
+                    self.hide_contours_box.setChecked(False)
+                self.hide_contours_box.setChecked(self.hide_contours_box.isChecked())
+        elif key == Qt.Key_J:
+            if self.image_displayed:
+                current_frame = self.display_slider.value()
+                self.display_slider.setValue(current_frame + 1)
+                QApplication.processEvents()
+                time.sleep(0.1)
+                self.display_slider.setValue(current_frame)
+                QApplication.processEvents()
+                time.sleep(0.1)
+                self.display_slider.setValue(current_frame - 1)
+                QApplication.processEvents()
+                time.sleep(0.1)
+                self.display_slider.setValue(current_frame)
+                QApplication.processEvents()
+        elif key == Qt.Key_W or key == Qt.Key_Up:
+            self.display_slider.next_gated_frame()
+        elif key == Qt.Key_S or key == Qt.Key_Down:
+            self.display_slider.last_gated_frame()
+        elif key == Qt.Key_D or key == Qt.Key_Right:
+            self.display_slider.setValue(self.display_slider.value() + 1)
+        elif key == Qt.Key_A or key == Qt.Key_Left:
+            self.display_slider.setValue(self.display_slider.value() - 1)
+        elif key == Qt.Key_E:
+            if self.image_displayed:
+                self.display.new_contour(self)  # start new manual Lumen contour
+                self.hide_contours_box.setChecked(False)
+                self.contours_drawn = True
+        if event.key() == Qt.Key.Key_R:
+            # Reset window level and window width to initial values
+            self.display.window_level = self.display.initial_window_level
+            self.display.window_width = self.display.initial_window_width
+            self.display.displayImage(update_image=True)
+        elif event.key() == Qt.Key.Key_C:
+            # Toggle colormap
+            self.colormap_enabled = not self.colormap_enabled
+            self.display.displayImage(update_image=True)

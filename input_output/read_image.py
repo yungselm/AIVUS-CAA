@@ -13,10 +13,10 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from input_output.contours import readContours
+from input_output.contours import read_contours
 
 
-def readImage(main_window):
+def read_image(main_window):
     """
     Reads DICOM or NIfTi images.
 
@@ -35,7 +35,7 @@ def readImage(main_window):
         try:  # DICOM
             main_window.dicom = dcm.read_file(fileName, force=True)
             main_window.images = main_window.dicom.pixel_array
-            parseDICOM(main_window)
+            parse_dicom(main_window)
         except AttributeError:
             try:  # NIfTi
                 main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(fileName))
@@ -51,9 +51,9 @@ def readImage(main_window):
                 return None
 
         main_window.metadata['number_of_frames'] = main_window.images.shape[0]
-        main_window.slider.setMaximum(main_window.metadata['number_of_frames'] - 1)
+        main_window.display_slider.setMaximum(main_window.metadata['number_of_frames'] - 1)
 
-        success = readContours(main_window, main_window.file_name)
+        success = read_contours(main_window, main_window.file_name)
         if success:
             main_window.segmentation = True
             try:
@@ -67,7 +67,7 @@ def readImage(main_window):
                     for frame in range(main_window.metadata['number_of_frames'])
                     if main_window.data['phases'][frame] == 'S'
                 ]
-                main_window.slider.addGatedFrames(main_window.gated_frames_dia)
+                main_window.display_slider.addGatedFrames(main_window.gated_frames_dia)
             except KeyError:  # old contour files may not have phases attribute
                 pass
         else:
@@ -95,11 +95,11 @@ def readImage(main_window):
             main_window.display.setData(main_window.data['lumen'], main_window.images)
 
         main_window.image_displayed = True
-        main_window.slider.setValue(main_window.metadata['number_of_frames'] - 1)
+        main_window.display_slider.setValue(main_window.metadata['number_of_frames'] - 1)
     main_window.status_bar.showMessage('Waiting for user input')
 
 
-def parseDICOM(main_window):
+def parse_dicom(main_window):
     """Parses DICOM metadata"""
     if len(main_window.dicom.PatientName.encode('ascii')) > 0:
         patientName = main_window.dicom.PatientName.original_string.decode('utf-8')

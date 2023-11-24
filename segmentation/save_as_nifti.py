@@ -5,7 +5,7 @@ import SimpleITK as sitk
 from PyQt5.QtWidgets import QErrorMessage, QProgressDialog, QApplication
 from PyQt5.QtCore import Qt
 
-from input_output.contours import contoursToMask
+from input_output.contours import contours_to_mask
 
 
 def save_as_nifti(main_window):
@@ -29,7 +29,7 @@ def save_as_nifti(main_window):
     if frames_to_save:
         file_name = os.path.splitext(os.path.basename(main_window.file_name))[0]  # remove file extension
         os.makedirs(out_path, exist_ok=True)
-        mask = contoursToMask(main_window.images[frames_to_save], frames_to_save, main_window.data['lumen'])
+        mask = contours_to_mask(main_window.images[frames_to_save], frames_to_save, main_window.data['lumen'])
 
         progress = QProgressDialog()
         progress.setWindowFlags(Qt.Dialog)
