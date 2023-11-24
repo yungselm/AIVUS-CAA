@@ -24,7 +24,7 @@ def report(main_window):
         return
 
     contoured_frames = [
-        frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
+        frame for frame in range(main_window.metadata['num_frames']) if main_window.data['lumen'][0][frame]
     ]
     if not contoured_frames:
         warning = QErrorMessage(main_window)
@@ -33,7 +33,7 @@ def report(main_window):
         warning.exec_()
         return
 
-    longest_distances, shortest_distances, lumen_area, lumen_circumf, vector_angle, vector_length = computeAll(
+    longest_distances, shortest_distances, lumen_area, lumen_circumf, vector_angle, vector_length = compute_all(
         main_window,
         contoured_frames,
         plot=main_window.config.report.plot,
@@ -62,7 +62,7 @@ def report(main_window):
     main_window.successMessage("Write report")
 
 
-def computePolygonMetrics(main_window, polygon, frame):
+def compute_polygon_metrics(main_window, polygon, frame):
     """Computes lumen area and centroid from contour"""
     lumen_area = polygon.area * main_window.metadata['resolution'] ** 2
     lumen_circumf = polygon.length * main_window.metadata['resolution']
@@ -97,7 +97,7 @@ def centroid_center_vector(window, centroid_x, centroid_y):
     return vector_length, vector_angle
 
 
-def findLongestDistanceContour(main_window, exterior_coords, frame):
+def farthest_points(main_window, exterior_coords, frame):
     max_distance = 0
     farthest_points = None
 
@@ -122,7 +122,7 @@ def findLongestDistanceContour(main_window, exterior_coords, frame):
     return longest_distance, farthest_point_x, farthest_point_y
 
 
-def findShortestDistanceContour(main_window, polygon, frame):
+def closest_points(main_window, polygon, frame):
     centroid = polygon.centroid
     circle = Point(centroid).buffer(1)
     exterior_coords = polygon.exterior.coords[0::5]
@@ -160,7 +160,7 @@ def findShortestDistanceContour(main_window, polygon, frame):
     return shortest_distance, closest_point_x, closest_point_y
 
 
-def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
+def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
     """compute all metrics and plot if desired"""
     progress = QProgressDialog()
     progress.setWindowFlags(Qt.Dialog)
@@ -184,10 +184,10 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
     lumen_circumf = main_window.data['lumen_circumf']
     centroid_x = main_window.data['lumen_centroid'][0]
     centroid_y = main_window.data['lumen_centroid'][1]
-    vector_length = [0] * main_window.metadata['number_of_frames']
-    vector_angle = [0] * main_window.metadata['number_of_frames']
-    lumen_x = [[] for _ in range(main_window.metadata['number_of_frames'])]
-    lumen_y = [[] for _ in range(main_window.metadata['number_of_frames'])]
+    vector_length = [0] * main_window.metadata['num_frames']
+    vector_angle = [0] * main_window.metadata['num_frames']
+    lumen_x = [[] for _ in range(main_window.metadata['num_frames'])]
+    lumen_y = [[] for _ in range(main_window.metadata['num_frames'])]
 
     for frame in contoured_frames:
         if lumen_area[frame]:  # values already computed for this frame -> skip
@@ -199,13 +199,13 @@ def computeAll(main_window, contoured_frames, plot=True, save_as_csv=True):
         polygon = Polygon([(x, y) for x, y in zip(lumen_x[frame], lumen_y[frame])])
         exterior_coords = polygon.exterior.coords
 
-        lumen_area[frame], lumen_circumf[frame], centroid_x[frame], centroid_y[frame] = computePolygonMetrics(
+        lumen_area[frame], lumen_circumf[frame], centroid_x[frame], centroid_y[frame] = compute_polygon_metrics(
             main_window, polygon, frame
         )
-        longest_distance[frame], farthest_x[frame], farthest_y[frame] = findLongestDistanceContour(
+        longest_distance[frame], farthest_x[frame], farthest_y[frame] = farthest_points(
             main_window, exterior_coords, frame
         )
-        shortest_distance[frame], nearest_x[frame], nearest_y[frame] = findShortestDistanceContour(
+        shortest_distance[frame], nearest_x[frame], nearest_y[frame] = closest_points(
             main_window, polygon, frame
         )
         progress.setValue(frame)

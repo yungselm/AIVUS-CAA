@@ -15,32 +15,32 @@ class Point(QGraphicsEllipseItem):
         self.point_radius = point_radius
 
         if color == 'y':
-            self.defaultColor = QPen(Qt.yellow, self.line_thickness)
+            self.default_color = QPen(Qt.yellow, self.line_thickness)
         elif color == 'r':
-            self.defaultColor = QPen(Qt.red, self.line_thickness)
+            self.default_color = QPen(Qt.red, self.line_thickness)
         elif color == "g":
-            self.defaultColor = QPen(Qt.green, self.line_thickness)
+            self.default_color = QPen(Qt.green, self.line_thickness)
         else:
-            self.defaultColor = QPen(Qt.blue, self.line_thickness)
+            self.default_color = QPen(Qt.blue, self.line_thickness)
 
-        self.setPen(self.defaultColor)
+        self.setPen(self.default_color)
         self.setRect(
             pos[0] - self.point_radius * 0.5, pos[1] - self.point_radius * 0.5, self.point_radius, self.point_radius
         )
 
-    def getPoint(self):
+    def get_coords(self):
         try:
             return self.rect().x(), self.rect().y()
         except RuntimeError:  # Point has been deleted
             return None, None
 
-    def updateColor(self):
+    def update_color(self):
         self.setPen(QPen(Qt.transparent, self.line_thickness))
 
-    def resetColor(self):
-        self.setPen(self.defaultColor)
+    def reset_color(self):
+        self.setPen(self.default_color)
 
-    def update(self, pos):
+    def update_pos(self, pos):
         """Updates the Point position"""
 
         self.setRect(
@@ -54,9 +54,9 @@ class Spline(QGraphicsPathItem):
 
     def __init__(self, points, line_thickness=1, color=None):
         super().__init__()
-        self.knotpoints = None
+        self.knot_points = None
         self.full_contour = None
-        self.setKnotPoints(points)
+        self.set_knot_points(points)
 
         if color == 'y':
             self.setPen(QPen(Qt.yellow, line_thickness))
@@ -67,7 +67,7 @@ class Spline(QGraphicsPathItem):
         else:
             self.setPen(QPen(Qt.blue, line_thickness))
 
-    def setKnotPoints(self, points):
+    def set_knot_points(self, points):
         try:
             start_point = QPointF(points[0][0], points[1][0])
             self.path = QPainterPath(start_point)
@@ -80,7 +80,7 @@ class Spline(QGraphicsPathItem):
 
                 self.setPath(self.path)
                 self.path.closeSubpath()
-                self.knotpoints = points
+                self.knot_points = points
         except IndexError:  # no points for this frame
             logger.error(points)
             pass
@@ -104,13 +104,13 @@ class Spline(QGraphicsPathItem):
             idx: index on spline of updated point
         """
 
-        if idx == len(self.knotpoints[0]) + 1:
-            self.knotpoints[0].append(pos.x())
-            self.knotpoints[1].append(pos.y())
+        if idx == len(self.knot_points[0]) + 1:
+            self.knot_points[0].append(pos.x())
+            self.knot_points[1].append(pos.y())
         else:
-            self.knotpoints[0][idx] = pos.x()
-            self.knotpoints[1][idx] = pos.y()
-        self.full_contour = self.interpolate(self.knotpoints)
+            self.knot_points[0][idx] = pos.x()
+            self.knot_points[1][idx] = pos.y()
+        self.full_contour = self.interpolate(self.knot_points)
         for i in range(0, len(self.full_contour[0])):
             self.path.setElementPositionAt(i, self.full_contour[0][i], self.full_contour[1][i])
         self.setPath(self.path)

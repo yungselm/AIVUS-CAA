@@ -19,10 +19,10 @@ def save_as_nifti(main_window):
     out_path = f'{main_window.config.save.nifti_dir}_{main_window.config.save.save_niftis}_frames'
     if main_window.config.save.save_niftis == 'contoured':
         frames_to_save = [
-            frame for frame in range(main_window.metadata['number_of_frames']) if main_window.data['lumen'][0][frame]
+            frame for frame in range(main_window.metadata['num_frames']) if main_window.data['lumen'][0][frame]
         ]  # find frames with contours (no need to save the others)
     elif main_window.config.save.save_niftis == 'all':
-        frames_to_save = range(main_window.metadata['number_of_frames'])
+        frames_to_save = range(main_window.metadata['num_frames'])
     else:
         return  # nothing to save
 

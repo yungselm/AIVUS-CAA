@@ -24,17 +24,15 @@ class Slider(QSlider):
         self.setRange(0, 0)
         self.setValue(0)
         self.setFocusPolicy(Qt.StrongFocus)
-        sizePolicy = QSizePolicy()
-        sizePolicy.setHorizontalPolicy(QSizePolicy.Fixed)
-        sizePolicy.setVerticalPolicy(QSizePolicy.Fixed)
-        self.setSizePolicy(sizePolicy)
+        size_policy = QSizePolicy()
+        size_policy.setHorizontalPolicy(QSizePolicy.Fixed)
+        size_policy.setVerticalPolicy(QSizePolicy.Fixed)
+        self.setSizePolicy(size_policy)
         self.setMinimumSize(QSize(400, 25))
         self.setMaximumSize(QSize(1000, 25))
-        self.gatedFrames = []
+        self.gated_frames = []
 
     def keyPressEvent(self, event):
-        """Key events."""
-
         key = event.key()
         if key == Qt.Key_Right or key == Qt.Key_D:
             self.setValue(self.value() + 1)
@@ -58,12 +56,12 @@ class Slider(QSlider):
             QApplication.processEvents()
 
     def next_gated_frame(self):
-        if self.gatedFrames:
-            currentGatedFrame = self.findFrame(self.value())
-            if self.value() >= self.gatedFrames[currentGatedFrame]:
-                currentGatedFrame = currentGatedFrame + 1
+        if self.gated_frames:
+            current_gated_frame = self.find_frame(self.value())
+            if self.value() >= self.gated_frames[current_gated_frame]:
+                current_gated_frame = current_gated_frame + 1
             try:
-                self.setValue(self.gatedFrames[currentGatedFrame])
+                self.setValue(self.gated_frames[current_gated_frame])
             except IndexError:
                 pass
         else:
@@ -72,24 +70,23 @@ class Slider(QSlider):
             except IndexError:
                 pass
     def last_gated_frame(self):
-        if self.gatedFrames:
-            currentGatedFrame = self.findFrame(self.value())
-            if self.value() <= self.gatedFrames[currentGatedFrame]:
-                currentGatedFrame = currentGatedFrame - 1
-            if currentGatedFrame < 0:
-                currentGatedFrame = 0
-            self.setValue(self.gatedFrames[currentGatedFrame])
+        if self.gated_frames:
+            current_gated_frame = self.find_frame(self.value())
+            if self.value() <= self.gated_frames[current_gated_frame]:
+                current_gated_frame = current_gated_frame - 1
+            if current_gated_frame < 0:
+                current_gated_frame = 0
+            self.setValue(self.gated_frames[current_gated_frame])
         else:
             self.setValue(self.value() - 1)
 
-    def findFrame(self, currentFrame):
+    def find_frame(self, current_frame):
         """Find the closest gated frame"""
-        gated_frames = np.asarray(self.gatedFrames)
-        closest_gated_frame = np.argmin(np.abs(gated_frames - currentFrame))
+        gated_frames = np.asarray(self.gated_frames)
+        closest_gated_frame = np.argmin(np.abs(gated_frames - current_frame))
 
         return closest_gated_frame
 
-    def addGatedFrames(self, gatedFrames):
+    def set_gated_frames(self, gated_frames):
         """Stores the gated frames."""
-
-        self.gatedFrames = gatedFrames
+        self.gated_frames = gated_frames

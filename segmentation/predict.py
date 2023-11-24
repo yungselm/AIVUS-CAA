@@ -31,14 +31,14 @@ class Predict:
         custom_objects = {'BinaryCrossentropy': tf.keras.losses.BinaryCrossentropy}
         model = tf.keras.models.load_model(self.model_file, custom_objects=custom_objects, compile=False)
         mask = np.zeros_like(self.images)
-        number_of_frames = self.images.shape[0]
+        num_frames = self.images.shape[0]
 
         if self.conserve_memory:
             progress = QProgressDialog(self.main_window)
             progress.setWindowFlags(Qt.Dialog)
             progress.setModal(True)
             progress.setMinimum(0)
-            progress.setMaximum(number_of_frames)
+            progress.setMaximum(num_frames)
             progress.resize(500, 100)
             progress.setValue(0)
             progress.setValue(1)
@@ -46,7 +46,7 @@ class Predict:
             progress.setWindowTitle("Segmenting frames...")
             progress.show()
 
-            for frame in range(0, number_of_frames, self.batch_size):
+            for frame in range(0, num_frames, self.batch_size):
                 progress.setValue(frame)
                 # calling model() instead of model.predict() leads to smaller memory leak
                 pred = model(self.images[frame : frame + self.batch_size, :, :], training=False)

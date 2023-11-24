@@ -1,62 +1,45 @@
-import glob
-
 import xml.etree.ElementTree as ET
-from loguru import logger
-
-from version import version_file_str
 
 
-def splitxy(points):
+def split_x_y(points):
     """Splits comma separated points into separate x and y lists"""
 
-    pointsX = []
-    pointsY = []
+    points_x = []
+    points_y = []
     for i in range(0, len(points)):
-        pointsX.append(map(lambda x: int(x.split(',')[0]), points[i]))
-        pointsY.append(map(lambda x: int(x.split(',')[1]), points[i]))
+        points_x.append(map(lambda x: int(x.split(',')[0]), points[i]))
+        points_y.append(map(lambda x: int(x.split(',')[1]), points[i]))
 
-    return pointsX, pointsY
+    return points_x, points_y
 
 
 def read(path, frames=[]):
-    """Reads xml file from the specified path.
-
-    Args:
-        path: str, path to the .xml file (must be in echoplaque format)
-        frames: list, frames that should be included, if empty all are included
-    Returns:
-        (Lx, Ly): tuple, x and y lumen contours
-        (Vx, Vy): tuple, x and y plaque contours
-        [xres, yres]: list, x and y pixel spacing
-        framelist: list, frames with contours
-    """
-
     tree = ET.parse(path)  # current version
     root = tree.getroot()
     root.attrib
     lumen_points = []
-    framelist = []
+    frame_list = []
     plaque_frames = []
     phases = []
     lumen = {}
 
     for child in root:
-        for imageState in child.iter('ImageState'):
-            xdim = imageState.find('Xdim').text
-            ydim = imageState.find('Ydim').text
-            zdim = imageState.find('NumberOfFrames').text
+        for image_state in child.iter('ImageState'):
+            dim_x = image_state.find('Xdim').text
+            dim_y = image_state.find('Ydim').text
+            dim_z = image_state.find('NumberOfFrames').text
             if not frames:
-                frames = range(int(zdim))
+                frames = range(int(dim_z))
 
-        for imageCalibration in child.iter('ImageCalibration'):
-            xres = imageCalibration.find('XCalibration').text
-            yres = imageCalibration.find('YCalibration').text
+        for image_calibration in child.iter('ImageCalibration'):
+            res_x = image_calibration.find('XCalibration').text
+            res_y = image_calibration.find('YCalibration').text
 
         for _ in child.iter('FrameState'):
             for frame in child.iter('Fm'):
-                frameNo = int(frame.find('Num').text)
+                frame_number = int(frame.find('Num').text)
                 lumen_subpoints = []
-                if frameNo in frames:
+                if frame_number in frames:
                     try:
                         plaque_frames.append(frame.find('Plaque').text)
                     except AttributeError:  # old contour files may not have plaque attribute
@@ -68,7 +51,7 @@ def read(path, frames=[]):
                         phase = '-'
                     phases.append(phase)
                     for pts in frame.iter('Ctr'):
-                        framelist.append(frameNo)
+                        frame_list.append(frame_number)
                         for child in pts:
                             if child.tag == 'Type':
                                 if child.text == 'L':
@@ -78,11 +61,11 @@ def read(path, frames=[]):
                                 if contour == 'L':
                                     lumen_subpoints.append(child.text)
                     lumen_points.append(lumen_subpoints)
-                    lumen[frameNo] = lumen_subpoints
+                    lumen[frame_number] = lumen_subpoints
 
-    Lx, Ly = splitxy(lumen_points)
+    Lx, Ly = split_x_y(lumen_points)
 
     # return unique frames as we have entry for each inner and outer contour
-    framelist = list(sorted(set(map(int, framelist))))
+    frame_list = list(sorted(set(map(int, frame_list))))
 
-    return (Lx, Ly), [xres, yres], [xdim, ydim, zdim], plaque_frames, phases
+    return (Lx, Ly), [res_x, res_y], [dim_x, dim_y, dim_z], plaque_frames, phases

@@ -26,19 +26,19 @@ def read_image(main_window):
     main_window.status_bar.showMessage('Reading image file...')
     options = QFileDialog.Options()
     options = QFileDialog.DontUseNativeDialog
-    fileName, _ = QFileDialog.getOpenFileName(
+    file_name, _ = QFileDialog.getOpenFileName(
         main_window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
     )
 
-    if fileName:
-        main_window.file_name = os.path.splitext(fileName)[0]  # remove file extension
+    if file_name:
+        main_window.file_name = os.path.splitext(file_name)[0]  # remove file extension
         try:  # DICOM
-            main_window.dicom = dcm.read_file(fileName, force=True)
+            main_window.dicom = dcm.read_file(file_name, force=True)
             main_window.images = main_window.dicom.pixel_array
             parse_dicom(main_window)
         except AttributeError:
             try:  # NIfTi
-                main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(fileName))
+                main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(file_name))
                 main_window.file_name = main_window.file_name.split('_')[0]  # remove _img.nii suffix
             except:
                 error = QMessageBox()
@@ -50,8 +50,8 @@ def read_image(main_window):
                 error.exec_()
                 return None
 
-        main_window.metadata['number_of_frames'] = main_window.images.shape[0]
-        main_window.display_slider.setMaximum(main_window.metadata['number_of_frames'] - 1)
+        main_window.metadata['num_frames'] = main_window.images.shape[0]
+        main_window.display_slider.setMaximum(main_window.metadata['num_frames'] - 1)
 
         success = read_contours(main_window, main_window.file_name)
         if success:
@@ -59,27 +59,27 @@ def read_image(main_window):
             try:
                 main_window.gated_frames_dia = [
                     frame
-                    for frame in range(main_window.metadata['number_of_frames'])
+                    for frame in range(main_window.metadata['num_frames'])
                     if main_window.data['phases'][frame] == 'D'
                 ]
                 main_window.gated_frames_sys = [
                     frame
-                    for frame in range(main_window.metadata['number_of_frames'])
+                    for frame in range(main_window.metadata['num_frames'])
                     if main_window.data['phases'][frame] == 'S'
                 ]
-                main_window.display_slider.addGatedFrames(main_window.gated_frames_dia)
+                main_window.display_slider.set_gated_frames(main_window.gated_frames_dia)
             except KeyError:  # old contour files may not have phases attribute
                 pass
         else:
-            main_window.data['plaque_frames'] = ['0'] * main_window.metadata['number_of_frames']
-            main_window.data['phases'] = ['-'] * main_window.metadata['number_of_frames']
+            main_window.data['plaque_frames'] = ['0'] * main_window.metadata['num_frames']
+            main_window.data['phases'] = ['-'] * main_window.metadata['num_frames']
 
             (
                 main_window.data['lumen_area'],
                 main_window.data['lumen_circumf'],
                 main_window.data['longest_distance'],
                 main_window.data['shortest_distance'],
-            ) = [[0] * main_window.metadata['number_of_frames'] for _ in range(4)]
+            ) = [[0] * main_window.metadata['num_frames'] for _ in range(4)]
             (  # initialise empty containers
                 main_window.data['lumen_centroid'],
                 main_window.data['farthest_point'],
@@ -87,59 +87,59 @@ def read_image(main_window):
                 main_window.data['lumen'],
             ) = [
                 (
-                    [[] for _ in range(main_window.metadata['number_of_frames'])],
-                    [[] for _ in range(main_window.metadata['number_of_frames'])],
+                    [[] for _ in range(main_window.metadata['num_frames'])],
+                    [[] for _ in range(main_window.metadata['num_frames'])],
                 )
                 for _ in range(4)
             ]
-            main_window.display.setData(main_window.data['lumen'], main_window.images)
+            main_window.display.set_data(main_window.data['lumen'], main_window.images)
 
         main_window.image_displayed = True
-        main_window.display_slider.setValue(main_window.metadata['number_of_frames'] - 1)
+        main_window.display_slider.setValue(main_window.metadata['num_frames'] - 1)
     main_window.status_bar.showMessage('Waiting for user input')
 
 
 def parse_dicom(main_window):
     """Parses DICOM metadata"""
     if len(main_window.dicom.PatientName.encode('ascii')) > 0:
-        patientName = main_window.dicom.PatientName.original_string.decode('utf-8')
+        patient_name = main_window.dicom.PatientName.original_string.decode('utf-8')
     else:
-        patientName = 'Unknown'
+        patient_name = 'Unknown'
 
     if len(main_window.dicom.PatientBirthDate) > 0:
-        patientBirthDate = main_window.dicom.PatientBirthDate
+        birth_date = main_window.dicom.PatientBirthDate
     else:
-        patientBirthDate = 'Unknown'
+        birth_date = 'Unknown'
 
     if len(main_window.dicom.PatientSex) > 0:
-        patientSex = main_window.dicom.PatientSex
+        sex = main_window.dicom.PatientSex
     else:
-        patientSex = 'Unknown'
+        sex = 'Unknown'
 
     if main_window.dicom.get('IVUSPullbackRate'):
-        ivusPullbackRate = float(main_window.dicom.IVUSPullbackRate)
+        pullback_rate = float(main_window.dicom.IVUSPullbackRate)
     # check Boston private tag
     elif main_window.dicom.get(0x000B1001):
-        ivusPullbackRate = float(main_window.dicom[0x000B1001].value)
+        pullback_rate = float(main_window.dicom[0x000B1001].value)
     else:
-        ivusPullbackRate, _ = QInputDialog.getText(
+        pullback_rate, _ = QInputDialog.getText(
             main_window,
             "Pullback Speed",
             "No pullback speed found, please enter pullback speeed (mm/s)",
             QLineEdit.Normal,
             "0.5",
         )
-        ivusPullbackRate = float(ivusPullbackRate)
+        pullback_rate = float(pullback_rate)
 
     if main_window.dicom.get('FrameTimeVector'):
-        frameTimeVector = main_window.dicom.get('FrameTimeVector')
-        frameTimeVector = [float(frame) for frame in frameTimeVector]
-        pullbackTime = np.cumsum(frameTimeVector) / 1000  # assume in ms
-        pullbackLength = pullbackTime * float(ivusPullbackRate)
+        frame_time_vector = main_window.dicom.get('FrameTimeVector')
+        frame_time_vector = [float(frame) for frame in frame_time_vector]
+        pullback_time = np.cumsum(frame_time_vector) / 1000  # assume in ms
+        pullback_length = pullback_time * float(pullback_rate)
     else:
-        pullbackLength = np.zeros((main_window.images.shape[0],))
+        pullback_length = np.zeros((main_window.images.shape[0],))
 
-    main_window.metadata['pullback_length'] = pullbackLength
+    main_window.metadata['pullback_length'] = pullback_length
 
     if main_window.dicom.get('SequenceOfUltrasoundRegions'):
         if main_window.dicom.SequenceOfUltrasoundRegions[0].PhysicalUnitsXDirection == 3:
@@ -177,10 +177,10 @@ def parse_dicom(main_window):
     else:
         model = 'Unknown'
 
-    main_window.infoTable.setItem(0, 1, QTableWidgetItem(patientName))
-    main_window.infoTable.setItem(1, 1, QTableWidgetItem(patientBirthDate))
-    main_window.infoTable.setItem(2, 1, QTableWidgetItem(patientSex))
-    main_window.infoTable.setItem(3, 1, QTableWidgetItem(str(ivusPullbackRate)))
+    main_window.infoTable.setItem(0, 1, QTableWidgetItem(patient_name))
+    main_window.infoTable.setItem(1, 1, QTableWidgetItem(birth_date))
+    main_window.infoTable.setItem(2, 1, QTableWidgetItem(sex))
+    main_window.infoTable.setItem(3, 1, QTableWidgetItem(str(pullback_rate)))
     main_window.infoTable.setItem(4, 1, QTableWidgetItem(str(main_window.metadata['resolution'])))
     main_window.infoTable.setItem(5, 1, QTableWidgetItem(str(rows)))
     main_window.infoTable.setItem(6, 1, QTableWidgetItem(manufacturer))

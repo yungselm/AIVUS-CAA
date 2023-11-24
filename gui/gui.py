@@ -27,7 +27,7 @@ from gui.slider import Slider, Communicate
 from preprocessing.preprocessing import PreProcessing
 from segmentation.predict import Predict
 from input_output.read_image import read_image
-from input_output.contours import write_contours, segment, newSpline
+from input_output.contours import write_contours, segment, new_spline
 from input_output.report import report
 from segmentation.save_as_nifti import save_as_nifti
 
@@ -139,7 +139,7 @@ class Master(QMainWindow):
         image_button.clicked.connect(lambda _: read_image(self))
         gating_button.clicked.connect(self.gate)
         segment_button.clicked.connect(lambda _: segment(self))
-        spline_button.clicked.connect(lambda _: newSpline(self))
+        spline_button.clicked.connect(lambda _: new_spline(self))
         write_button.clicked.connect(lambda _: write_contours(self))
         report_button.clicked.connect(lambda _: report(self))
 
@@ -182,8 +182,8 @@ class Master(QMainWindow):
 
         self.display = Display(self, self.config)
         self.display_frame_comms = Communicate()
-        self.display_frame_comms.updateBW[int].connect(self.display.setFrame)
-        self.display_frame_comms.updateBool[bool].connect(self.display.setDisplay)
+        self.display_frame_comms.updateBW[int].connect(self.display.set_frame)
+        self.display_frame_comms.updateBool[bool].connect(self.display.set_display)
 
         self.frame_number_label = QLabel()
         self.frame_number_label.setAlignment(Qt.AlignCenter)
@@ -243,7 +243,7 @@ class Master(QMainWindow):
             self.paused = True
             self.play_button.setIcon(self.play_icon)
 
-        for frame in range(start_frame, self.metadata['number_of_frames']):
+        for frame in range(start_frame, self.metadata['num_frames']):
             if not self.paused:
                 self.display_slider.setValue(frame)
                 QApplication.processEvents()
@@ -266,7 +266,7 @@ class Master(QMainWindow):
             return
 
         if self.gated_frames is not None:
-            self.display_slider.addGatedFrames(self.gated_frames)
+            self.display_slider.set_gated_frames(self.gated_frames)
             self.use_diastolic_button.setChecked(True)
         else:
             warning = QErrorMessage(self)
@@ -318,7 +318,7 @@ class Master(QMainWindow):
                 self.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.systole_color}')
                 self.gated_frames = self.gated_frames_sys
 
-            self.display_slider.addGatedFrames(self.gated_frames)
+            self.display_slider.set_gated_frames(self.gated_frames)
 
     def toggle_diastolic_frame(self, state_true):
         if self.image_displayed:
@@ -337,9 +337,9 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.display_slider.addGatedFrames(self.gated_frames_dia)
+            self.display_slider.set_gated_frames(self.gated_frames_dia)
 
-        self.display.displayImage(update_phase=True)
+        self.display.display_image(update_phase=True)
 
     def toggle_systolic_frame(self, state_true):
         if self.image_displayed:
@@ -358,9 +358,9 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.display_slider.addGatedFrames(self.gated_frames_sys)
+            self.display_slider.set_gated_frames(self.gated_frames_sys)
 
-        self.display.displayImage(update_phase=True)
+        self.display.display_image(update_phase=True)
 
     def toggle_plaque_frame(self, state_true):
         if self.image_displayed:
@@ -430,8 +430,8 @@ class Master(QMainWindow):
             # Reset window level and window width to initial values
             self.display.window_level = self.display.initial_window_level
             self.display.window_width = self.display.initial_window_width
-            self.display.displayImage(update_image=True)
+            self.display.display_image(update_image=True)
         elif event.key() == Qt.Key.Key_C:
             # Toggle colormap
             self.colormap_enabled = not self.colormap_enabled
-            self.display.displayImage(update_image=True)
+            self.display.display_image(update_image=True)

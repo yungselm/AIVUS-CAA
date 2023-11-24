@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPixmap, QImage, QColor, QFont
 from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
-from input_output.report import computePolygonMetrics, findLongestDistanceContour, findShortestDistanceContour
+from input_output.report import compute_polygon_metrics, farthest_points, closest_points
 from input_output.contours import downsample
 
 class Display(QGraphicsView):
@@ -41,9 +41,9 @@ class Display(QGraphicsView):
         self.hide_contours = True
         self.lumen_spline = None  # entire contour (not only knotpoints), needed for elliptic ratio
         self.draw = False
-        self.drawPoints = []
-        self.splineDrawn = False
-        self.newSpline = None
+        self.points_to_draw = []
+        self.spline_drawn = False
+        self.new_spline = None
         self.enable_drag = True
         self.active_point = None
         self.lumen_points = []
@@ -58,7 +58,7 @@ class Display(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.image = QGraphicsPixmapItem(QPixmap(self.image_size, self.image_size))
-        self.text = None
+        self.frame_metrics_text = None
         self.graphics_scene.addItem(self.image)
         self.setScene(self.graphics_scene)
 
@@ -66,7 +66,7 @@ class Display(QGraphicsView):
         if event.buttons() == Qt.MouseButton.LeftButton:
             if self.draw:
                 pos = self.mapToScene(event.pos())
-                self.addManualSpline(pos)
+                self.add_manual_spline(pos)
             else:
                 # identify which point has been clicked
                 items = self.items(event.pos())
@@ -76,7 +76,7 @@ class Display(QGraphicsView):
                         # Convert mouse position to item position
                         # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
                         self.point_index = self.lumen_points.index(item)
-                        item.updateColor()
+                        item.update_color()
                         self.enable_drag = True
                         self.active_point = item
 
@@ -89,7 +89,7 @@ class Display(QGraphicsView):
             if self.point_index is not None:
                 item = self.active_point
                 mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
-                new_point = item.update(mouse_position)
+                new_point = item.update_pos(mouse_position)
                 self.lumen_spline.update(new_point, self.point_index)
 
         elif event.buttons() == Qt.MouseButton.RightButton:
@@ -97,7 +97,7 @@ class Display(QGraphicsView):
             # Right-click drag for adjusting window level and window width
             self.window_level += (event.x() - self.mouse_x) * self.windowing_sensitivity
             self.window_width += (event.y() - self.mouse_y) * self.windowing_sensitivity
-            self.displayImage(update_image=True)
+            self.display_image(update_image=True)
             self.setMouseTracking(False)
 
     def mouseReleaseEvent(self, event):
@@ -105,30 +105,30 @@ class Display(QGraphicsView):
             if self.point_index is not None:
                 self.main_window.setCursor(Qt.ArrowCursor)
                 item = self.active_point
-                item.resetColor()
+                item.reset_color()
 
                 self.main_window.data['lumen'][0][self.frame] = [
-                    point / self.scaling_factor for point in self.lumen_spline.knotpoints[0]
+                    point / self.scaling_factor for point in self.lumen_spline.knot_points[0]
                 ]
                 self.main_window.data['lumen'][1][self.frame] = [
-                    point / self.scaling_factor for point in self.lumen_spline.knotpoints[1]
+                    point / self.scaling_factor for point in self.lumen_spline.knot_points[1]
                 ]
-                self.displayImage(update_splines=True)
+                self.display_image(update_splines=True)
                 self.point_index = None
 
-    def setData(self, lumen, images):
-        self.numberOfFrames = images.shape[0]
+    def set_data(self, lumen, images):
+        self.num_frames = images.shape[0]
         self.scaling_factor = self.image_size / images.shape[1]
         if (
-            lumen[0] and max([len(lumen[0][frame]) for frame in range(self.numberOfFrames)]) == 500
+            lumen[0] and max([len(lumen[0][frame]) for frame in range(self.num_frames)]) == 500
         ):  # complete contours loaded -> save downsampled version
             self.main_window.data['lumen'] = downsample(lumen)
         else:
             self.main_window.data['lumen'] = lumen
         self.images = images
-        self.displayImage(update_image=True, update_splines=True, update_phase=True)
+        self.display_image(update_image=True, update_splines=True, update_phase=True)
 
-    def displayImage(self, update_image=False, update_splines=False, update_phase=False):
+    def display_image(self, update_image=False, update_splines=False, update_phase=False):
         """Clears scene and displays current image and splines"""
         if update_image:
             [
@@ -144,20 +144,20 @@ class Display(QGraphicsView):
             upper_bound = self.window_level + self.window_width / 2
 
             # Clip and normalize pixel values
-            normalized_data = np.clip(
+            normalised_data = np.clip(
                 self.images[self.frame, :, :], lower_bound, upper_bound
             )  # clip values to be within the range
-            normalized_data = ((normalized_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
-            height, width = normalized_data.shape
+            normalised_data = ((normalised_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
+            height, width = normalised_data.shape
 
             if self.main_window.colormap_enabled:
                 # Apply an orange-blue colormap
-                colormap = cv2.applyColorMap(normalized_data, cv2.COLORMAP_JET)
+                colormap = cv2.applyColorMap(normalised_data, cv2.COLORMAP_JET)
                 q_image = QImage(colormap.data, width, height, width * 3, QImage.Format.Format_RGB888).scaled(
                     self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
             else:
-                q_image = QImage(normalized_data.data, width, height, width, QImage.Format.Format_Grayscale8).scaled(
+                q_image = QImage(normalised_data.data, width, height, width, QImage.Format.Format_Grayscale8).scaled(
                     self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
 
@@ -176,25 +176,25 @@ class Display(QGraphicsView):
         ]  # clear previous scene
         if not self.hide_contours:
             if update_splines:
-                self.addInteractiveSplines(self.main_window.data['lumen'])
+                self.draw_spline(self.main_window.data['lumen'])
                 if self.main_window.data['lumen'][0][self.frame] and self.lumen_spline.full_contour[0] is not None:
                     lumen_x = [point / self.scaling_factor for point in self.lumen_spline.full_contour[0]]
                     lumen_y = [point / self.scaling_factor for point in self.lumen_spline.full_contour[1]]
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
-                    lumen_area, lumen_circumf, _, _ = computePolygonMetrics(self.main_window, polygon, self.frame)
-                    longest_distance, _, _ = findLongestDistanceContour(
+                    lumen_area, lumen_circumf, _, _ = compute_polygon_metrics(self.main_window, polygon, self.frame)
+                    longest_distance, _, _ = farthest_points(
                         self.main_window, polygon.exterior.coords, self.frame
                     )
-                    shortest_distance, _, _ = findShortestDistanceContour(self.main_window, polygon, self.frame)
+                    shortest_distance, _, _ = closest_points(self.main_window, polygon, self.frame)
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
-                    self.text = QGraphicsTextItem(
+                    self.frame_metrics_text = QGraphicsTextItem(
                         f"Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n"
                         f"Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n"
                         f"Elliptic ratio:\t{round(elliptic_ratio, 2)}"
                     )
-                    self.text.setFont(QFont('Helvetica', int(self.image_size / 50)))
-                    self.graphics_scene.addItem(self.text)
+                    self.frame_metrics_text.setFont(QFont('Helvetica', int(self.image_size / 50)))
+                    self.graphics_scene.addItem(self.frame_metrics_text)
                     if not update_phase:
                         self.graphics_scene.addItem(self.phase_text)
             else:  # re-draw old elements to put them in foreground
@@ -224,7 +224,7 @@ class Display(QGraphicsView):
             self.phase_text.setFont(QFont('Helvetica', int(self.image_size / 50), QFont.Bold))
             self.graphics_scene.addItem(self.phase_text)
 
-    def addInteractiveSplines(self, lumen):
+    def draw_spline(self, lumen):
         """Adds lumen splines to scene"""
 
         if lumen[0][self.frame]:
@@ -234,62 +234,62 @@ class Display(QGraphicsView):
             if self.lumen_spline.full_contour[0] is not None:
                 self.lumen_points = [
                     Point(
-                        (self.lumen_spline.knotpoints[0][idx], self.lumen_spline.knotpoints[1][idx]),
+                        (self.lumen_spline.knot_points[0][idx], self.lumen_spline.knot_points[1][idx]),
                         self.point_thickness,
                         self.point_radius,
                         'g',
                     )
-                    for idx in range(len(self.lumen_spline.knotpoints[0]) - 1)
+                    for idx in range(len(self.lumen_spline.knot_points[0]) - 1)
                 ]
                 [self.graphics_scene.addItem(point) for point in self.lumen_points]
                 self.graphics_scene.addItem(self.lumen_spline)
             else:
                 logger.warning(f'Spline for frame {self.frame + 1} could not be interpolated')
 
-    def addManualSpline(self, point):
+    def add_manual_spline(self, point):
         """Creates an interactive spline manually point by point"""
 
-        if self.drawPoints:
-            start_point = self.drawPoints[0].getPoint()
+        if self.points_to_draw:
+            start_point = self.points_to_draw[0].get_coords()
         else:
-            self.splineDrawn = False
+            self.spline_drawn = False
             start_point = (point.x(), point.y())
 
         if start_point[0] is None:  # occurs when Point has been deleted during draw (e.g. by RMB click)
-            self.drawPoints = []
+            self.points_to_draw = []
             self.draw = False
             self.main_window.setCursor(Qt.ArrowCursor)
-            self.displayImage(update_splines=True)
+            self.display_image(update_splines=True)
         else:
-            self.drawPoints.append(Point((point.x(), point.y()), self.point_thickness, self.point_radius))
-            self.graphics_scene.addItem(self.drawPoints[-1])
+            self.points_to_draw.append(Point((point.x(), point.y()), self.point_thickness, self.point_radius))
+            self.graphics_scene.addItem(self.points_to_draw[-1])
 
-            if len(self.drawPoints) > 3:
-                if not self.splineDrawn:
-                    self.newSpline = Spline(
+            if len(self.points_to_draw) > 3:
+                if not self.spline_drawn:
+                    self.new_spline = Spline(
                         [
-                            [point.getPoint()[0] for point in self.drawPoints],
-                            [point.getPoint()[1] for point in self.drawPoints],
+                            [point.get_coords()[0] for point in self.points_to_draw],
+                            [point.get_coords()[1] for point in self.points_to_draw],
                         ],
                         self.spline_thickness,
                     )
-                    self.graphics_scene.addItem(self.newSpline)
-                    self.splineDrawn = True
+                    self.graphics_scene.addItem(self.new_spline)
+                    self.spline_drawn = True
                 else:
-                    self.newSpline.update(point, len(self.drawPoints))
+                    self.new_spline.update(point, len(self.points_to_draw))
 
-            if len(self.drawPoints) > 1:
+            if len(self.points_to_draw) > 1:
                 dist = math.sqrt(
-                    (point.x() - self.drawPoints[0].getPoint()[0]) ** 2
-                    + (point.y() - self.drawPoints[0].getPoint()[1]) ** 2
+                    (point.x() - self.points_to_draw[0].get_coords()[0]) ** 2
+                    + (point.y() - self.points_to_draw[0].get_coords()[1]) ** 2
                 )
 
                 if dist < 20:
                     self.draw = False
-                    self.drawPoints = []
-                    if self.newSpline is not None:
+                    self.points_to_draw = []
+                    if self.new_spline is not None:
                         downsampled = downsample(
-                            ([self.newSpline.full_contour[0].tolist()], [self.newSpline.full_contour[1].tolist()])
+                            ([self.new_spline.full_contour[0].tolist()], [self.new_spline.full_contour[1].tolist()])
                         )
                         self.main_window.data['lumen'][0][self.frame] = [
                             point / self.scaling_factor for point in downsampled[0][0]
@@ -299,24 +299,24 @@ class Display(QGraphicsView):
                         ]
 
                     self.main_window.setCursor(Qt.ArrowCursor)
-                    self.displayImage(update_splines=True)
+                    self.display_image(update_splines=True)
 
     def run(self):
-        self.displayImage(update_image=True, update_splines=True, update_phase=True)
+        self.display_image(update_image=True, update_splines=True, update_phase=True)
 
     def new_contour(self, main_window):
         self.main_window = main_window
         self.main_window.setCursor(Qt.CrossCursor)
         self.draw = True
-        self.drawPoints = []
+        self.points_to_draw = []
 
         self.main_window.data['lumen'][0][self.frame] = []
         self.main_window.data['lumen'][1][self.frame] = []
 
-        self.displayImage(update_splines=True)
+        self.display_image(update_splines=True)
 
-    def setFrame(self, value):
+    def set_frame(self, value):
         self.frame = value
 
-    def setDisplay(self, hide_contours):
+    def set_display(self, hide_contours):
         self.hide_contours = hide_contours

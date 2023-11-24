@@ -1,62 +1,8 @@
 import xml.etree.ElementTree as et
 import os
 import datetime
-import numpy as np
-import matplotlib.path as mplPath
-from loguru import logger
-from skimage import measure
 
 from version import version_file_str
-
-
-def label_contours(image):
-    """generate contours for labels"""
-    # Find contours at a constant value
-    contours = measure.find_contours(image)
-    lumen = []
-    for contour in contours:
-        lumen.append(np.array((contour[:, 0], contour[:, 1])))
-
-    return lumen
-
-
-def keep_largest_contour(contours, image_shape):
-    # this function returns the largest contour (num of points) as a numpy array
-    max_length = 0
-    keep_contour = [[], []]
-    for contour in contours:
-        if keep_valid_contour(contour, image_shape):
-            if len(contour[0]) > max_length:
-                keep_contour = [list(contour[1, :]), list(contour[0, :])]
-                max_length = len(contour[0])
-
-    return keep_contour
-
-
-def keep_valid_contour(contour, image_shape):
-    # this function check that the contour is valid if the image centroid is contained within the mask region
-    bbPath = mplPath.Path(np.transpose(contour))
-    centroid = [image_shape[0] // 2, image_shape[1] // 2]
-    return bbPath.contains_point(centroid)
-
-
-def get_contours(preds, image_shape):
-    """Extracts contours from masked images. Returns x and y coodinates"""
-    # get contours for each image
-    lumen_pred = [[], []]
-    # convert contours to x and y points
-    for frame in range(preds.shape[0]):
-        if np.any(preds[frame, :, :] == 1):
-            lumen = label_contours(preds[frame, :, :])
-            # return the contour with the largest number of points
-            keep_lumen_x, keep_lumen_y = keep_largest_contour(lumen, image_shape)
-            lumen_pred[0].append(keep_lumen_x)
-            lumen_pred[1].append(keep_lumen_y)
-        else:
-            lumen_pred[0].append([])
-            lumen_pred[1].append([])
-
-    return lumen_pred
 
 
 def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
@@ -75,97 +21,97 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
 
     num_frames = dims[0]
     root = et.Element('AnalysisState')
-    analyzedfilename = et.SubElement(root, 'AnalyzedFileName')
-    analyzedfilename.text = 'FILE0000'
-    analyzedfilenamefullpath = et.SubElement(root, 'AnalyzedFileNameFullPath')
-    analyzedfilenamefullpath.text = 'D:\CASE0000\FILE0000'
-    username = et.SubElement(root, 'UserName')
-    username.text = 'ICViewAdmin'
-    computername = et.SubElement(root, 'ComputerName')
-    computername.text = 'USER-3BF85F9281'
-    softwareversion = et.SubElement(root, 'SoftwareVersion')
-    softwareversion.text = '4.0.27'
-    screenresolution = et.SubElement(root, 'ScreenResolution')
-    screenresolution.text = '1600 x 900'
+    analysed_filename = et.SubElement(root, 'AnalyzedFileName')
+    analysed_filename.text = 'FILE0000'
+    analysed_path = et.SubElement(root, 'AnalyzedFileNameFullPath')
+    analysed_path.text = 'D:\CASE0000\FILE0000'
+    user_name = et.SubElement(root, 'UserName')
+    user_name.text = 'ICViewAdmin'
+    computer_name = et.SubElement(root, 'ComputerName')
+    computer_name.text = 'USER-3BF85F9281'
+    software_version = et.SubElement(root, 'SoftwareVersion')
+    software_version.text = '4.0.27'
+    screen_resolution = et.SubElement(root, 'ScreenResolution')
+    screen_resolution.text = '1600 x 900'
     date = et.SubElement(root, 'Date')
     date.text = datetime.datetime.now().strftime('%d%b%Y %H:%M:%S')
-    timezone = et.SubElement(root, 'TimeZone')
-    timezone.text = 'GMT-300 min'
+    time_zone = et.SubElement(root, 'TimeZone')
+    time_zone.text = 'GMT-300 min'
     demographics = et.SubElement(root, 'Demographics')
-    patientname = et.SubElement(demographics, 'PatientName')
-    patientname.text = os.path.basename(out_path)
-    patientid = et.SubElement(demographics, 'PatientID')
-    patientid.text = os.path.basename(out_path)
+    patient_name = et.SubElement(demographics, 'PatientName')
+    patient_name.text = os.path.basename(out_path)
+    patient_id = et.SubElement(demographics, 'PatientID')
+    patient_id.text = os.path.basename(out_path)
 
-    imagestate = et.SubElement(root, 'ImageState')
-    xdim = et.SubElement(imagestate, 'Xdim')
-    xdim.text = str(dims[1])
-    ydim = et.SubElement(imagestate, 'Ydim')
-    ydim.text = str(dims[2])
-    numberofframes = et.SubElement(imagestate, 'NumberOfFrames')
-    numberofframes.text = str(num_frames)
-    firstframeloaded = et.SubElement(imagestate, 'FirstFrameLoaded')
-    firstframeloaded.text = str(0)
-    lastframeloaded = et.SubElement(imagestate, 'LastFrameLoaded')
-    lastframeloaded.text = str(num_frames - 1)
-    stride = et.SubElement(imagestate, 'Stride')
+    image_state = et.SubElement(root, 'ImageState')
+    dim_x = et.SubElement(image_state, 'Xdim')
+    dim_x.text = str(dims[1])
+    dim_y = et.SubElement(image_state, 'Ydim')
+    dim_y.text = str(dims[2])
+    number_of_frames = et.SubElement(image_state, 'NumberOfFrames')
+    number_of_frames.text = str(num_frames)
+    first_frame_loaded = et.SubElement(image_state, 'FirstFrameLoaded')
+    first_frame_loaded.text = str(0)
+    last_frame_loaded = et.SubElement(image_state, 'LastFrameLoaded')
+    last_frame_loaded.text = str(num_frames - 1)
+    stride = et.SubElement(image_state, 'Stride')
     stride.text = str(1)
 
-    imagecalibration = et.SubElement(root, 'ImageCalibration')
-    xcalibration = et.SubElement(imagecalibration, 'XCalibration')
-    xcalibration.text = str(resolution)
-    ycalibration = et.SubElement(imagecalibration, 'YCalibration')
-    ycalibration.text = str(resolution)
-    acqrateinfps = et.SubElement(imagecalibration, 'AcqRateInFPS')
-    acqrateinfps.text = str(133.0)
-    pullbackspeed = et.SubElement(imagecalibration, 'PullbackSpeed')
-    pullbackspeed.text = str(speed)
+    image_calibration = et.SubElement(root, 'ImageCalibration')
+    calibration_x = et.SubElement(image_calibration, 'XCalibration')
+    calibration_x.text = str(resolution)
+    calibration_y = et.SubElement(image_calibration, 'YCalibration')
+    calibration_y.text = str(resolution)
+    acq_rate_fps = et.SubElement(image_calibration, 'AcqRateInFPS')
+    acq_rate_fps.text = str(133.0)
+    pullback_speed = et.SubElement(image_calibration, 'PullbackSpeed')
+    pullback_speed.text = str(speed)
 
-    brightnesssetting = et.SubElement(root, 'BrightnessSetting')
-    brightnesssetting.text = str(50)
-    contrastsetting = et.SubElement(root, 'ContrastSetting')
-    contrastsetting.text = str(50)
-    freestepping = et.SubElement(root, 'FreeStepping')
-    freestepping.text = 'FALSE'
-    steppinginterval = et.SubElement(root, 'SteppingInterval')
-    steppinginterval.text = str(1)
-    volumehasbeencomputed = et.SubElement(root, 'VolumeHasBeenComputed')
-    volumehasbeencomputed.text = 'FALSE'
+    brightness_setting = et.SubElement(root, 'BrightnessSetting')
+    brightness_setting.text = str(50)
+    contrast_setting = et.SubElement(root, 'ContrastSetting')
+    contrast_setting.text = str(50)
+    free_stepping = et.SubElement(root, 'FreeStepping')
+    free_stepping.text = 'FALSE'
+    stepping_interval = et.SubElement(root, 'SteppingInterval')
+    stepping_interval.text = str(1)
+    volume_computed = et.SubElement(root, 'VolumeHasBeenComputed')
+    volume_computed.text = 'FALSE'
 
-    framestate = et.SubElement(root, 'FrameState')
-    imagerelativepoints = et.SubElement(framestate, 'ImageRelativePoints')
-    imagerelativepoints.text = 'TRUE'
-    xoffset = et.SubElement(framestate, 'Xoffset')
-    xoffset.text = str(109)
-    yoffset = et.SubElement(framestate, 'Yoffset')
-    yoffset.text = str(3)
-    for frame in range(num_frames):
-        fm = et.SubElement(framestate, 'Fm')
-        num = et.SubElement(fm, 'Num')
-        num.text = str(frame)
-        plaque = et.SubElement(fm, 'Plaque')
-        phase = et.SubElement(fm, 'Phase')
+    frame_state = et.SubElement(root, 'FrameState')
+    img_rel_points = et.SubElement(frame_state, 'ImageRelativePoints')
+    img_rel_points.text = 'TRUE'
+    offset_x = et.SubElement(frame_state, 'Xoffset')
+    offset_x.text = str(109)
+    offset_y = et.SubElement(frame_state, 'Yoffset')
+    offset_y.text = str(3)
+    for frame_index in range(num_frames):
+        frame = et.SubElement(frame_state, 'Fm')
+        frame_number = et.SubElement(frame, 'Num')
+        frame_number.text = str(frame_index)
+        plaque = et.SubElement(frame, 'Plaque')
+        phase = et.SubElement(frame, 'Phase')
         try:
-            plaque.text = plaque_frames[frame]
+            plaque.text = plaque_frames[frame_index]
         except IndexError:  # old contour files may not have phases attr
             plaque.text = '0'
         try:
-            phase.text = phases[frame]
+            phase.text = phases[frame_index]
         except IndexError:  # old contour files may not have phases attr
             phase.text = '-'
 
         try:
-            ctr = et.SubElement(fm, 'Ctr')
-            npts = et.SubElement(ctr, 'Npts')
-            npts.text = str(len(x[frame]))
-            type = et.SubElement(ctr, 'Type')
+            contour = et.SubElement(frame, 'Ctr')
+            num_points = et.SubElement(contour, 'Npts')
+            num_points.text = str(len(x[frame_index]))
+            type = et.SubElement(contour, 'Type')
             type.text = 'L'
-            handdrawn = et.SubElement(ctr, 'HandDrawn')
-            handdrawn.text = 'T'
+            hand_drawn = et.SubElement(contour, 'HandDrawn')
+            hand_drawn.text = 'T'
             # iterative over the points in each contour
-            for k in range(len(x[frame])):
-                p = et.SubElement(ctr, 'p')
-                p.text = str(int(x[frame][k])) + ',' + str(int(y[frame][k]))
+            for k in range(len(x[frame_index])):
+                p = et.SubElement(contour, 'p')
+                p.text = str(int(x[frame_index][k])) + ',' + str(int(y[frame_index][k]))
         except IndexError:
             pass
 
