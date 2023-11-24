@@ -5,6 +5,7 @@
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Keyboard shortcuts](#keyboard-shortcuts)
+- [Acknowledgements](#acknowledgements)
 
 
 ## Installation
@@ -49,3 +50,6 @@ In the current state, these cannot be changed by the user (at least not without 
 - Press <kbd>H</kbd> to hide all contours
 - Press <kbd>J</kbd> to jiggle around the current frame
 - Press <kbd>Q</kbd> to close the program
+
+## Acknowledgements
+The starting point of this project was the [DeepIVUS](https://github.com/dmolony3/DeepIVUS) public repository by [David](https://github.com/dmolony3) (cloned on May 22, 2023).
