@@ -22,13 +22,15 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
 
-from gui.display import Display
+from gui.display.display import Display
 from gui.slider import Slider, Communicate
 from preprocessing.preprocessing import PreProcessing
 from segmentation.predict import Predict
+from gui.display.contours_gui import new_contour
 from input_output.read_image import read_image
-from input_output.contours import write_contours, segment, new_spline
+from input_output.contours_io import write_contours
 from input_output.report import report
+from segmentation.segment import segment
 from segmentation.save_as_nifti import save_as_nifti
 
 
@@ -139,7 +141,7 @@ class Master(QMainWindow):
         image_button.clicked.connect(lambda _: read_image(self))
         gating_button.clicked.connect(self.gate)
         segment_button.clicked.connect(lambda _: segment(self))
-        spline_button.clicked.connect(lambda _: new_spline(self))
+        spline_button.clicked.connect(lambda _: new_contour(self))
         write_button.clicked.connect(lambda _: write_contours(self))
         report_button.clicked.connect(lambda _: report(self))
 

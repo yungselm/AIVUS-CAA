@@ -1,11 +1,11 @@
 import os
 
-from loguru import logger
+import numpy as np
 import SimpleITK as sitk
+from loguru import logger
 from PyQt5.QtWidgets import QErrorMessage, QProgressDialog, QApplication
 from PyQt5.QtCore import Qt
-
-from input_output.contours import contours_to_mask
+from skimage.draw import polygon2mask
 
 
 def save_as_nifti(main_window):
@@ -69,3 +69,18 @@ def save_as_nifti(main_window):
             QApplication.processEvents()
 
         progress.close()
+
+
+def contours_to_mask(images, contoured_frames, lumen):
+    """Convert IVUS contours to numpy mask"""
+    image_shape = images.shape[1:3]
+    mask = np.zeros_like(images)
+    for i, frame in enumerate(contoured_frames):
+        try:
+            lumen_polygon = [[x, y] for x, y in zip(lumen[1][frame], lumen[0][frame])]
+            mask[i, :, :] += polygon2mask(image_shape, lumen_polygon).astype(np.uint8)
+        except ValueError:  # frame has no lumen contours
+            pass
+    mask = np.clip(mask, a_min=0, a_max=1)  # enforce correct value range
+
+    return mask

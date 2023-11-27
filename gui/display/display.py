@@ -10,22 +10,12 @@ from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
 from input_output.report import compute_polygon_metrics, farthest_points, closest_points
-from input_output.contours import downsample
+from segmentation.segment import downsample
 
 
 class Display(QGraphicsView):
-    """Displays images and contours.
-
-    Displays images and contours as well as allowing user to
-    interact and manipulate contours.
-
-    Attributes:
-        graphics_scene: QGraphicsScene, all items
-        frame: int, current frame
-        lumen: tuple, lumen contours
-        hide_contours: bool, indicates whether contours should be displayed or hidden
-        activePoint: Point, active point in spline
-        innerPoint: list, spline points for inner (lumen) contours
+    """
+    Displays images and contours and allows the user to add and manipulate contours.
     """
 
     def __init__(self, main_window, config):

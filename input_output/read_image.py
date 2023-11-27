@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from input_output.contours import read_contours
+from input_output.contours_io import read_contours
 
 
 def read_image(main_window):

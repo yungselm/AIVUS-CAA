@@ -16,7 +16,7 @@
     poetry install
 ```
 
-If you plan on using GPU acceleration for model training, make sure to install the required tools (NVIDIA toolkit, etc.) and the corresponding version of Pytorch.
+If you plan on using GPU acceleration for model training and inference, make sure to install the required tools (NVIDIA toolkit, etc.) and the corresponding version of Tensorflow.
 
 ## Functionalities
 This application is designed for IVUS images in DICOM format and offers the following functionalities:

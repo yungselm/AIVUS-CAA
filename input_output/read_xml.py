@@ -1,18 +1,6 @@
 import xml.etree.ElementTree as ET
 
 
-def split_x_y(points):
-    """Splits comma separated points into separate x and y lists"""
-
-    points_x = []
-    points_y = []
-    for i in range(0, len(points)):
-        points_x.append(map(lambda x: int(x.split(',')[0]), points[i]))
-        points_y.append(map(lambda x: int(x.split(',')[1]), points[i]))
-
-    return points_x, points_y
-
-
 def read_xml(main_window, path, frames=[]):
     tree = ET.parse(path)  # current version
     root = tree.getroot()
@@ -64,3 +52,15 @@ def read_xml(main_window, path, frames=[]):
     main_window.data['plaque_frames'] = plaque_frames
     main_window.data['phases'] = phases
     main_window.metadata['resolution'] = res_x
+
+
+def split_x_y(points):
+    """Splits comma separated points into separate x and y lists"""
+
+    points_x = []
+    points_y = []
+    for i in range(0, len(points)):
+        points_x.append(map(lambda x: int(x.split(',')[0]), points[i]))
+        points_y.append(map(lambda x: int(x.split(',')[1]), points[i]))
+
+    return points_x, points_y
