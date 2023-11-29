@@ -1,8 +1,11 @@
 import numpy as np
 import matplotlib.path as mplPath
-from PyQt5.QtWidgets import QErrorMessage
+from loguru import logger
+from PyQt5.QtWidgets import QErrorMessage, QDialog, QLineEdit
 from PyQt5.QtCore import Qt
 from skimage import measure
+
+from gui.segment_dialog import SegmentDialog
 
 
 def segment(main_window):
@@ -15,12 +18,26 @@ def segment(main_window):
         warning.exec_()
         main_window.status_bar.showMessage('Waiting for user input')
         return
+    
+    segment_dialog = SegmentDialog(main_window)
 
-    masks = main_window.predictor(main_window.images)
-    main_window.data['lumen'] = mask_to_contours(masks)
-    main_window.contours_drawn = True
-    main_window.display.set_data(main_window.data['lumen'], main_window.images)
-    main_window.hide_contours_box.setChecked(False)
+    if segment_dialog.exec_():
+        lower_limit, upper_limit = segment_dialog.getInputs()
+        lower_limit = max(0, lower_limit)
+        upper_limit = min(main_window.images.shape[0], upper_limit)
+        if lower_limit > upper_limit:
+            warning = QErrorMessage(main_window)
+            warning.setWindowModality(Qt.WindowModal)
+            warning.showMessage('Lower limit must be smaller than upper limit')
+            warning.exec_()
+            main_window.status_bar.showMessage('Waiting for user input')
+            return
+        masks = main_window.predictor(main_window.images, lower_limit, upper_limit)
+        main_window.data['lumen'] = mask_to_contours(masks)
+        main_window.contours_drawn = True
+        main_window.display.set_data(main_window.data['lumen'], main_window.images)
+        main_window.hide_contours_box.setChecked(False)
+
     main_window.status_bar.showMessage('Waiting for user input')
 
 
