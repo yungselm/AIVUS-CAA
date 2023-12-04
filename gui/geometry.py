@@ -52,8 +52,9 @@ class Point(QGraphicsEllipseItem):
 class Spline(QGraphicsPathItem):
     """Class that describes a spline"""
 
-    def __init__(self, points, line_thickness=1, color=None):
+    def __init__(self, points, n_points, line_thickness=1, color=None):
         super().__init__()
+        self.n_points = n_points
         self.knot_points = None
         self.full_contour = None
         self.set_knot_points(points)
@@ -86,13 +87,13 @@ class Spline(QGraphicsPathItem):
             pass
 
     def interpolate(self, points):
-        """Interpolates the spline points at 500 points along spline"""
+        """Interpolates the spline points at n_points points along spline"""
         points = np.array(points)
         try:
             tck, u = splprep(points, u=None, s=0.0, per=1)
         except ValueError:
             return (None, None)
-        u_new = np.linspace(u.min(), u.max(), 500)
+        u_new = np.linspace(u.min(), u.max(), self.n_points)
         x_new, y_new = splev(u_new, tck, der=0)
 
         return (x_new, y_new)

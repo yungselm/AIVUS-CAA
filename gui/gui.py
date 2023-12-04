@@ -92,14 +92,14 @@ class Master(QMainWindow):
         image_button = QPushButton('Read DICOM/NIfTi')
         gating_button = QPushButton('Extract Diastolic and Systolic Frames')
         segment_button = QPushButton('Segment')
-        spline_button = QPushButton('Manual Contour')
+        contour_button = QPushButton('Manual Contour')
         write_button = QPushButton('Write Contours')
         report_button = QPushButton('Write Report')
 
         image_button.setToolTip("Load images in .dcm format")
         gating_button.setToolTip("Extract diastolic and systolic images from pullback")
         segment_button.setToolTip("Run deep learning based segmentation of lumen")
-        spline_button.setToolTip("Manually draw new contour for lumen")
+        contour_button.setToolTip("Manually draw new contour for lumen")
         write_button.setToolTip("Manually save contours in .json file")
         report_button.setToolTip("Write report to .txt file")
 
@@ -141,7 +141,7 @@ class Master(QMainWindow):
         image_button.clicked.connect(lambda _: read_image(self))
         gating_button.clicked.connect(self.gate)
         segment_button.clicked.connect(lambda _: segment(self))
-        spline_button.clicked.connect(lambda _: new_contour(self))
+        contour_button.clicked.connect(lambda _: new_contour(self))
         write_button.clicked.connect(lambda _: write_contours(self))
         report_button.clicked.connect(lambda _: report(self))
 
@@ -205,7 +205,7 @@ class Master(QMainWindow):
         right_vbox.addWidget(image_button)
         right_vbox.addWidget(gating_button)
         right_vbox.addWidget(segment_button)
-        right_vbox.addWidget(spline_button)
+        right_vbox.addWidget(contour_button)
         right_vbox.addWidget(write_button)
         right_vbox.addWidget(report_button)
         right_upper_hbox.addWidget(self.info_table)
@@ -425,7 +425,7 @@ class Master(QMainWindow):
             self.display_slider.setValue(self.display_slider.value() - 1)
         elif key == Qt.Key_E:
             if self.image_displayed:
-                self.display.new_contour(self)  # start new manual Lumen contour
+                self.display.enter_draw_mode()  # start new manual Lumen contour
                 self.hide_contours_box.setChecked(False)
                 self.contours_drawn = True
         if event.key() == Qt.Key.Key_R:

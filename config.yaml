@@ -11,7 +11,9 @@ hydra:
 display:
   image_size: 1024
   windowing_sensitivity: 0.03  # 1 for default, below 1 for slower, above 1 for faster
-  spline_thickness: 3
+  n_interactive_points: 10
+  n_points_contour: 250
+  contour_thickness: 3
   point_thickness: 1
   point_radius: 10
 

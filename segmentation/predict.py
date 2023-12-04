@@ -1,9 +1,7 @@
-import os
-
 import numpy as np
 import tensorflow as tf
 from loguru import logger
-from PyQt5.QtWidgets import QProgressDialog, QMessageBox
+from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 
 
@@ -40,11 +38,10 @@ class Predict:
             progress.setModal(True)
             progress.setMinimum(self.lower_limit)
             progress.setMaximum(self.upper_limit)
+            progress.setMinimumDuration(1000)
             progress.resize(500, 100)
-            progress.setValue(0)
-            progress.setValue(1)
-            progress.setValue(0)  # trick to make progress bar appear
-            progress.setWindowTitle("Segmenting frames...")
+            progress.setWindowTitle('Automatic segmentation')
+            progress.setLabelText(f'Please wait, segmenting frames {self.lower_limit} to {self.upper_limit}...')
             progress.show()
 
             for frame in range(self.lower_limit, self.upper_limit, self.batch_size):
@@ -52,13 +49,15 @@ class Predict:
                 # calling model() instead of model.predict() leads to smaller memory leak
                 pred = model(self.images[frame : frame + self.batch_size, :, :], training=False)
                 mask[frame : frame + self.batch_size, :, :] = np.array(pred)[0, :, :, :, 0]
+                if progress.wasCanceled():
+                    progress.close()
+                    return None
             progress.close()
         else:
             prediction = model.predict(
                 self.images[self.lower_limit : self.upper_limit, :, :], batch_size=self.batch_size, verbose=0
             )
             mask[self.lower_limit : self.upper_limit, :, :] = np.array(prediction)[0, :, :, :, 0]
-
             self.main_window.successMessage('Automatic segmentation')
 
         return mask

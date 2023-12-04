@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.path as mplPath
 from loguru import logger
-from PyQt5.QtWidgets import QErrorMessage, QDialog, QLineEdit
+from PyQt5.QtWidgets import QErrorMessage
 from PyQt5.QtCore import Qt
 from skimage import measure
 
@@ -10,7 +10,7 @@ from gui.segment_dialog import SegmentDialog
 
 def segment(main_window):
     """Automatic segmentation of IVUS images"""
-    main_window.status_bar.showMessage('Segmenting all gated frames...')
+    main_window.status_bar.showMessage('Segmenting frames...')
     if not main_window.image_displayed:
         warning = QErrorMessage(main_window)
         warning.setWindowModality(Qt.WindowModal)
@@ -30,21 +30,22 @@ def segment(main_window):
             warning.setWindowModality(Qt.WindowModal)
             warning.showMessage('Lower limit must be smaller than upper limit')
             warning.exec_()
-            main_window.status_bar.showMessage('Waiting for user input')
+            segment(main_window)
             return
         masks = main_window.predictor(main_window.images, lower_limit, upper_limit)
-        main_window.data['lumen'] = mask_to_contours(masks)
-        main_window.contours_drawn = True
-        main_window.display.set_data(main_window.data['lumen'], main_window.images)
-        main_window.hide_contours_box.setChecked(False)
+        if masks is not None:
+            main_window.data['lumen'] = mask_to_contours(masks, main_window.config.display.n_interactive_points)
+            main_window.contours_drawn = True
+            main_window.display.set_data(main_window.data['lumen'], main_window.images)
+            main_window.hide_contours_box.setChecked(False)
 
     main_window.status_bar.showMessage('Waiting for user input')
 
 
-def mask_to_contours(masks):
+def mask_to_contours(masks, num_points):
     """Convert numpy mask to IVUS contours"""
     lumen_pred = get_contours(masks, image_shape=masks.shape[1:3])
-    lumen_pred = downsample(lumen_pred)
+    lumen_pred = downsample(lumen_pred, num_points)
 
     return lumen_pred
 
@@ -94,7 +95,7 @@ def keep_valid_contour(contour, image_shape):
     return bbPath.contains_point(centroid)
 
 
-def downsample(contours, num_points=20):
+def downsample(contours, num_points):
     """Downsamples input contour data by selecting n points from original contour"""
     num_frames = len(contours[0])
     downsampled = [[] for _ in range(num_frames)], [[] for _ in range(num_frames)]
