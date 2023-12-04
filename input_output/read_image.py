@@ -164,11 +164,11 @@ def parse_dicom(main_window):
     else:
         model = 'Unknown'
 
-    main_window.infoTable.setItem(0, 1, QTableWidgetItem(patient_name))
-    main_window.infoTable.setItem(1, 1, QTableWidgetItem(birth_date))
-    main_window.infoTable.setItem(2, 1, QTableWidgetItem(sex))
-    main_window.infoTable.setItem(3, 1, QTableWidgetItem(str(pullback_rate)))
-    main_window.infoTable.setItem(4, 1, QTableWidgetItem(str(main_window.metadata['resolution'])))
-    main_window.infoTable.setItem(5, 1, QTableWidgetItem(str(rows)))
-    main_window.infoTable.setItem(6, 1, QTableWidgetItem(manufacturer))
-    main_window.infoTable.setItem(7, 1, QTableWidgetItem((model)))
+    main_window.info_table.setItem(0, 1, QTableWidgetItem(patient_name))
+    main_window.info_table.setItem(1, 1, QTableWidgetItem(birth_date))
+    main_window.info_table.setItem(2, 1, QTableWidgetItem(sex))
+    main_window.info_table.setItem(3, 1, QTableWidgetItem(str(pullback_rate)))
+    main_window.info_table.setItem(4, 1, QTableWidgetItem(str(main_window.metadata['resolution'])))
+    main_window.info_table.setItem(5, 1, QTableWidgetItem(str(rows)))
+    main_window.info_table.setItem(6, 1, QTableWidgetItem(manufacturer))
+    main_window.info_table.setItem(7, 1, QTableWidgetItem((model)))
