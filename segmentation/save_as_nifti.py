@@ -41,7 +41,7 @@ def save_as_nifti(main_window):
         progress.setValue(0)
         progress.setValue(1)
         progress.setValue(0)  # trick to make progress bar appear
-        progress.setWindowTitle("Saving frames as NIfTi files...")
+        progress.setWindowTitle('Saving frames as NIfTi files...')
         progress.show()
 
         if main_window.config.save.save_2d:

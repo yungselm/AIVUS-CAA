@@ -16,13 +16,13 @@ class PreProcessing:
         self.signal = None 
         self.sample_signal = None 
         self.NFFT = None 
-        print("__init__ done") 
+        print('__init__ done') 
  
     def __call__(self): 
         tags_dia = self.IVUS_gating_diastole() 
         tags_sys, distance_frames = self.IVUS_gating_systole() 
         # dia, sys = self.stack_generator(tags_dia, tags_sys) 
-        print("Calling done") 
+        print('Calling done') 
         return tags_dia, tags_sys, distance_frames 
  
     def IVUS_gating_diastole(self): 
@@ -194,15 +194,15 @@ class PreProcessing:
         print(HR_between) 
         print(tags_dia) 
         # print(lower_bound_freq) 
-        # print("___") 
+        # print('___') 
         # print(upper_bound_freq) 
-        # print("___") 
+        # print('___') 
         # print(np.mean(HR_between)) 
         return tags_dia, lower_bound_freq, upper_bound_freq 
     
     def IVUS_gating_systole(self):
         """Find the maximum signal value in between two diastolic frames and use this as the systolic frame"""
-        print("IVUS_gating_systole")
+        print('IVUS_gating_systole')
         print(self.s_low)
         print(self.tags_dia)
         tags_sys = []

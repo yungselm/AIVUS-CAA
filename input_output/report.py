@@ -42,24 +42,24 @@ def report(main_window):
     if longest_distances is None or shortest_distances is None:  # report was cancelled
         return
 
-    f = open(os.path.splitext(main_window.file_name)[0] + "_report.txt", "w")
+    f = open(os.path.splitext(main_window.file_name)[0] + '_report.txt', 'w')
     f.write(
-        "Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})\tCircumf (mm)"
-        "\tLongest Distance (mm)\tShortest Distance (mm)\tElliptic Ratio\tPhase\tVector Angle\tVector length\n"
+        'Frame\tPosition (mm)\tLumen area (mm\N{SUPERSCRIPT TWO})\tCircumf (mm)'
+        '\tLongest Distance (mm)\tShortest Distance (mm)\tElliptic Ratio\tPhase\tVector Angle\tVector length\n'
     )
 
     for frame, frame in enumerate(contoured_frames):
         elliptic_ratio = longest_distances[frame] / shortest_distances[frame] if shortest_distances[frame] != 0 else 0
         f.write(
-            f"{frame+1}\t{main_window.metadata['pullback_length'][frame]:.2f}"
-            f"\t{lumen_area[frame]:.2f}\t{lumen_circumf[frame]:.2f}"
-            f"\t{longest_distances[frame]:.2f}\t{shortest_distances[frame]:.2f}"
-            f"\t{elliptic_ratio:.2f}\t{main_window.data['phases'][frame]}"
-            f"\t{vector_angle[frame]:.2f}\t{vector_length[frame]:.2f}\n"
+            f'{frame+1}\t{main_window.metadata["pullback_length"][frame]:.2f}'
+            f'\t{lumen_area[frame]:.2f}\t{lumen_circumf[frame]:.2f}'
+            f'\t{longest_distances[frame]:.2f}\t{shortest_distances[frame]:.2f}'
+            f'\t{elliptic_ratio:.2f}\t{main_window.data["phases"][frame]}'
+            f'\t{vector_angle[frame]:.2f}\t{vector_length[frame]:.2f}\n'
         )
     f.close()
 
-    main_window.successMessage("Write report")
+    main_window.successMessage('Write report')
 
 
 def compute_polygon_metrics(main_window, polygon, frame):
@@ -171,7 +171,7 @@ def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
     progress.setValue(0)
     progress.setValue(1)
     progress.setValue(0)  # trick to make progress bar appear
-    progress.setWindowTitle("Writing report...")
+    progress.setWindowTitle('Writing report...')
     progress.show()
 
     longest_distance = main_window.data['longest_distance']
@@ -272,7 +272,7 @@ def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
                 xycoords='data',
                 xytext=(10, 30),
                 textcoords='offset points',
-                arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=.2'),
             )
 
             plt.annotate(
@@ -281,7 +281,7 @@ def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
                 xycoords='data',
                 xytext=(10, -30),
                 textcoords='offset points',
-                arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=-.2"),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2'),
             )
 
             plt.annotate(
@@ -290,7 +290,7 @@ def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
                 xycoords='data',
                 xytext=(10, 0),
                 textcoords='offset points',
-                arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'),
             )
 
             plt.title(f'Frame {frame + 1}')

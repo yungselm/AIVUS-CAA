@@ -27,7 +27,7 @@ def read_image(main_window):
     options = QFileDialog.Options()
     options = QFileDialog.DontUseNativeDialog
     file_name, _ = QFileDialog.getOpenFileName(
-        main_window, "QFileDialog.getOpenFileName()", "", "All files (*)", options=options
+        main_window, 'QFileDialog.getOpenFileName()', '', 'All files (*)', options=options
     )
 
     if file_name:
@@ -43,10 +43,10 @@ def read_image(main_window):
             except:
                 error = QMessageBox()
                 error.setIcon(QMessageBox.Critical)
-                error.setWindowTitle("Error")
+                error.setWindowTitle('Error')
                 error.setModal(True)
                 error.setWindowModality(Qt.WindowModal)
-                error.setText("File is not a valid IVUS file and could not be loaded (DICOM or NIfTi supported)")
+                error.setText('File is not a valid IVUS file and could not be loaded (DICOM or NIfTi supported)')
                 error.exec_()
                 return None
 
@@ -111,10 +111,10 @@ def parse_dicom(main_window):
     else:
         pullback_rate, _ = QInputDialog.getText(
             main_window,
-            "Pullback Speed",
-            "No pullback speed found, please enter pullback speeed (mm/s)",
+            'Pullback Speed',
+            'No pullback speed found, please enter pullback speeed (mm/s)',
             QLineEdit.Normal,
-            "0.5",
+            '0.5',
         )
         pullback_rate = float(pullback_rate)
 
@@ -140,10 +140,10 @@ def parse_dicom(main_window):
     else:
         resolution, _ = QInputDialog.getText(
             main_window,
-            "Pixel Spacing",
-            "No pixel spacing info found, please enter pixel spacing (mm)",
+            'Pixel Spacing',
+            'No pixel spacing info found, please enter pixel spacing (mm)',
             QLineEdit.Normal,
-            "",
+            '',
         )
         resolution = float(resolution)
 

@@ -68,7 +68,7 @@ class Master(QMainWindow):
     def init_gui(self):
         spacing = 5
         self.setGeometry(spacing, spacing, 1200, 1200)
-        self.addToolBar("My Window")
+        self.addToolBar('My Window')
         self.showMaximized()
 
         self.status_bar = QStatusBar(self)
@@ -96,12 +96,12 @@ class Master(QMainWindow):
         write_button = QPushButton('Write Contours')
         report_button = QPushButton('Write Report')
 
-        image_button.setToolTip("Load images in .dcm format")
-        gating_button.setToolTip("Extract diastolic and systolic images from pullback")
-        segment_button.setToolTip("Run deep learning based segmentation of lumen")
-        contour_button.setToolTip("Manually draw new contour for lumen")
-        write_button.setToolTip("Manually save contours in .json file")
-        report_button.setToolTip("Write report to .txt file")
+        image_button.setToolTip('Load images in .dcm format')
+        gating_button.setToolTip('Extract diastolic and systolic images from pullback')
+        segment_button.setToolTip('Run deep learning based segmentation of lumen')
+        contour_button.setToolTip('Manually draw new contour for lumen')
+        write_button.setToolTip('Manually save contours in .json file')
+        report_button.setToolTip('Write report to .txt file')
 
         vertical_header = QHeaderView(Qt.Vertical)
         vertical_header.hide()
@@ -180,7 +180,7 @@ class Master(QMainWindow):
         self.use_diastolic_button.setCheckable(True)
         self.use_diastolic_button.setChecked(True)
         self.use_diastolic_button.clicked.connect(self.use_diastolic)
-        self.use_diastolic_button.setToolTip("Press button to switch between diastolic and systolic frames")
+        self.use_diastolic_button.setToolTip('Press button to switch between diastolic and systolic frames')
 
         self.display = Display(self, self.config)
         self.display_frame_comms = Communicate()
@@ -189,7 +189,7 @@ class Master(QMainWindow):
 
         self.frame_number_label = QLabel()
         self.frame_number_label.setAlignment(Qt.AlignCenter)
-        self.frame_number_label.setText("Frame {}".format(self.display_slider.value() + 1))
+        self.frame_number_label.setText(f'Frame {self.display_slider.value() + 1}')
 
         left_vbox.addWidget(self.display)
         left_lower_hbox.addWidget(self.play_button)
@@ -250,7 +250,7 @@ class Master(QMainWindow):
                 self.display_slider.setValue(frame)
                 QApplication.processEvents()
                 time.sleep(0.05)
-                self.frame_number_label.setText("Frame {}".format(frame + 1))
+                self.frame_number_label.setText(f'Frame {frame + 1}')
 
         self.play_button.setIcon(self.play_icon)
 
@@ -263,7 +263,7 @@ class Master(QMainWindow):
         except AttributeError:  # self.images not defined because no file was read first
             warning = QErrorMessage(self)
             warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage("Please first read a DICOM file")
+            warning.showMessage('Please first read a DICOM file')
             warning.exec_()
             return
 
@@ -273,7 +273,7 @@ class Master(QMainWindow):
         else:
             warning = QErrorMessage(self)
             warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage("Diastolic/Systolic frame extraction was unsuccessful")
+            warning.showMessage('Diastolic/Systolic frame extraction was unsuccessful')
             warning.exec_()
 
     def auto_save(self):
@@ -284,7 +284,7 @@ class Master(QMainWindow):
     def change_value(self, value):
         self.display_frame_comms.updateBW.emit(value)
         self.display.run()
-        self.frame_number_label.setText("Frame {}".format(value + 1))
+        self.frame_number_label.setText(f'Frame {value + 1}')
         try:
             if self.data['plaque_frames'][value] == '1':
                 self.plaque_frame_box.setChecked(True)
@@ -377,8 +377,8 @@ class Master(QMainWindow):
 
         warning = QMessageBox(self)
         warning.setWindowModality(Qt.WindowModal)
-        warning.setWindowTitle("Error")
-        warning.setText("Segmentation must be performed first")
+        warning.setWindowTitle('Error')
+        warning.setText('Segmentation must be performed first')
         warning.exec_()
 
     def successMessage(self, task):
@@ -386,8 +386,8 @@ class Master(QMainWindow):
 
         success = QMessageBox(self)
         success.setWindowModality(Qt.WindowModal)
-        success.setWindowTitle("Status")
-        success.setText(task + " has been successfully completed")
+        success.setWindowTitle('Status')
+        success.setText(task + ' has been successfully completed')
         success.exec_()
 
     def keyPressEvent(self, event):

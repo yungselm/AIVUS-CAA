@@ -126,9 +126,9 @@ class Display(QGraphicsView):
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
                     self.frame_metrics_text = QGraphicsTextItem(
-                        f"Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n"
-                        f"Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n"
-                        f"Elliptic ratio:\t{round(elliptic_ratio, 2)}"
+                        f'Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n'
+                        f'Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n'
+                        f'Elliptic ratio:\t{round(elliptic_ratio, 2)}'
                     )
                     self.frame_metrics_text.setFont(QFont('Helvetica', int(self.image_size / 50)))
                     self.graphics_scene.addItem(self.frame_metrics_text)

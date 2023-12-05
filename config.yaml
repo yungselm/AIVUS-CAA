@@ -30,7 +30,7 @@ save:
   save_3d: True
 
 segmentation:
-  model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/1_IVUS_.1000-0.633190274.h5'
+  model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/models/u2net_2d_MINMAX_512_best.h5'
   batch_size: 1
   conserve_memory: False  # set to True for devices with less than 32 GB RAM (increases inference times)
 

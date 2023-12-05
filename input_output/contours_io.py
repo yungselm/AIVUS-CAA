@@ -63,10 +63,10 @@ def write_contours(main_window):
     if main_window.use_xml_files:
         # reformat data for compatibility with write_xml function
         x, y = [], []
-        for i in range(main_window.metadata['num_frames']):
-            if i < len(main_window.data['lumen'][0]):
-                new_x_lumen = main_window.data['lumen'][0][i]
-                new_y_lumen = main_window.data['lumen'][1][i]
+        for frame in range(main_window.metadata['num_frames']):
+            if frame < len(main_window.data['lumen'][0]):
+                new_x_lumen = main_window.data['lumen'][0][frame]
+                new_y_lumen = main_window.data['lumen'][1][frame]
             else:
                 new_x_lumen = []
                 new_y_lumen = []
@@ -92,7 +92,7 @@ def write_contours(main_window):
 def map_to_list(contours):
     """Converts map to list"""
     x, y = contours
-    x = [list(x[i]) for i in range(0, len(x))]
-    y = [list(y[i]) for i in range(0, len(y))]
+    x = [list(x[i]) for i in range(len(x))]
+    y = [list(y[i]) for i in range(len(y))]
 
     return (x, y)
