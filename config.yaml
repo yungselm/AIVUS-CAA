@@ -24,15 +24,17 @@ report:
 save:
   autosave_interval: 10000  # in ms
   use_xml_files: False  # set True to use .xml files instead of .json to save contours, etc.
-  nifti_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
+  # nifti_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
+  nifti_dir: '/home/yungselm/Documents/niftis'
   save_niftis: 'none'  # 'contoured', 'all', 'none' (which frames to save as NIfTi)
   save_2d: False
   save_3d: True
 
 segmentation:
-  model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/models/u2net_2d_MINMAX_512_best.h5'
-  batch_size: 1
-  conserve_memory: False  # set to True for devices with less than 32 GB RAM (increases inference times)
+  # model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/models/u2net_2d_MINMAX_512_best.h5'
+  model_file: '/home/yungselm/Documents/IVUS_models/u2net_2d_MINMAX_512_best.h5'
+  batch_size: 16
+  conserve_memory: True  # set to True for devices with less than 32 GB RAM (increases inference times)
 
 filters:
   plot: True

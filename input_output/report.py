@@ -193,7 +193,7 @@ def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
         if lumen_area[frame]:  # values already computed for this frame -> skip
             continue
 
-        lumen_contour = Spline([main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]])
+        lumen_contour = Spline([main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]], n_points=main_window.config.display.n_points_contour)
         lumen_x[frame] = [point for point in lumen_contour.full_contour[0]]
         lumen_y[frame] = [point for point in lumen_contour.full_contour[1]]
         polygon = Polygon([(x, y) for x, y in zip(lumen_x[frame], lumen_y[frame])])
@@ -224,7 +224,7 @@ def compute_all(main_window, contoured_frames, plot=True, save_as_csv=True):
 
         for frame in contoured_frames:
             if not lumen_x[frame]:
-                lumen_contour = Spline([main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]])
+                lumen_contour = Spline([main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]], n_points=main_window.config.display.n_points_contour)
                 lumen_x[frame] = [point for point in lumen_contour.full_contour[0]]
                 lumen_y[frame] = [point for point in lumen_contour.full_contour[1]]
             with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
