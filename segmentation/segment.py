@@ -53,8 +53,10 @@ def mask_to_contours(masks, num_points):
 def get_contours(preds, image_shape):
     """Extracts contours from masked images. Returns x and y coodinates"""
     lumen_pred = [[], []]
+    counter = 0
     for frame in range(preds.shape[0]):
-        if np.any(preds[frame, :, :] == 1):
+        if np.sum(preds[frame, :, :]) > 0:
+            counter += 1
             lumen = label_contours(preds[frame, :, :])
             keep_lumen_x, keep_lumen_y = keep_largest_contour(lumen, image_shape)
             lumen_pred[0].append(keep_lumen_x)
@@ -62,7 +64,7 @@ def get_contours(preds, image_shape):
         else:
             lumen_pred[0].append([])
             lumen_pred[1].append([])
-
+    logger.info(f'Found contours in {counter} frames')
     return lumen_pred
 
 
