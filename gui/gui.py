@@ -24,12 +24,13 @@ from PyQt5.QtGui import QIcon
 
 from gui.display.display import Display
 from gui.slider import Slider, Communicate
-from preprocessing.preprocessing import PreProcessing
-from segmentation.predict import Predict
+from gui.shortcuts import init_shortcuts
 from gui.display.contours_gui import new_contour
 from input_output.read_image import read_image
 from input_output.contours_io import write_contours
-from input_output.report import report
+from gating.contour_based_gating import ContourBasedGating
+from report.report import report
+from segmentation.predict import Predict
 from segmentation.segment import segment
 from segmentation.save_as_nifti import save_as_nifti
 
@@ -50,6 +51,7 @@ class Master(QMainWindow):
         self.config = config
         self.autosave_interval = config.save.autosave_interval
         self.use_xml_files = config.save.use_xml_files
+        self.contour_based_gating = ContourBasedGating(self)
         self.predictor = Predict(self)
         self.image_displayed = False
         self.contours_drawn = False
@@ -64,6 +66,7 @@ class Master(QMainWindow):
         self.diastole_color = (39, 69, 219)
         self.systole_color = (209, 55, 38)
         self.init_gui()
+        init_shortcuts(self)
 
     def init_gui(self):
         spacing = 5
@@ -126,7 +129,7 @@ class Master(QMainWindow):
         self.shortcut_info.setText(
             (
                 '\n'
-                'First, load a DICOM/NIfTi file using the button below.\n'
+                'First, load a DICOM/NIfTi file using the button below or by pressing Ctrl+O.\n'
                 'If available, contours for that file will be read automatically.\n'
                 'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
                 'Press E to draw a new Lumen contour.\n'
@@ -134,22 +137,20 @@ class Master(QMainWindow):
                 'Press C to toggle color mode.\n'
                 'Press H to hide all contours.\n'
                 'Press J to jiggle around the current frame.\n'
-                'Press Q to close the program.\n'
+                'Press Ctrl+Q to close the program.\n'
             )
         )
 
         image_button.clicked.connect(lambda _: read_image(self))
-        gating_button.clicked.connect(self.gate)
+        gating_button.clicked.connect(lambda _: self.contour_based_gating())
         segment_button.clicked.connect(lambda _: segment(self))
         contour_button.clicked.connect(lambda _: new_contour(self))
         write_button.clicked.connect(lambda _: write_contours(self))
         report_button.clicked.connect(lambda _: report(self))
 
         self.play_button = QPushButton()
-        media_play = getattr(QStyle, 'SP_MediaPlay')
-        media_pause = getattr(QStyle, 'SP_MediaPause')
-        self.play_icon = self.style().standardIcon(media_play)
-        self.pause_icon = self.style().standardIcon(media_pause)
+        self.play_icon = self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay'))
+        self.pause_icon = self.style().standardIcon(getattr(QStyle, 'SP_MediaPause'))
         self.play_button.setIcon(self.play_icon)
         self.play_button.setMaximumWidth(30)
         self.play_button.clicked.connect(self.play)
@@ -254,28 +255,6 @@ class Master(QMainWindow):
 
         self.play_button.setIcon(self.play_icon)
 
-    def gate(self):
-        """Extract end diastolic frames and stores in new variable"""
-        try:
-            preprocessor = PreProcessing(self.images, self.dicom.CineRate, self.ivusPullbackRate)
-            self.gated_frames_dia, self.gated_frames_sys, self.distance_frames = preprocessor()
-            self.gated_frames = self.gated_frames_dia  # diastolic frames by default
-        except AttributeError:  # self.images not defined because no file was read first
-            warning = QErrorMessage(self)
-            warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage('Please first read a DICOM file')
-            warning.exec_()
-            return
-
-        if self.gated_frames is not None:
-            self.display_slider.set_gated_frames(self.gated_frames)
-            self.use_diastolic_button.setChecked(True)
-        else:
-            warning = QErrorMessage(self)
-            warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage('Diastolic/Systolic frame extraction was unsuccessful')
-            warning.exec_()
-
     def auto_save(self):
         """Automatically saves contours to a temporary file every autoSaveInterval seconds"""
         if self.image_displayed:
@@ -339,7 +318,8 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.display_slider.set_gated_frames(self.gated_frames_dia)
+            if self.use_diastolic_button.isChecked():
+                self.display_slider.set_gated_frames(self.gated_frames_dia)
 
         self.display.display_image(update_phase=True)
 
@@ -360,7 +340,8 @@ class Master(QMainWindow):
                     self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
-            self.display_slider.set_gated_frames(self.gated_frames_sys)
+            if not self.use_diastolic_button.isChecked():
+                self.display_slider.set_gated_frames(self.gated_frames_sys)
 
         self.display.display_image(update_phase=True)
 
@@ -392,16 +373,8 @@ class Master(QMainWindow):
 
     def keyPressEvent(self, event):
         key = event.key()
-        if key == Qt.Key_Q:
-            self.close()
-        elif key == Qt.Key_H:
-            if self.image_displayed:
-                if not self.hide_contours_box.isChecked():
-                    self.hide_contours_box.setChecked(True)
-                elif self.hide_contours_box.isChecked():
-                    self.hide_contours_box.setChecked(False)
-                self.hide_contours_box.setChecked(self.hide_contours_box.isChecked())
-        elif key == Qt.Key_J:
+        
+        if key == Qt.Key_J:
             if self.image_displayed:
                 current_frame = self.display_slider.value()
                 self.display_slider.setValue(current_frame + 1)

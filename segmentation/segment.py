@@ -18,7 +18,7 @@ def segment(main_window):
         warning.exec_()
         main_window.status_bar.showMessage('Waiting for user input')
         return
-    
+
     segment_dialog = SegmentDialog(main_window)
 
     if segment_dialog.exec_():
@@ -35,6 +35,9 @@ def segment(main_window):
         masks = main_window.predictor(main_window.images, lower_limit, upper_limit)
         if masks is not None:
             main_window.data['lumen'] = mask_to_contours(masks, main_window.config.display.n_interactive_points)
+            main_window.data['lumen_area'] = [0] * main_window.metadata[
+                'num_frames'
+            ]  # ensure all metrics are recalculated for the report
             main_window.contours_drawn = True
             main_window.display.set_data(main_window.data['lumen'], main_window.images)
             main_window.hide_contours_box.setChecked(False)

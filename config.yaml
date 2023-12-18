@@ -17,6 +17,11 @@ display:
   point_thickness: 1
   point_radius: 10
 
+gating:
+  min_window_size: 5
+  max_window_size: 15
+  step_size: 0.01
+
 report:
   plot: False
   save_as_csv: False

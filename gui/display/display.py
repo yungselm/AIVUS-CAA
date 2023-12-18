@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPixmap, QImage, QColor, QFont
 from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
-from input_output.report import compute_polygon_metrics, farthest_points, closest_points
+from report.report import compute_polygon_metrics, farthest_points, closest_points
 from segmentation.segment import downsample
 
 
@@ -60,7 +60,7 @@ class Display(QGraphicsView):
         self.scaling_factor = self.image_size / images.shape[1]
         if (
             lumen[0] and max([len(lumen[0][frame]) for frame in range(self.num_frames)]) > self.n_interactive_points
-        ):  # complete contours loaded -> save downsampled version
+        ):  # contours with higher number of knotpoints loaded -> save downsampled version
             self.main_window.data['lumen'] = downsample(lumen, self.n_interactive_points)
         else:
             self.main_window.data['lumen'] = lumen

@@ -31,7 +31,15 @@ def read_contours(main_window, file_name=None):
         logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_xml}')
         read_xml(main_window, newest_xml)
         main_window.data['lumen'] = map_to_list(main_window.data['lumen'])
-        for key in ['lumen_area', 'lumen_circumf', 'longest_distance', 'shortest_distance']:
+        for key in [
+            'lumen_area',
+            'lumen_circumf',
+            'longest_distance',
+            'shortest_distance',
+            'elliptic_ratio',
+            'vector_length',
+            'vector_angle',
+        ]:
             main_window.data[key] = [0] * main_window.metadata[
                 'num_frames'
             ]  # initialise empty containers for data not stored in xml
