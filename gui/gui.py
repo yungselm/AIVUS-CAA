@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QTableWidget,
     QTableWidgetItem,
-    QErrorMessage,
     QStatusBar,
 )
 from PyQt5.QtCore import Qt, QTimer
@@ -370,43 +369,3 @@ class Master(QMainWindow):
         success.setWindowTitle('Status')
         success.setText(task + ' has been successfully completed')
         success.exec_()
-
-    def keyPressEvent(self, event):
-        key = event.key()
-        
-        if key == Qt.Key_J:
-            if self.image_displayed:
-                current_frame = self.display_slider.value()
-                self.display_slider.setValue(current_frame + 1)
-                QApplication.processEvents()
-                time.sleep(0.1)
-                self.display_slider.setValue(current_frame)
-                QApplication.processEvents()
-                time.sleep(0.1)
-                self.display_slider.setValue(current_frame - 1)
-                QApplication.processEvents()
-                time.sleep(0.1)
-                self.display_slider.setValue(current_frame)
-                QApplication.processEvents()
-        elif key == Qt.Key_W or key == Qt.Key_Up:
-            self.display_slider.next_gated_frame()
-        elif key == Qt.Key_S or key == Qt.Key_Down:
-            self.display_slider.last_gated_frame()
-        elif key == Qt.Key_D or key == Qt.Key_Right:
-            self.display_slider.setValue(self.display_slider.value() + 1)
-        elif key == Qt.Key_A or key == Qt.Key_Left:
-            self.display_slider.setValue(self.display_slider.value() - 1)
-        elif key == Qt.Key_E:
-            if self.image_displayed:
-                self.display.enter_draw_mode()  # start new manual Lumen contour
-                self.hide_contours_box.setChecked(False)
-                self.contours_drawn = True
-        if event.key() == Qt.Key.Key_R:
-            # Reset window level and window width to initial values
-            self.display.window_level = self.display.initial_window_level
-            self.display.window_width = self.display.initial_window_width
-            self.display.display_image(update_image=True)
-        elif event.key() == Qt.Key.Key_C:
-            # Toggle colormap
-            self.colormap_enabled = not self.colormap_enabled
-            self.display.display_image(update_image=True)

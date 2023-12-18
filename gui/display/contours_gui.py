@@ -10,6 +10,6 @@ def new_contour(main_window):
         warning.exec_()
         return
 
-    main_window.display.new_contour(main_window)
+    main_window.display.start_drawing()
     main_window.hide_contours_box.setChecked(False)
     main_window.contours_drawn = True

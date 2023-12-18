@@ -243,7 +243,7 @@ class Display(QGraphicsView):
     def run(self):
         self.display_image(update_image=True, update_contours=True, update_phase=True)
 
-    def enter_draw_mode(self):
+    def start_drawing(self):
         self.main_window.setCursor(Qt.CrossCursor)
         self.draw = True
         self.points_to_draw = []
