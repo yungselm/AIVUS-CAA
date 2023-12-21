@@ -54,7 +54,8 @@ class Master(QMainWindow):
         self.predictor = Predict(self)
         self.image_displayed = False
         self.contours_drawn = False
-        self.segmentation = False
+        self.hide_contours = False
+        self.hide_special_points = False
         self.colormap_enabled = False
         self.gated_frames = []
         self.gated_frames_dia = []
@@ -173,8 +174,11 @@ class Master(QMainWindow):
         self.plaque_frame_box.stateChanged[int].connect(self.toggle_plaque_frame)
 
         self.hide_contours_box = QCheckBox('&Hide Contours')
-        self.hide_contours_box.setChecked(True)
-        self.hide_contours_box.stateChanged[int].connect(self.change_state)
+        self.hide_contours_box.setChecked(False)
+        self.hide_contours_box.stateChanged[int].connect(self.toggle_hide_contours)
+        self.hide_special_points_box = QCheckBox('Hide farthest and closest points')
+        self.hide_special_points_box.setChecked(False)
+        self.hide_special_points_box.stateChanged[int].connect(self.toggle_hide_special_points)
         self.use_diastolic_button = QPushButton('Diastolic Frames')
         self.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.diastole_color}')
         self.use_diastolic_button.setCheckable(True)
@@ -185,7 +189,6 @@ class Master(QMainWindow):
         self.display = Display(self, self.config)
         self.display_frame_comms = Communicate()
         self.display_frame_comms.updateBW[int].connect(self.display.set_frame)
-        self.display_frame_comms.updateBool[bool].connect(self.display.set_display)
 
         self.frame_number_label = QLabel()
         self.frame_number_label.setAlignment(Qt.AlignCenter)
@@ -201,6 +204,7 @@ class Master(QMainWindow):
         left_vbox.addWidget(self.frame_number_label)
 
         right_vbox.addWidget(self.hide_contours_box)
+        right_vbox.addWidget(self.hide_special_points_box)
         right_vbox.addWidget(self.use_diastolic_button)
         right_vbox.addWidget(image_button)
         right_vbox.addWidget(gating_button)
@@ -261,7 +265,7 @@ class Master(QMainWindow):
 
     def change_value(self, value):
         self.display_frame_comms.updateBW.emit(value)
-        self.display.run()
+        self.display.update_display()
         self.frame_number_label.setText(f'Frame {value + 1}')
         try:
             if self.data['plaque_frames'][value] == '1':
@@ -283,9 +287,15 @@ class Master(QMainWindow):
         except AttributeError:
             pass
 
-    def change_state(self, value):
-        self.display_frame_comms.updateBool.emit(value)
-        self.display.run()
+    def toggle_hide_contours(self, value):
+        if self.image_displayed:
+            self.hide_contours = value
+            self.display.update_display()
+
+    def toggle_hide_special_points(self, value):
+        if self.image_displayed:
+            self.hide_special_points = value
+            self.display.update_display()
 
     def use_diastolic(self):
         if self.image_displayed:

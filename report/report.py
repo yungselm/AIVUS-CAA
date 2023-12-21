@@ -59,7 +59,7 @@ def report(main_window, suppress_messages=False):
 def compute_all(main_window, contoured_frames, suppress_messages, plot=True, save_as_csv=True):
     """compute all metrics and plot if desired"""
     if not suppress_messages:
-        progress = QProgressDialog()
+        progress = QProgressDialog(main_window)
         progress.setWindowFlags(Qt.Dialog)
         progress.setModal(True)
         progress.setMinimum(0)
@@ -285,21 +285,25 @@ def farthest_points(main_window, exterior_coords, frame):
 
 
 def closest_points(main_window, polygon, frame):
-    centroid = polygon.centroid
-    circle = Point(centroid).buffer(1)
-    exterior_coords = polygon.exterior.coords[0::5]
-
+    contour = polygon.exterior.coords
+    num_points = len(contour)
     min_distance = math.inf
     closest_points = None
-    min_dist_to_centroid = polygon.exterior.distance(centroid)
 
-    for point1, point2 in combinations(exterior_coords, 2):
-        distance = math.dist(point1, point2)
-        if distance < min_distance and distance > min_dist_to_centroid * 2:
-            line = LineString([point1, point2])
-            if line.intersects(circle):
-                min_distance = distance
-                closest_points = (point1, point2)
+    index_1 = 0
+    index_2 = num_points // 2
+
+    while True:
+        distance = math.dist(contour[index_1], contour[index_2])
+        if distance < min_distance:
+            min_distance = distance
+            closest_points = (contour[index_1], contour[index_2])
+
+        index_1 += 1
+        index_2 += 1
+
+        if index_1 >= num_points // 2:
+            break
 
     shortest_distance = min_distance * main_window.metadata['resolution']
 

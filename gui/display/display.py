@@ -31,7 +31,6 @@ class Display(QGraphicsView):
         self.graphics_scene = QGraphicsScene(self)
         self.point_index = None
         self.frame = 0
-        self.hide_contours = True
         self.lumen_contour = None  # entire contour (not only knotpoints), needed for elliptic ratio
         self.draw = False
         self.points_to_draw = []
@@ -113,7 +112,7 @@ class Display(QGraphicsView):
             for item in self.graphics_scene.items()
             if isinstance(item, (Spline, Point, QGraphicsTextItem))
         ]  # clear previous scene
-        if not self.hide_contours:
+        if not self.main_window.hide_contours:
             if update_contours:
                 self.draw_contour(self.main_window.data['lumen'])
                 if self.main_window.data['lumen'][0][self.frame] and self.lumen_contour.full_contour[0] is not None:
@@ -121,8 +120,36 @@ class Display(QGraphicsView):
                     lumen_y = [point / self.scaling_factor for point in self.lumen_contour.full_contour[1]]
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
                     lumen_area, lumen_circumf, _, _ = compute_polygon_metrics(self.main_window, polygon, self.frame)
-                    longest_distance, _, _ = farthest_points(self.main_window, polygon.exterior.coords, self.frame)
-                    shortest_distance, _, _ = closest_points(self.main_window, polygon, self.frame)
+                    longest_distance, farthest_point_x, farthest_point_y = farthest_points(
+                        self.main_window, polygon.exterior.coords, self.frame
+                    )
+                    shortest_distance, closest_point_x, closest_point_y = closest_points(
+                        self.main_window, polygon, self.frame
+                    )
+                    if not self.main_window.hide_special_points:
+                        for i in range(2):  # draw farthest and closest points
+                            self.graphics_scene.addItem(
+                                Point(
+                                    (
+                                        farthest_point_x[i] * self.scaling_factor,
+                                        farthest_point_y[i] * self.scaling_factor,
+                                    ),
+                                    self.point_thickness * 2,
+                                    self.point_radius,
+                                    'r',
+                                )
+                            )
+                            self.graphics_scene.addItem(
+                                Point(
+                                    (
+                                        closest_point_x[i] * self.scaling_factor,
+                                        closest_point_y[i] * self.scaling_factor,
+                                    ),
+                                    self.point_thickness * 2,
+                                    self.point_radius,
+                                    'y',
+                                )
+                            )
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
                     self.frame_metrics_text = QGraphicsTextItem(
@@ -240,7 +267,7 @@ class Display(QGraphicsView):
                     self.main_window.setCursor(Qt.ArrowCursor)
                     self.display_image(update_contours=True)
 
-    def run(self):
+    def update_display(self):
         self.display_image(update_image=True, update_contours=True, update_phase=True)
 
     def start_drawing(self):
@@ -254,9 +281,6 @@ class Display(QGraphicsView):
 
     def set_frame(self, value):
         self.frame = value
-
-    def set_display(self, hide_contours):
-        self.hide_contours = hide_contours
 
     def mousePressEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
