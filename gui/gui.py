@@ -57,6 +57,8 @@ class Master(QMainWindow):
         self.hide_contours = False
         self.hide_special_points = False
         self.colormap_enabled = False
+        self.tmp_lumen_x = None  # for Ctrl+Z
+        self.tmp_lumen_y = None
         self.gated_frames = []
         self.gated_frames_dia = []
         self.gated_frames_sys = []
@@ -133,6 +135,7 @@ class Master(QMainWindow):
                 'If available, contours for that file will be read automatically.\n'
                 'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
                 'Press E to draw a new Lumen contour.\n'
+                'Press Delete to delete the current Lumen contour.\n'
                 'Hold the right mouse button for windowing (can be reset by pressing R).\n'
                 'Press C to toggle color mode.\n'
                 'Press H to hide all contours.\n'

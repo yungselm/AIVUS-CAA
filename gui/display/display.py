@@ -271,6 +271,11 @@ class Display(QGraphicsView):
         self.main_window.data['lumen'][1][self.frame] = []
         self.display_image(update_contours=True)
 
+    def stop_drawing(self):
+        self.draw = False
+        self.main_window.setCursor(Qt.ArrowCursor)
+        self.display_image(update_contours=True)
+
     def set_frame(self, value):
         self.frame = value
 
