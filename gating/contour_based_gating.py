@@ -6,12 +6,14 @@ from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 from scipy.signal import argrelextrema
 
+from gui.frame_range_dialog import FrameRangeDialog
 from report.report import report
 
 
 class ContourBasedGating:
     def __init__(self, main_window):
         self.main_window = main_window
+        self.intramural_threshold = main_window.config.gating.intramural_threshold
         self.min_window_size = main_window.config.gating.min_window_size
         self.max_window_size = main_window.config.gating.max_window_size
         self.step_size = main_window.config.gating.step_size
@@ -19,13 +21,26 @@ class ContourBasedGating:
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
         self.report_data = report(self.main_window, suppress_messages=True)  # compute all needed data
+        self.define_intramural_part()
         self.data_preparation()
         success = self.optimize_window_size_and_weights()
         if success:
+            self.propagate_gating()
             self.update_main_window()
             self.plot_results()
 
         self.main_window.status_bar.showMessage('Waiting for user input')
+
+    def define_intramural_part(self):
+        dialog = FrameRangeDialog(self.main_window)
+        if dialog.exec_():
+            lower_limit, upper_limit = dialog.getInputs()
+            if (
+                lower_limit == 0 and upper_limit == self.main_window.images.shape[0]
+            ):  # automatic detection of intramural part
+                mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
+
+            self.report_data = self.report_data.iloc[lower_limit:upper_limit, :]
 
     def data_preparation(self):
         self.report_data['lumen_area'] = self.report_data['lumen_area'] / self.report_data['lumen_area'].max()
@@ -51,7 +66,7 @@ class ContourBasedGating:
         signals_systole = []
         signals_diastole = []
 
-        progress = QProgressDialog()
+        progress = QProgressDialog(self.main_window)
         progress.setWindowFlags(Qt.Dialog)
         progress.setModal(True)
         progress.setMinimum(self.min_window_size)
@@ -175,7 +190,28 @@ class ContourBasedGating:
         ]
         return local_extrema_differences, local_extrema_indices, signal
 
+    def propagate_gating(self):
+        sys_mean_diff = round(np.mean(np.diff(self.systolic_indices)))
+        self.systolic_indices_plot = self.systolic_indices.copy()
+        self.systolic_indices = (
+            np.arange(0, min(self.systolic_indices), sys_mean_diff, dtype=int).tolist()
+            + self.systolic_indices
+            + np.arange(
+                max(self.systolic_indices) + sys_mean_diff, self.main_window.images.shape[0], sys_mean_diff, dtype=int
+            ).tolist()
+        )
+        dia_mean_diff = round(np.mean(np.diff(self.diastolic_indices)))
+        self.diastolic_indices_plot = self.diastolic_indices.copy()
+        self.diastolic_indices = (
+            np.arange(0, min(self.diastolic_indices), dia_mean_diff, dtype=int).tolist()
+            + self.diastolic_indices
+            + np.arange(
+                max(self.diastolic_indices) + dia_mean_diff, self.main_window.images.shape[0], dia_mean_diff, dtype=int
+            ).tolist()
+        )
+
     def update_main_window(self):
+        self.main_window.data['phases'] = ['-'] * len(self.main_window.data['phases'])  # reset phases
         for frame in self.diastolic_indices:
             self.main_window.data['phases'][frame] = 'D'
         for frame in self.systolic_indices:
@@ -198,10 +234,10 @@ class ContourBasedGating:
         ax.legend()
 
         # find frames corresponding to row in self.systolic_indices and self.diastolic_indices
-        frames_systole = self.report_data.loc[self.systolic_indices, 'frame'].tolist()
-        frames_diastole = self.report_data.loc[self.diastolic_indices, 'frame'].tolist()
-        signal_systole = [self.signal_systole[frame] for frame in self.systolic_indices]
-        signal_diastole = [self.signal_diastole[frame] for frame in self.diastolic_indices]
+        frames_systole = self.report_data.loc[self.systolic_indices_plot, 'frame'].tolist()
+        frames_diastole = self.report_data.loc[self.diastolic_indices_plot, 'frame'].tolist()
+        signal_systole = [self.signal_systole[frame] for frame in self.systolic_indices_plot]
+        signal_diastole = [self.signal_diastole[frame] for frame in self.diastolic_indices_plot]
 
         # Scatter plot for 'S' (local maxima) and 'D' (local minima)
         ax.scatter(frames_systole, signal_systole, color='red', marker='o', label='S')

@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QDialog, QLineEdit, QDialogButtonBox, QFormLayout
 
 
-class SegmentDialog(QDialog):
+class FrameRangeDialog(QDialog):
     def __init__(self, main_window):
         super().__init__(main_window)
+        self.main_window = main_window
         self.lower_limit = QLineEdit(self)
         self.lower_limit.setText('1')
         self.upper_limit = QLineEdit(self)
@@ -19,4 +20,11 @@ class SegmentDialog(QDialog):
         buttonBox.rejected.connect(self.reject)
 
     def getInputs(self):
-        return int(self.lower_limit.text()) - 1, int(self.upper_limit.text())
+        lower_limit = int(self.lower_limit.text()) - 1
+        lower_limit = max(0, lower_limit)
+        upper_limit = int(self.upper_limit.text())
+        upper_limit = min(self.main_window.images.shape[0], upper_limit)
+
+        if lower_limit >= upper_limit:
+            lower_limit, upper_limit = upper_limit, lower_limit
+        return lower_limit, upper_limit

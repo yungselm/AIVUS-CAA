@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QErrorMessage
 from PyQt5.QtCore import Qt
 from skimage import measure
 
-from gui.segment_dialog import SegmentDialog
+from gui.frame_range_dialog import FrameRangeDialog
 
 
 def segment(main_window):
@@ -19,19 +19,10 @@ def segment(main_window):
         main_window.status_bar.showMessage('Waiting for user input')
         return
 
-    segment_dialog = SegmentDialog(main_window)
+    segment_dialog = FrameRangeDialog(main_window)
 
     if segment_dialog.exec_():
         lower_limit, upper_limit = segment_dialog.getInputs()
-        lower_limit = max(0, lower_limit)
-        upper_limit = min(main_window.images.shape[0], upper_limit)
-        if lower_limit > upper_limit:
-            warning = QErrorMessage(main_window)
-            warning.setWindowModality(Qt.WindowModal)
-            warning.showMessage('Lower limit must be smaller than upper limit')
-            warning.exec_()
-            segment(main_window)
-            return
         masks = main_window.predictor(main_window.images, lower_limit, upper_limit)
         if masks is not None:
             main_window.data['lumen'] = mask_to_contours(masks, main_window.config.display.n_interactive_points)
