@@ -4,8 +4,8 @@ import numpy as np
 from loguru import logger
 import cv2
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsTextItem
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage, QColor, QFont
+from PyQt5.QtCore import Qt, QLineF
+from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
 from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
@@ -105,12 +105,12 @@ class Display(QGraphicsView):
             self.graphics_scene.addItem(self.image)
 
         old_contours = [
-            item for item in self.graphics_scene.items() if isinstance(item, (Spline, Point, QGraphicsTextItem))
+            item for item in self.graphics_scene.items() if not isinstance(item, QGraphicsPixmapItem)
         ]
         [
             self.graphics_scene.removeItem(item)
             for item in self.graphics_scene.items()
-            if isinstance(item, (Spline, Point, QGraphicsTextItem))
+            if not isinstance(item, QGraphicsPixmapItem)
         ]  # clear previous scene
         if not self.main_window.hide_contours:
             if update_contours:
@@ -127,29 +127,24 @@ class Display(QGraphicsView):
                         self.main_window, polygon, self.frame
                     )
                     if not self.main_window.hide_special_points:
-                        for i in range(2):  # draw farthest and closest points
-                            self.graphics_scene.addItem(
-                                Point(
-                                    (
-                                        farthest_point_x[i] * self.scaling_factor,
-                                        farthest_point_y[i] * self.scaling_factor,
-                                    ),
-                                    self.point_thickness * 2,
-                                    self.point_radius,
-                                    'r',
-                                )
-                            )
-                            self.graphics_scene.addItem(
-                                Point(
-                                    (
-                                        closest_point_x[i] * self.scaling_factor,
-                                        closest_point_y[i] * self.scaling_factor,
-                                    ),
-                                    self.point_thickness * 2,
-                                    self.point_radius,
-                                    'y',
-                                )
-                            )
+                        self.graphics_scene.addLine(
+                            QLineF(
+                                farthest_point_x[0] * self.scaling_factor,
+                                farthest_point_y[0] * self.scaling_factor,
+                                farthest_point_x[1] * self.scaling_factor,
+                                farthest_point_y[1] * self.scaling_factor,
+                            ),
+                            QPen(Qt.yellow, self.point_thickness * 2),
+                        )
+                        self.graphics_scene.addLine(
+                            QLineF(
+                                closest_point_x[0] * self.scaling_factor,
+                                closest_point_y[0] * self.scaling_factor,
+                                closest_point_x[1] * self.scaling_factor,
+                                closest_point_y[1] * self.scaling_factor,
+                            ),
+                            QPen(Qt.yellow, self.point_thickness * 2),
+                        )
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
                     self.frame_metrics_text = QGraphicsTextItem(

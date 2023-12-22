@@ -12,7 +12,7 @@ display:
   image_size: 1024
   windowing_sensitivity: 0.03  # 1 for default, below 1 for slower, above 1 for faster
   n_interactive_points: 10
-  n_points_contour: 250
+  n_points_contour: 500  # ideally choose a multiple of 100 (for calculation of closest points)
   contour_thickness: 3
   point_thickness: 1
   point_radius: 10
