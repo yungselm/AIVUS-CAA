@@ -57,8 +57,8 @@ class Master(QMainWindow):
         self.hide_contours = False
         self.hide_special_points = False
         self.colormap_enabled = False
-        self.tmp_lumen_x = None  # for Ctrl+Z
-        self.tmp_lumen_y = None
+        self.tmp_lumen_x = []  # for Ctrl+Z
+        self.tmp_lumen_y = []
         self.gated_frames = []
         self.gated_frames_dia = []
         self.gated_frames_sys = []

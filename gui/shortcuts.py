@@ -64,8 +64,11 @@ def delete_contour(main_window):
 
 
 def undo_delete(main_window):
-    main_window.data['lumen'][0][main_window.display.frame] = main_window.tmp_lumen_x
-    main_window.data['lumen'][1][main_window.display.frame] = main_window.tmp_lumen_y
+    if main_window.tmp_lumen_x:
+        main_window.data['lumen'][0][main_window.display.frame] = main_window.tmp_lumen_x
+        main_window.data['lumen'][1][main_window.display.frame] = main_window.tmp_lumen_y
+        main_window.tmp_lumen_x = []
+        main_window.tmp_lumen_y = []
     main_window.display.stop_drawing()
 
 
