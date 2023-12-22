@@ -104,9 +104,7 @@ class Display(QGraphicsView):
             self.image = QGraphicsPixmapItem(self.pixmap)
             self.graphics_scene.addItem(self.image)
 
-        old_contours = [
-            item for item in self.graphics_scene.items() if not isinstance(item, QGraphicsPixmapItem)
-        ]
+        old_contours = [item for item in self.graphics_scene.items() if not isinstance(item, QGraphicsPixmapItem)]
         [
             self.graphics_scene.removeItem(item)
             for item in self.graphics_scene.items()
@@ -271,7 +269,6 @@ class Display(QGraphicsView):
         self.points_to_draw = []
         self.main_window.data['lumen'][0][self.frame] = []
         self.main_window.data['lumen'][1][self.frame] = []
-
         self.display_image(update_contours=True)
 
     def set_frame(self, value):

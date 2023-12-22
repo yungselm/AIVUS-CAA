@@ -15,6 +15,7 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('H'), main_window, lambda: hide_contours(main_window))
     QShortcut(QKeySequence('J'), main_window, lambda: jiggle_frame(main_window))
     QShortcut(QKeySequence('E'), main_window, lambda: new_contour(main_window))
+    QShortcut(QKeySequence('Delete'), main_window, lambda: delete_contour(main_window))
     # Windowing
     QShortcut(QKeySequence('R'), main_window, lambda: reset_windowing(main_window))
     QShortcut(QKeySequence('C'), main_window, lambda: toggle_color(main_window))
@@ -51,6 +52,11 @@ def jiggle_frame(main_window):
         time.sleep(0.1)
         main_window.display_slider.setValue(current_frame)
         QApplication.processEvents()
+
+def delete_contour(main_window):
+        main_window.data['lumen'][0][main_window.display.frame] = []
+        main_window.data['lumen'][1][main_window.display.frame] = []
+        main_window.display.display_image(update_contours=True)
 
 
 def reset_windowing(main_window):
