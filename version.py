@@ -1,2 +1,2 @@
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 version_file_str = '_'.join(__version__.split('.'))  # version format suitable to be used in filenames
