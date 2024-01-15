@@ -6,11 +6,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from loguru import logger
-from PyQt5.QtWidgets import QErrorMessage, QProgressDialog
+from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 from shapely.geometry import Polygon
 from itertools import combinations
 
+from gui.error_message import ErrorMessage
 from gui.geometry import Spline
 
 
@@ -18,21 +19,17 @@ def report(main_window, suppress_messages=False):
     """Writes a report file containing lumen area, etc."""
 
     if not main_window.image_displayed:
-        warning = QErrorMessage(main_window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot write report before reading DICOM file')
-        warning.exec_()
-        return
+        if not suppress_messages:
+            ErrorMessage(main_window, 'Cannot write report before reading DICOM file')
+        return None
 
     contoured_frames = [
         frame for frame in range(main_window.metadata['num_frames']) if main_window.data['lumen'][0][frame]
     ]
     if not contoured_frames:
-        warning = QErrorMessage(main_window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot write report before drawing contours')
-        warning.exec_()
-        return
+        if not suppress_messages:
+            ErrorMessage(main_window, 'Cannot write report before drawing contours')
+        return None
 
     report_data = compute_all(
         main_window,

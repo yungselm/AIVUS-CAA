@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from loguru import logger
 from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 from scipy.signal import argrelextrema
 
+from gui.error_message import ErrorMessage
 from gui.frame_range_dialog import FrameRangeDialog
 from report.report import report
 
@@ -21,6 +21,11 @@ class ContourBasedGating:
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
         self.report_data = report(self.main_window, suppress_messages=True)  # compute all needed data
+        if self.report_data is None:
+            ErrorMessage(self.main_window, 'Please ensure that a DICOM file was read and contours were drawn')
+            self.main_window.status_bar.showMessage(self.main_window.waiting_status)
+            return
+
         self.define_intramural_part()
         self.data_preparation()
         success = self.optimize_window_size_and_weights()
@@ -29,7 +34,7 @@ class ContourBasedGating:
             self.update_main_window()
             self.plot_results()
 
-        self.main_window.status_bar.showMessage('Waiting for user input')
+        self.main_window.status_bar.showMessage(self.main_window.waiting_status)
 
     def define_intramural_part(self):
         dialog = FrameRangeDialog(self.main_window)

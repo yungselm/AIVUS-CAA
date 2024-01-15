@@ -3,17 +3,16 @@ import os
 import numpy as np
 import SimpleITK as sitk
 from loguru import logger
-from PyQt5.QtWidgets import QErrorMessage, QProgressDialog, QApplication
+from PyQt5.QtWidgets import QProgressDialog, QApplication
 from PyQt5.QtCore import Qt
 from skimage.draw import polygon2mask
+
+from gui.error_message import ErrorMessage
 
 
 def save_as_nifti(main_window):
     if not main_window.image_displayed:
-        warning = QErrorMessage(main_window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot save as NIfTi before reading DICOM file')
-        warning.exec_()
+        ErrorMessage(main_window, 'Cannot save as NIfTi before reading DICOM file')
         return
 
     out_path = f'{main_window.config.save.nifti_dir}_{main_window.config.save.save_niftis}_frames'

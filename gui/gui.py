@@ -67,26 +67,26 @@ class Master(QMainWindow):
         self.images = None
         self.diastole_color = (39, 69, 219)
         self.systole_color = (209, 55, 38)
+        self.waiting_status = 'Waiting for user input...'
         self.init_gui()
         init_shortcuts(self)
 
     def init_gui(self):
-        spacing = 5
-        self.setGeometry(spacing, spacing, 1200, 1200)
+        SPACING = 5
         self.addToolBar('My Window')
         self.showMaximized()
 
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage('Waiting for user input...')
+        self.status_bar.showMessage(self.waiting_status)
 
         main_window_hbox = QHBoxLayout()
         left_vbox = QVBoxLayout()
         right_vbox = QVBoxLayout()
         left_lower_hbox = QHBoxLayout()
 
-        left_vbox.setContentsMargins(0, 0, spacing, spacing)
-        right_vbox.setContentsMargins(spacing, 0, 0, spacing)
+        left_vbox.setContentsMargins(0, 0, SPACING, SPACING)
+        right_vbox.setContentsMargins(SPACING, 0, 0, SPACING)
         right_upper_hbox = QHBoxLayout()
         right_lower_hbox = QHBoxLayout()
         right_vbox.addLayout(right_upper_hbox)
@@ -239,7 +239,7 @@ class Master(QMainWindow):
         self.status_bar.showMessage('Saving contours and NIfTi files...')
         write_contours(self)
         save_as_nifti(self)
-        self.status_bar.showMessage('Waiting for user input')
+        self.status_bar.showMessage(self.waiting_status)
 
     def play(self):
         """Plays all frames until end of pullback starting from currently selected frame"""

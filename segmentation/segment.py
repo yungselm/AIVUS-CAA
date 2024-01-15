@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.path as mplPath
 from loguru import logger
-from PyQt5.QtWidgets import QErrorMessage
-from PyQt5.QtCore import Qt
 from skimage import measure
 
+from gui.error_message import ErrorMessage
 from gui.frame_range_dialog import FrameRangeDialog
 
 
@@ -12,11 +11,8 @@ def segment(main_window):
     """Automatic segmentation of IVUS images"""
     main_window.status_bar.showMessage('Segmenting frames...')
     if not main_window.image_displayed:
-        warning = QErrorMessage(main_window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot perform automatic segmentation before reading DICOM file')
-        warning.exec_()
-        main_window.status_bar.showMessage('Waiting for user input')
+        ErrorMessage(main_window, 'Cannot perform automatic segmentation before reading DICOM file')
+        main_window.status_bar.showMessage(main_window.waiting_status)
         return
 
     segment_dialog = FrameRangeDialog(main_window)
@@ -33,7 +29,7 @@ def segment(main_window):
             main_window.display.set_data(main_window.data['lumen'], main_window.images)
             main_window.hide_contours_box.setChecked(False)
 
-    main_window.status_bar.showMessage('Waiting for user input')
+    main_window.status_bar.showMessage(main_window.waiting_status)
 
 
 def mask_to_contours(masks, num_points):

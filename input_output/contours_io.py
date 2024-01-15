@@ -3,12 +3,9 @@ import json
 import glob
 
 from loguru import logger
-from PyQt5.QtWidgets import (
-    QErrorMessage,
-)
-from PyQt5.QtCore import Qt
 
 from version import version_file_str
+from gui.error_message import ErrorMessage
 from input_output.read_xml import read_xml
 from input_output.write_xml import write_xml
 
@@ -62,10 +59,7 @@ def write_contours(main_window):
     """Writes contours to a json/xml file"""
 
     if not main_window.image_displayed:
-        warning = QErrorMessage(main_window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot write contours before reading DICOM file')
-        warning.exec_()
+        ErrorMessage(main_window, 'Cannot write contours before reading DICOM file')
         return
 
     if main_window.use_xml_files:

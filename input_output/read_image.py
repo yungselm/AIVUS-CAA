@@ -6,13 +6,13 @@ import numpy as np
 from loguru import logger
 from PyQt5.QtWidgets import (
     QInputDialog,
-    QMessageBox,
     QLineEdit,
     QFileDialog,
     QTableWidgetItem,
 )
 from PyQt5.QtCore import Qt
 
+from gui.error_message import ErrorMessage
 from input_output.contours_io import read_contours
 
 
@@ -41,13 +41,9 @@ def read_image(main_window):
                 main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(file_name))
                 main_window.file_name = main_window.file_name.split('_')[0]  # remove _img.nii suffix
             except:
-                error = QMessageBox()
-                error.setIcon(QMessageBox.Critical)
-                error.setWindowTitle('Error')
-                error.setModal(True)
-                error.setWindowModality(Qt.WindowModal)
-                error.setText('File is not a valid IVUS file and could not be loaded (DICOM or NIfTi supported)')
-                error.exec_()
+                ErrorMessage(
+                    main_window, 'File is not a valid IVUS file and could not be loaded (DICOM or NIfTi supported)'
+                )
                 return None
 
         main_window.metadata['num_frames'] = main_window.images.shape[0]
@@ -92,7 +88,7 @@ def read_image(main_window):
 
         main_window.image_displayed = True
         main_window.display_slider.setValue(main_window.metadata['num_frames'] - 1)
-    main_window.status_bar.showMessage('Waiting for user input')
+    main_window.status_bar.showMessage(main_window.waiting_status)
 
 
 def parse_dicom(main_window):

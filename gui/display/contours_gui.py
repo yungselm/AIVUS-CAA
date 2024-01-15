@@ -1,13 +1,9 @@
-from PyQt5.QtWidgets import QErrorMessage
-from PyQt5.QtCore import Qt
+from gui.error_message import ErrorMessage
 
 
 def new_contour(main_window):
     if not main_window.image_displayed:
-        warning = QErrorMessage(main_window)
-        warning.setWindowModality(Qt.WindowModal)
-        warning.showMessage('Cannot create manual contour before reading DICOM file')
-        warning.exec_()
+        ErrorMessage(main_window, 'Cannot create manual contour before reading DICOM file')
         return
 
     main_window.tmp_lumen_x = main_window.data['lumen'][0][main_window.display.frame]  # for Ctrl+Z
