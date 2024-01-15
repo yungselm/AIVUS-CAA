@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from loguru import logger
 from PyQt5.QtWidgets import QErrorMessage, QProgressDialog
 from PyQt5.QtCore import Qt
-from shapely.geometry import Polygon, Point, LineString
+from shapely.geometry import Polygon
 from itertools import combinations
 
 from gui.geometry import Spline
@@ -41,7 +41,7 @@ def report(main_window, suppress_messages=False):
         plot=main_window.config.report.plot,
         save_as_csv=main_window.config.report.save_as_csv,
     )
-    if report_data is not None:
+    if report_data is not None:  # else user cancelled progress bar
         report_data.to_csv(
             os.path.splitext(main_window.file_name)[0] + '_report.txt',
             sep='\t',
@@ -66,8 +66,6 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
         progress.setMaximum(len(contoured_frames) * (1 + save_as_csv))
         progress.resize(500, 100)
         progress.setValue(0)
-        progress.setValue(1)
-        progress.setValue(0)  # trick to make progress bar appear
         progress.setWindowTitle('Writing report...')
         progress.show()
 

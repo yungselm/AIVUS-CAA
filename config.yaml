@@ -18,6 +18,7 @@ display:
   point_radius: 10
 
 gating:
+  intramural_threshold: 1.5  # elliptic ratio threshold to define intramural part of vessel
   min_window_size: 5
   max_window_size: 15
   step_size: 0.01
