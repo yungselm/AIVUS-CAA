@@ -9,6 +9,7 @@ from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
 from shapely.geometry import Polygon
 
 from gui.geometry import Point, Spline
+from gui.display.longitudinal_view import Marker
 from report.report import compute_polygon_metrics, farthest_points, closest_points
 from segmentation.segment import downsample
 
@@ -68,11 +69,12 @@ class IVUSDisplay(QGraphicsView):
 
     def display_image(self, update_image=False, update_contours=False, update_phase=False):
         """Clears scene and displays current image and contours"""
+        image_types = (QGraphicsPixmapItem, Marker)
         if update_image:
             [
                 self.graphics_scene.removeItem(item)
                 for item in self.graphics_scene.items()
-                if isinstance(item, QGraphicsPixmapItem)
+                if isinstance(item, image_types)
             ]  # clear previous scene
             self.active_point = None
             self.point_index = None
@@ -105,12 +107,16 @@ class IVUSDisplay(QGraphicsView):
             self.graphics_scene.addItem(self.image)
 
             self.main_window.longitudinal_view.set_data(self.images, self.frame)
+            marker = Marker(
+                (width // 2) * self.scaling_factor, 0, (width // 2) * self.scaling_factor, height * self.scaling_factor
+            )
+            self.graphics_scene.addItem(marker)
 
-        old_contours = [item for item in self.graphics_scene.items() if not isinstance(item, QGraphicsPixmapItem)]
+        old_contours = [item for item in self.graphics_scene.items() if not isinstance(item, image_types)]
         [
             self.graphics_scene.removeItem(item)
             for item in self.graphics_scene.items()
-            if not isinstance(item, QGraphicsPixmapItem)
+            if not isinstance(item, image_types)
         ]  # clear previous scene
         if not self.main_window.hide_contours:
             if update_contours:

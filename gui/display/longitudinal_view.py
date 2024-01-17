@@ -41,6 +41,6 @@ class Marker(QGraphicsLineItem):
     def __init__(self, x1, y1, x2, y2, color=Qt.white):
         super().__init__()
         pen = QPen(QColor(color), 2)
-        pen.setDashPattern([10, 10])
+        pen.setDashPattern([1, 6])
         self.setLine(x1, y1, x2, y2)
         self.setPen(pen)
