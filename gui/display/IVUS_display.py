@@ -13,13 +13,13 @@ from report.report import compute_polygon_metrics, farthest_points, closest_poin
 from segmentation.segment import downsample
 
 
-class Display(QGraphicsView):
+class IVUSDisplay(QGraphicsView):
     """
     Displays images and contours and allows the user to add and manipulate contours.
     """
 
     def __init__(self, main_window, config):
-        super(Display, self).__init__()
+        super(IVUSDisplay, self).__init__()
         self.main_window = main_window
         self.n_interactive_points = config.display.n_interactive_points
         self.n_points_contour = config.display.n_points_contour
@@ -103,6 +103,8 @@ class Display(QGraphicsView):
             self.pixmap = QPixmap.fromImage(q_image)
             self.image = QGraphicsPixmapItem(self.pixmap)
             self.graphics_scene.addItem(self.image)
+
+            self.main_window.longitudinal_view.set_data(self.images, self.frame)
 
         old_contours = [item for item in self.graphics_scene.items() if not isinstance(item, QGraphicsPixmapItem)]
         [

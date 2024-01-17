@@ -21,7 +21,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
 
-from gui.display.display import Display
+from gui.display.IVUS_display import IVUSDisplay
+from gui.display.longitudinal_view import LongitudinalView
 from gui.slider import Slider, Communicate
 from gui.shortcuts import init_shortcuts
 from gui.display.contours_gui import new_contour
@@ -88,9 +89,11 @@ class Master(QMainWindow):
         left_vbox.setContentsMargins(0, 0, SPACING, SPACING)
         right_vbox.setContentsMargins(SPACING, 0, 0, SPACING)
         right_upper_hbox = QHBoxLayout()
-        right_lower_hbox = QHBoxLayout()
+        right_middle_hbox = QHBoxLayout()
+        right_lower_vbox = QVBoxLayout()
         right_vbox.addLayout(right_upper_hbox)
-        right_vbox.addLayout(right_lower_hbox)
+        right_vbox.addLayout(right_middle_hbox)
+        right_vbox.addLayout(right_lower_vbox)
         main_window_hbox.addLayout(left_vbox)
         main_window_hbox.addLayout(right_vbox)
 
@@ -189,9 +192,11 @@ class Master(QMainWindow):
         self.use_diastolic_button.clicked.connect(self.use_diastolic)
         self.use_diastolic_button.setToolTip('Press button to switch between diastolic and systolic frames')
 
-        self.display = Display(self, self.config)
+        self.display = IVUSDisplay(self, self.config)
         self.display_frame_comms = Communicate()
         self.display_frame_comms.updateBW[int].connect(self.display.set_frame)
+
+        self.longitudinal_view = LongitudinalView(self, self.config)
 
         self.frame_number_label = QLabel()
         self.frame_number_label.setAlignment(Qt.AlignCenter)
@@ -206,17 +211,18 @@ class Master(QMainWindow):
         left_vbox.addLayout(left_lower_hbox)
         left_vbox.addWidget(self.frame_number_label)
 
-        right_vbox.addWidget(self.hide_contours_box)
-        right_vbox.addWidget(self.hide_special_points_box)
-        right_vbox.addWidget(self.use_diastolic_button)
-        right_vbox.addWidget(image_button)
-        right_vbox.addWidget(gating_button)
-        right_vbox.addWidget(segment_button)
-        right_vbox.addWidget(contour_button)
-        right_vbox.addWidget(write_button)
-        right_vbox.addWidget(report_button)
         right_upper_hbox.addWidget(self.info_table)
-        right_lower_hbox.addWidget(self.shortcut_info)
+        right_middle_hbox.addWidget(self.longitudinal_view)
+        right_lower_vbox.addWidget(self.shortcut_info)
+        right_lower_vbox.addWidget(self.hide_contours_box)
+        right_lower_vbox.addWidget(self.hide_special_points_box)
+        right_lower_vbox.addWidget(self.use_diastolic_button)
+        right_lower_vbox.addWidget(image_button)
+        right_lower_vbox.addWidget(gating_button)
+        right_lower_vbox.addWidget(segment_button)
+        right_lower_vbox.addWidget(contour_button)
+        right_lower_vbox.addWidget(write_button)
+        right_lower_vbox.addWidget(report_button)
 
         central_widget = QWidget()
         central_widget.setLayout(main_window_hbox)

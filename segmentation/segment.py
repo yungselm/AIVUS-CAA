@@ -41,7 +41,7 @@ def mask_to_contours(masks, num_points):
 
 
 def get_contours(preds, image_shape):
-    """Extracts contours from masked images. Returns x and y coodinates"""
+    """Extracts contours from masked images. Returns x and y coordinates"""
     lumen_pred = [[], []]
     counter = 0
     for frame in range(preds.shape[0]):
