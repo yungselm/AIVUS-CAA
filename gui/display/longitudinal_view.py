@@ -1,8 +1,8 @@
 import numpy as np
 from loguru import logger
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsLineItem
-from PyQt5.QtCore import Qt, QLineF
-from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QImage, QColor, QPen
 
 
 class LongitudinalView(QGraphicsView):

@@ -30,16 +30,15 @@ class IVUSDisplay(QGraphicsView):
         self.point_thickness = config.display.point_thickness
         self.point_radius = config.display.point_radius
         self.graphics_scene = QGraphicsScene(self)
-        self.point_index = None
-        self.frame = 0
-        self.lumen_contour = None  # entire contour (not only knotpoints), needed for elliptic ratio
-        self.draw = False
         self.points_to_draw = []
+        self.contour_points = []
+        self.frame = 0
+        self.draw = False
         self.contour_drawn = False
+        self.current_contour = None  # entire contour (not only knotpoints), needed for elliptic ratio
         self.new_spline = None
-        self.enable_drag = True
         self.active_point = None
-        self.lumen_points = []
+        self.active_point_index = None
 
         # Store initial window level and window width (full width, middle level)
         self.initial_window_level = 128  # window level is the center which determines the brightness of the image
@@ -47,19 +46,18 @@ class IVUSDisplay(QGraphicsView):
         self.window_level = self.initial_window_level
         self.window_width = self.initial_window_width
 
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.image = QGraphicsPixmapItem(QPixmap(self.image_size, self.image_size))
-        self.frame_metrics_text = None
-        self.graphics_scene.addItem(self.image)
+        image = QGraphicsPixmapItem(QPixmap(self.image_size, self.image_size))
+        self.graphics_scene.addItem(image)
         self.setScene(self.graphics_scene)
 
     def set_data(self, lumen, images):
-        self.num_frames = images.shape[0]
+        num_frames = images.shape[0]
         self.scaling_factor = self.image_size / images.shape[1]
         if (
-            lumen[0] and max([len(lumen[0][frame]) for frame in range(self.num_frames)]) > self.n_interactive_points
+            lumen[0] and max([len(lumen[0][frame]) for frame in range(num_frames)]) > self.n_interactive_points
         ):  # contours with higher number of knotpoints loaded -> save downsampled version
             self.main_window.data['lumen'] = downsample(lumen, self.n_interactive_points)
         else:
@@ -77,7 +75,7 @@ class IVUSDisplay(QGraphicsView):
                 if isinstance(item, image_types)
             ]  # clear previous scene
             self.active_point = None
-            self.point_index = None
+            self.active_point_index = None
 
             # Calculate lower and upper bounds for the adjusted window level and window width
             lower_bound = self.window_level - self.window_width / 2
@@ -86,7 +84,7 @@ class IVUSDisplay(QGraphicsView):
             # Clip and normalize pixel values
             normalised_data = np.clip(
                 self.images[self.frame, :, :], lower_bound, upper_bound
-            )  # clip values to be within the range
+            )
             normalised_data = ((normalised_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
             height, width = normalised_data.shape
 
@@ -101,10 +99,8 @@ class IVUSDisplay(QGraphicsView):
                     self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
 
-            self.q_image = q_image  # Update the QImage
-            self.pixmap = QPixmap.fromImage(q_image)
-            self.image = QGraphicsPixmapItem(self.pixmap)
-            self.graphics_scene.addItem(self.image)
+            image = QGraphicsPixmapItem(QPixmap.fromImage(q_image))
+            self.graphics_scene.addItem(image)
 
             self.main_window.longitudinal_view.set_data(self.images, self.frame)
             marker = Marker(
@@ -121,9 +117,9 @@ class IVUSDisplay(QGraphicsView):
         if not self.main_window.hide_contours:
             if update_contours:
                 self.draw_contour(self.main_window.data['lumen'])
-                if self.main_window.data['lumen'][0][self.frame] and self.lumen_contour.full_contour[0] is not None:
-                    lumen_x = [point / self.scaling_factor for point in self.lumen_contour.full_contour[0]]
-                    lumen_y = [point / self.scaling_factor for point in self.lumen_contour.full_contour[1]]
+                if self.main_window.data['lumen'][0][self.frame] and self.current_contour.full_contour[0] is not None:
+                    lumen_x = [point / self.scaling_factor for point in self.current_contour.full_contour[0]]
+                    lumen_y = [point / self.scaling_factor for point in self.current_contour.full_contour[1]]
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
                     lumen_area, lumen_circumf, _, _ = compute_polygon_metrics(self.main_window, polygon, self.frame)
                     longest_distance, farthest_point_x, farthest_point_y = farthest_points(
@@ -153,13 +149,13 @@ class IVUSDisplay(QGraphicsView):
                         )
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
-                    self.frame_metrics_text = QGraphicsTextItem(
+                    frame_metrics_text = QGraphicsTextItem(
                         f'Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n'
                         f'Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n'
                         f'Elliptic ratio:\t{round(elliptic_ratio, 2)}'
                     )
-                    self.frame_metrics_text.setFont(QFont('Helvetica', int(self.image_size / 50)))
-                    self.graphics_scene.addItem(self.frame_metrics_text)
+                    frame_metrics_text.setFont(QFont('Helvetica', int(self.image_size / 50)))
+                    self.graphics_scene.addItem(frame_metrics_text)
                     if not update_phase:
                         self.graphics_scene.addItem(self.phase_text)
             else:  # re-draw old elements to put them in foreground
@@ -195,19 +191,19 @@ class IVUSDisplay(QGraphicsView):
         if lumen[0][self.frame]:
             lumen_x = [point * self.scaling_factor for point in lumen[0][self.frame]]
             lumen_y = [point * self.scaling_factor for point in lumen[1][self.frame]]
-            self.lumen_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'g')
-            if self.lumen_contour.full_contour[0] is not None:
-                self.lumen_points = [
+            self.current_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'g')
+            if self.current_contour.full_contour[0] is not None:
+                self.contour_points = [
                     Point(
-                        (self.lumen_contour.knot_points[0][idx], self.lumen_contour.knot_points[1][idx]),
+                        (self.current_contour.knot_points[0][i], self.current_contour.knot_points[1][i]),
                         self.point_thickness,
                         self.point_radius,
                         'g',
                     )
-                    for idx in range(len(self.lumen_contour.knot_points[0]) - 1)
+                    for i in range(len(self.current_contour.knot_points[0]) - 1)
                 ]
-                [self.graphics_scene.addItem(point) for point in self.lumen_points]
-                self.graphics_scene.addItem(self.lumen_contour)
+                [self.graphics_scene.addItem(point) for point in self.contour_points]
+                self.graphics_scene.addItem(self.current_contour)
             else:
                 logger.warning(f'Spline for frame {self.frame + 1} could not be interpolated')
 
@@ -296,13 +292,12 @@ class IVUSDisplay(QGraphicsView):
                 # identify which point has been clicked
                 items = self.items(event.pos())
                 for item in items:
-                    if item in self.lumen_points:
+                    if item in self.contour_points:
                         self.main_window.setCursor(Qt.BlankCursor)  # remove cursor for precise contour changes
                         # Convert mouse position to item position
                         # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                        self.point_index = self.lumen_points.index(item)
+                        self.active_point_index = self.contour_points.index(item)
                         item.update_color()
-                        self.enable_drag = True
                         self.active_point = item
 
         elif event.buttons() == Qt.MouseButton.RightButton:
@@ -311,11 +306,11 @@ class IVUSDisplay(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
-            if self.point_index is not None:
+            if self.active_point_index is not None:
                 item = self.active_point
                 mouse_position = item.mapFromScene(self.mapToScene(event.pos()))
                 new_point = item.update_pos(mouse_position)
-                self.lumen_contour.update(new_point, self.point_index)
+                self.current_contour.update(new_point, self.active_point_index)
 
         elif event.buttons() == Qt.MouseButton.RightButton:
             self.setMouseTracking(True)
@@ -327,16 +322,16 @@ class IVUSDisplay(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:  # for some reason event.buttons() does not work here
-            if self.point_index is not None:
+            if self.active_point_index is not None:
                 self.main_window.setCursor(Qt.ArrowCursor)
                 item = self.active_point
                 item.reset_color()
 
                 self.main_window.data['lumen'][0][self.frame] = [
-                    point / self.scaling_factor for point in self.lumen_contour.knot_points[0]
+                    point / self.scaling_factor for point in self.current_contour.knot_points[0]
                 ]
                 self.main_window.data['lumen'][1][self.frame] = [
-                    point / self.scaling_factor for point in self.lumen_contour.knot_points[1]
+                    point / self.scaling_factor for point in self.current_contour.knot_points[1]
                 ]
                 self.display_image(update_contours=True)
-                self.point_index = None
+                self.active_point_index = None
