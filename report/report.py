@@ -91,10 +91,7 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
         if lumen_area[frame] and elliptic_ratio[frame] != 0:  # values already computed for this frame -> skip
             continue
 
-        lumen_contour = Spline(
-            [main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]],
-            n_points=main_window.config.display.n_points_contour,
-        )  # data['lumen'] stores only knot points -> need to recalculate full contour
+        lumen_contour = main_window.display.full_contours[frame]
         lumen_x[frame] = [point for point in lumen_contour.full_contour[0]]
         lumen_y[frame] = [point for point in lumen_contour.full_contour[1]]
         polygon = Polygon([(x, y) for x, y in zip(lumen_x[frame], lumen_y[frame])])

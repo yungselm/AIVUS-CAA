@@ -54,7 +54,7 @@ class Spline(QGraphicsPathItem):
 
     def __init__(self, points, n_points, line_thickness=1, color=None):
         super().__init__()
-        self.n_points = n_points
+        self.n_points = n_points + 1
         self.knot_points = None
         self.full_contour = None
         self.set_knot_points(points)

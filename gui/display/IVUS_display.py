@@ -59,10 +59,17 @@ class IVUSDisplay(QGraphicsView):
         if (
             lumen[0] and max([len(lumen[0][frame]) for frame in range(num_frames)]) > self.n_interactive_points
         ):  # contours with higher number of knotpoints loaded -> save downsampled version
-            self.main_window.data['lumen'] = downsample(lumen, self.n_interactive_points)
-        else:
-            self.main_window.data['lumen'] = lumen
+            lumen = downsample(lumen, self.n_interactive_points)
+
+        self.main_window.data['lumen'] = lumen
+        self.full_contours = [
+            Spline([lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'g')
+            if lumen[0][frame]
+            else None
+            for frame in range(num_frames)
+        ]
         self.images = images
+        self.main_window.longitudinal_view.set_data(self.images)
         self.display_image(update_image=True, update_contours=True, update_phase=True)
 
     def display_image(self, update_image=False, update_contours=False, update_phase=False):
@@ -82,9 +89,7 @@ class IVUSDisplay(QGraphicsView):
             upper_bound = self.window_level + self.window_width / 2
 
             # Clip and normalize pixel values
-            normalised_data = np.clip(
-                self.images[self.frame, :, :], lower_bound, upper_bound
-            )
+            normalised_data = np.clip(self.images[self.frame, :, :], lower_bound, upper_bound)
             normalised_data = ((normalised_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
             height, width = normalised_data.shape
 
@@ -102,9 +107,11 @@ class IVUSDisplay(QGraphicsView):
             image = QGraphicsPixmapItem(QPixmap.fromImage(q_image))
             self.graphics_scene.addItem(image)
 
-            self.main_window.longitudinal_view.set_data(self.images, self.frame)
+            self.main_window.longitudinal_view.update_marker(self.frame)
+            x_pos = width // 2
+            self.main_window.longitudinal_view.update_contour(x_pos, self.full_contours)
             marker = Marker(
-                (width // 2) * self.scaling_factor, 0, (width // 2) * self.scaling_factor, height * self.scaling_factor
+                x_pos * self.scaling_factor, 0, x_pos * self.scaling_factor, height * self.scaling_factor
             )
             self.graphics_scene.addItem(marker)
 
@@ -200,7 +207,7 @@ class IVUSDisplay(QGraphicsView):
                         self.point_radius,
                         'g',
                     )
-                    for i in range(len(self.current_contour.knot_points[0]) - 1)
+                    for i in range(len(self.current_contour.knot_points[0]))
                 ]
                 [self.graphics_scene.addItem(point) for point in self.contour_points]
                 self.graphics_scene.addItem(self.current_contour)
