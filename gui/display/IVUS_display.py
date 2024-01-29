@@ -110,9 +110,7 @@ class IVUSDisplay(QGraphicsView):
             self.main_window.longitudinal_view.update_marker(self.frame)
             x_pos = width // 2
             self.main_window.longitudinal_view.update_contour(x_pos, self.full_contours)
-            marker = Marker(
-                x_pos * self.scaling_factor, 0, x_pos * self.scaling_factor, height * self.scaling_factor
-            )
+            marker = Marker(x_pos * self.scaling_factor, 0, x_pos * self.scaling_factor, height * self.scaling_factor)
             self.graphics_scene.addItem(marker)
 
         old_contours = [item for item in self.graphics_scene.items() if not isinstance(item, image_types)]
@@ -199,7 +197,7 @@ class IVUSDisplay(QGraphicsView):
             lumen_x = [point * self.scaling_factor for point in lumen[0][self.frame]]
             lumen_y = [point * self.scaling_factor for point in lumen[1][self.frame]]
             self.current_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'g')
-            if self.current_contour.full_contour[0] is not None:
+            if self.current_contour.full_contour[0] is not None:  
                 self.contour_points = [
                     Point(
                         (self.current_contour.knot_points[0][i], self.current_contour.knot_points[1][i]),
@@ -207,7 +205,7 @@ class IVUSDisplay(QGraphicsView):
                         self.point_radius,
                         'g',
                     )
-                    for i in range(len(self.current_contour.knot_points[0]))
+                    for i in range(len(self.current_contour.knot_points[0]) - 1)
                 ]
                 [self.graphics_scene.addItem(point) for point in self.contour_points]
                 self.graphics_scene.addItem(self.current_contour)
@@ -229,10 +227,7 @@ class IVUSDisplay(QGraphicsView):
             self.main_window.setCursor(Qt.ArrowCursor)
             self.display_image(update_contours=True)
         else:
-            self.points_to_draw.append(Point((point.x(), point.y()), self.point_thickness, self.point_radius))
-            self.graphics_scene.addItem(self.points_to_draw[-1])
-
-            if len(self.points_to_draw) > 3:
+            if len(self.points_to_draw) > 3:  # start drawing spline after 3 points
                 if not self.contour_drawn:
                     self.new_spline = Spline(
                         [
@@ -247,10 +242,10 @@ class IVUSDisplay(QGraphicsView):
                 else:
                     self.new_spline.update(point, len(self.points_to_draw))
 
-            if len(self.points_to_draw) > 1:
+            if len(self.points_to_draw) > 1:  # check distance to start point, if close enough, close contour
                 dist = math.sqrt(
-                    (point.x() - self.points_to_draw[0].get_coords()[0]) ** 2
-                    + (point.y() - self.points_to_draw[0].get_coords()[1]) ** 2
+                    (point.x() - start_point[0]) ** 2
+                    + (point.y() - start_point[1]) ** 2
                 )
 
                 if dist < 20:
@@ -270,6 +265,10 @@ class IVUSDisplay(QGraphicsView):
 
                     self.main_window.setCursor(Qt.ArrowCursor)
                     self.display_image(update_contours=True)
+                    return
+
+            self.points_to_draw.append(Point((point.x(), point.y()), self.point_thickness, self.point_radius))
+            self.graphics_scene.addItem(self.points_to_draw[-1])
 
     def update_display(self):
         self.display_image(update_image=True, update_contours=True, update_phase=True)
