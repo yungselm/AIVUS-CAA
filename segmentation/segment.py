@@ -97,4 +97,8 @@ def downsample(contours, num_points):
             points_to_sample = range(0, len(contours[0][frame]), len(contours[0][frame]) // num_points)
             for axis in range(2):
                 downsampled[axis][frame] = [contours[axis][frame][point] for point in points_to_sample]
+
+    if num_frames == 1:
+        downsampled = [downsampled[0][0], downsampled[1][0]]  # remove unnecessary dimension
+
     return downsampled

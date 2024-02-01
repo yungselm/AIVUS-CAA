@@ -55,6 +55,7 @@ class IVUSDisplay(QGraphicsView):
 
     def set_data(self, lumen, images):
         num_frames = images.shape[0]
+        self.image_width = images.shape[1]
         self.scaling_factor = self.image_size / images.shape[1]
         if (
             lumen[0] and max([len(lumen[0][frame]) for frame in range(num_frames)]) > self.n_interactive_points
@@ -69,7 +70,7 @@ class IVUSDisplay(QGraphicsView):
             for frame in range(num_frames)
         ]
         self.images = images
-        self.main_window.longitudinal_view.set_data(self.images)
+        self.main_window.longitudinal_view.set_data(self.images, self.full_contours)
         self.display_image(update_image=True, update_contours=True, update_phase=True)
 
     def display_image(self, update_image=False, update_contours=False, update_phase=False):
@@ -108,9 +109,12 @@ class IVUSDisplay(QGraphicsView):
             self.graphics_scene.addItem(image)
 
             self.main_window.longitudinal_view.update_marker(self.frame)
-            x_pos = width // 2
-            self.main_window.longitudinal_view.update_contour(x_pos, self.full_contours)
-            marker = Marker(x_pos * self.scaling_factor, 0, x_pos * self.scaling_factor, height * self.scaling_factor)
+            marker = Marker(
+                (self.image_width // 2) * self.scaling_factor,
+                0,
+                (self.image_width // 2) * self.scaling_factor,
+                height * self.scaling_factor,
+            )
             self.graphics_scene.addItem(marker)
 
         old_contours = [item for item in self.graphics_scene.items() if not isinstance(item, image_types)]
@@ -197,7 +201,7 @@ class IVUSDisplay(QGraphicsView):
             lumen_x = [point * self.scaling_factor for point in lumen[0][self.frame]]
             lumen_y = [point * self.scaling_factor for point in lumen[1][self.frame]]
             self.current_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'g')
-            if self.current_contour.full_contour[0] is not None:  
+            if self.current_contour.full_contour[0] is not None:
                 self.contour_points = [
                     Point(
                         (self.current_contour.knot_points[0][i], self.current_contour.knot_points[1][i]),
@@ -243,13 +247,9 @@ class IVUSDisplay(QGraphicsView):
                     self.new_spline.update(point, len(self.points_to_draw))
 
             if len(self.points_to_draw) > 1:  # check distance to start point, if close enough, close contour
-                dist = math.sqrt(
-                    (point.x() - start_point[0]) ** 2
-                    + (point.y() - start_point[1]) ** 2
-                )
+                dist = math.sqrt((point.x() - start_point[0]) ** 2 + (point.y() - start_point[1]) ** 2)
 
                 if dist < 20:
-                    self.draw = False
                     self.points_to_draw = []
                     if self.new_spline is not None:
                         downsampled = downsample(
@@ -257,14 +257,13 @@ class IVUSDisplay(QGraphicsView):
                             self.n_interactive_points,
                         )
                         self.main_window.data['lumen'][0][self.frame] = [
-                            point / self.scaling_factor for point in downsampled[0][0]
+                            point / self.scaling_factor for point in downsampled[0]
                         ]
                         self.main_window.data['lumen'][1][self.frame] = [
-                            point / self.scaling_factor for point in downsampled[1][0]
+                            point / self.scaling_factor for point in downsampled[1]
                         ]
 
-                    self.main_window.setCursor(Qt.ArrowCursor)
-                    self.display_image(update_contours=True)
+                    self.stop_drawing()
                     return
 
             self.points_to_draw.append(Point((point.x(), point.y()), self.point_thickness, self.point_radius))
@@ -285,6 +284,9 @@ class IVUSDisplay(QGraphicsView):
         self.draw = False
         self.main_window.setCursor(Qt.ArrowCursor)
         self.display_image(update_contours=True)
+        self.main_window.longitudinal_view.lview_contour(
+            self.frame, self.current_contour, self.scaling_factor, update=True
+        )
 
     def set_frame(self, value):
         self.frame = value
@@ -340,4 +342,7 @@ class IVUSDisplay(QGraphicsView):
                     point / self.scaling_factor for point in self.current_contour.knot_points[1]
                 ]
                 self.display_image(update_contours=True)
+                self.main_window.longitudinal_view.lview_contour(
+                    self.frame, self.current_contour, self.scaling_factor, update=True
+                )
                 self.active_point_index = None
