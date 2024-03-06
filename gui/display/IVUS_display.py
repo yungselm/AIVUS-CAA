@@ -161,7 +161,9 @@ class IVUSDisplay(QGraphicsView):
                     frame_metrics_text = QGraphicsTextItem(
                         f'Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n'
                         f'Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n'
-                        f'Elliptic ratio:\t{round(elliptic_ratio, 2)}'
+                        f'Elliptic ratio:\t{round(elliptic_ratio, 2)}\n'
+                        f'Longest distance:\t{round(longest_distance, 2)} (mm)\n'
+                        f'Shortest distance:\t{round(shortest_distance, 2)} (mm)'
                     )
                     frame_metrics_text.setFont(QFont('Helvetica', int(self.image_size / 50)))
                     self.graphics_scene.addItem(frame_metrics_text)
@@ -190,7 +192,7 @@ class IVUSDisplay(QGraphicsView):
                 color = Qt.white
             self.phase_text = QGraphicsTextItem(phase)
             self.phase_text.setDefaultTextColor(color)
-            self.phase_text.setPos(0, self.image_size / 8.5)
+            self.phase_text.setX(self.image_size - self.image_size / 3.75)
             self.phase_text.setFont(QFont('Helvetica', int(self.image_size / 50), QFont.Bold))
             self.graphics_scene.addItem(self.phase_text)
 
