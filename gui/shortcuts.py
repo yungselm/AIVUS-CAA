@@ -1,5 +1,6 @@
 import time
 
+from functools import partial
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
@@ -11,25 +12,25 @@ from gui.display.contours_gui import new_contour
 def init_shortcuts(main_window):
     # General
     QShortcut(QKeySequence('Ctrl+Q'), main_window, main_window.close)
-    QShortcut(QKeySequence('Ctrl+O'), main_window, lambda: read_image(main_window))
-    QShortcut(QKeySequence('H'), main_window, lambda: hide_contours(main_window))
-    QShortcut(QKeySequence('J'), main_window, lambda: jiggle_frame(main_window))
-    QShortcut(QKeySequence('E'), main_window, lambda: new_contour(main_window))
+    QShortcut(QKeySequence('Ctrl+O'), main_window, partial(read_image, main_window))
+    QShortcut(QKeySequence('H'), main_window, partial(hide_contours, main_window))
+    QShortcut(QKeySequence('J'), main_window, partial(jiggle_frame, main_window))
+    QShortcut(QKeySequence('E'), main_window, partial(new_contour, main_window))
     QShortcut(QKeySequence('Escape'), main_window, main_window.display.stop_drawing)
-    QShortcut(QKeySequence('Delete'), main_window, lambda: delete_contour(main_window))
-    QShortcut(QKeySequence('Ctrl+Z'), main_window, lambda: undo_delete(main_window))
+    QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
+    QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
     # Windowing
-    QShortcut(QKeySequence('R'), main_window, lambda: reset_windowing(main_window))
-    QShortcut(QKeySequence('C'), main_window, lambda: toggle_color(main_window))
+    QShortcut(QKeySequence('R'), main_window, partial(reset_windowing, main_window))
+    QShortcut(QKeySequence('C'), main_window, partial(toggle_color, main_window))
     # Traverse frames
-    QShortcut(QKeySequence('W'), main_window, lambda: main_window.display_slider.next_gated_frame())
-    QShortcut(QKeySequence(Qt.Key_Up), main_window, lambda: main_window.display_slider.next_gated_frame())
-    QShortcut(QKeySequence('A'), main_window, lambda: main_window.display_slider.last_frame())
-    QShortcut(QKeySequence(Qt.Key_Left), main_window, lambda: main_window.display_slider.last_frame())
-    QShortcut(QKeySequence('S'), main_window, lambda: main_window.display_slider.last_gated_frame())
-    QShortcut(QKeySequence(Qt.Key_Down), main_window, lambda: main_window.display_slider.last_gated_frame())
-    QShortcut(QKeySequence('D'), main_window, lambda: main_window.display_slider.next_frame())
-    QShortcut(QKeySequence(Qt.Key_Right), main_window, lambda: main_window.display_slider.next_frame())
+    QShortcut(QKeySequence('W'), main_window, main_window.display_slider.next_gated_frame)
+    QShortcut(QKeySequence(Qt.Key_Up), main_window, main_window.display_slider.next_gated_frame)
+    QShortcut(QKeySequence('A'), main_window, main_window.display_slider.last_frame)
+    QShortcut(QKeySequence(Qt.Key_Left), main_window, main_window.display_slider.last_frame)
+    QShortcut(QKeySequence('S'), main_window, main_window.display_slider.last_gated_frame)
+    QShortcut(QKeySequence(Qt.Key_Down), main_window, main_window.display_slider.last_gated_frame)
+    QShortcut(QKeySequence('D'), main_window, main_window.display_slider.next_frame)
+    QShortcut(QKeySequence(Qt.Key_Right), main_window, main_window.display_slider.next_frame)
 
 
 def display_shortcuts_info(main_window):
