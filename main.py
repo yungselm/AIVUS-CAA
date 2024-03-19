@@ -3,7 +3,6 @@ import hydra
 import qdarktheme
 
 from omegaconf import DictConfig
-from loguru import logger
 
 from version import __version__
 from gui.gui import QApplication, Master
