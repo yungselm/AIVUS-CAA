@@ -1,7 +1,7 @@
 import time
 
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QShortcut, QApplication
+from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 
 from input_output.read_image import read_image
@@ -30,6 +30,23 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence(Qt.Key_Down), main_window, lambda: main_window.display_slider.last_gated_frame())
     QShortcut(QKeySequence('D'), main_window, lambda: main_window.display_slider.next_frame())
     QShortcut(QKeySequence(Qt.Key_Right), main_window, lambda: main_window.display_slider.next_frame())
+
+
+def display_shortcuts_info(main_window):
+    text = (
+        '\n'
+        'First, load a DICOM/NIfTi file using the button below or by pressing Ctrl+O.\n'
+        'If available, contours for that file will be read automatically.\n'
+        'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
+        'Press E to draw a new Lumen contour.\n'
+        'Press Delete to delete the current Lumen contour.\n'
+        'Hold the right mouse button for windowing (can be reset by pressing R).\n'
+        'Press C to toggle color mode.\n'
+        'Press H to hide all contours.\n'
+        'Press J to jiggle around the current frame.\n'
+        'Press Ctrl+Q to close the program.\n'
+    )
+    QMessageBox.information(main_window, 'Keyboard Shortcuts', text)
 
 
 def hide_contours(main_window):

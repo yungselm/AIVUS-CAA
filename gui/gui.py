@@ -2,6 +2,7 @@ import time
 import bisect
 
 from loguru import logger
+from functools import partial
 from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -16,6 +17,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QTableWidget,
     QTableWidgetItem,
+    QMenuBar,
     QStatusBar,
 )
 from PyQt5.QtCore import Qt, QTimer
@@ -24,7 +26,7 @@ from PyQt5.QtGui import QIcon
 from gui.display.IVUS_display import IVUSDisplay
 from gui.display.longitudinal_view import LongitudinalView
 from gui.slider import Slider, Communicate
-from gui.shortcuts import init_shortcuts
+from gui.shortcuts import init_shortcuts, display_shortcuts_info
 from gui.display.contours_gui import new_contour
 from input_output.read_image import read_image
 from input_output.contours_io import write_contours
@@ -74,8 +76,13 @@ class Master(QMainWindow):
 
     def init_gui(self):
         SPACING = 5
-        self.addToolBar('My Window')
         self.showMaximized()
+        # self.addToolBar('My Window')
+
+        self.menu_bar = QMenuBar(self)
+        self.setMenuBar(self.menu_bar)
+        help_menu = self.menu_bar.addMenu('Help')
+        help_menu.addAction('Shortcuts', partial(display_shortcuts_info, self))
 
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
@@ -130,29 +137,12 @@ class Master(QMainWindow):
         self.info_table.setHorizontalHeader(horizontal_header)
         self.info_table.horizontalHeader().setStretchLastSection(True)
 
-        self.shortcut_info = QLabel()
-        self.shortcut_info.setText(
-            (
-                '\n'
-                'First, load a DICOM/NIfTi file using the button below or by pressing Ctrl+O.\n'
-                'If available, contours for that file will be read automatically.\n'
-                'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
-                'Press E to draw a new Lumen contour.\n'
-                'Press Delete to delete the current Lumen contour.\n'
-                'Hold the right mouse button for windowing (can be reset by pressing R).\n'
-                'Press C to toggle color mode.\n'
-                'Press H to hide all contours.\n'
-                'Press J to jiggle around the current frame.\n'
-                'Press Ctrl+Q to close the program.\n'
-            )
-        )
-
-        image_button.clicked.connect(lambda _: read_image(self))
-        gating_button.clicked.connect(lambda _: self.contour_based_gating())
-        segment_button.clicked.connect(lambda _: segment(self))
-        contour_button.clicked.connect(lambda _: new_contour(self))
-        write_button.clicked.connect(lambda _: write_contours(self))
-        report_button.clicked.connect(lambda _: report(self))
+        image_button.clicked.connect(partial(read_image, self))
+        gating_button.clicked.connect(self.contour_based_gating)
+        segment_button.clicked.connect(partial(segment, self))
+        contour_button.clicked.connect(partial(new_contour, self))
+        write_button.clicked.connect(partial(write_contours, self))
+        report_button.clicked.connect(partial(report, self))
 
         self.play_button = QPushButton()
         self.play_icon = self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay'))
@@ -213,7 +203,6 @@ class Master(QMainWindow):
 
         right_upper_hbox.addWidget(self.info_table)
         right_middle_hbox.addWidget(self.longitudinal_view)
-        right_lower_vbox.addWidget(self.shortcut_info)
         right_lower_vbox.addWidget(self.hide_contours_box)
         right_lower_vbox.addWidget(self.hide_special_points_box)
         right_lower_vbox.addWidget(self.use_diastolic_button)

@@ -80,7 +80,7 @@ class ContourBasedGating:
         progress.setValue(0)
         progress.setValue(1)
         progress.setValue(0)  # trick to make progress bar appear
-        progress.setWindowTitle('Extracting systolic and diastolic frames...')
+        progress.setWindowTitle('Extracting diastolic and systolic frames...')
         progress.show()
 
         for window_size in range(self.min_window_size, self.max_window_size + 1):
