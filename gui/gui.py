@@ -77,7 +77,6 @@ class Master(QMainWindow):
     def init_gui(self):
         SPACING = 5
         self.showMaximized()
-        # self.addToolBar('My Window')
 
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
