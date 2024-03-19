@@ -283,12 +283,13 @@ class IVUSDisplay(QGraphicsView):
         self.display_image(update_contours=True)
 
     def stop_drawing(self):
-        self.draw = False
-        self.main_window.setCursor(Qt.ArrowCursor)
-        self.display_image(update_contours=True)
-        self.main_window.longitudinal_view.lview_contour(
-            self.frame, self.current_contour, self.scaling_factor, update=True
-        )
+        if self.main_window.image_displayed:
+            self.draw = False
+            self.main_window.setCursor(Qt.ArrowCursor)
+            self.display_image(update_contours=True)
+            self.main_window.longitudinal_view.lview_contour(
+                self.frame, self.current_contour, self.scaling_factor, update=True
+            )
 
     def set_frame(self, value):
         self.frame = value

@@ -74,15 +74,16 @@ def jiggle_frame(main_window):
 
 
 def delete_contour(main_window):
-    main_window.tmp_lumen_x = main_window.data['lumen'][0][main_window.display.frame]  # for Ctrl+Z
-    main_window.tmp_lumen_y = main_window.data['lumen'][1][main_window.display.frame]
-    main_window.data['lumen'][0][main_window.display.frame] = []
-    main_window.data['lumen'][1][main_window.display.frame] = []
-    main_window.display.display_image(update_contours=True)
+    if main_window.image_displayed:
+        main_window.tmp_lumen_x = main_window.data['lumen'][0][main_window.display.frame]  # for Ctrl+Z
+        main_window.tmp_lumen_y = main_window.data['lumen'][1][main_window.display.frame]
+        main_window.data['lumen'][0][main_window.display.frame] = []
+        main_window.data['lumen'][1][main_window.display.frame] = []
+        main_window.display.display_image(update_contours=True)
 
 
 def undo_delete(main_window):
-    if main_window.tmp_lumen_x:
+    if main_window.image_displayed and main_window.tmp_lumen_x:
         main_window.data['lumen'][0][main_window.display.frame] = main_window.tmp_lumen_x
         main_window.data['lumen'][1][main_window.display.frame] = main_window.tmp_lumen_y
         main_window.tmp_lumen_x = []
@@ -91,11 +92,13 @@ def undo_delete(main_window):
 
 
 def reset_windowing(main_window):
-    main_window.display.window_level = main_window.display.initial_window_level
-    main_window.display.window_width = main_window.display.initial_window_width
-    main_window.display.display_image(update_image=True)
+    if main_window.image_displayed:
+        main_window.display.window_level = main_window.display.initial_window_level
+        main_window.display.window_width = main_window.display.initial_window_width
+        main_window.display.display_image(update_image=True)
 
 
 def toggle_color(main_window):
-    main_window.colormap_enabled = not main_window.colormap_enabled
-    main_window.display.display_image(update_image=True)
+    if main_window.image_displayed:
+        main_window.colormap_enabled = not main_window.colormap_enabled
+        main_window.display.display_image(update_image=True)
