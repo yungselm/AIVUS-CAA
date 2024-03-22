@@ -1,4 +1,5 @@
 import os
+import cv2
 
 import pydicom as dcm
 import SimpleITK as sitk
@@ -10,7 +11,6 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QTableWidgetItem,
 )
-from PyQt5.QtCore import Qt
 
 from gui.error_message import ErrorMessage
 from input_output.contours_io import read_contours
@@ -31,10 +31,11 @@ def read_image(main_window):
     )
 
     if file_name:
-        main_window.file_name = os.path.splitext(file_name)[0]  # remove file extension
         try:  # DICOM
             main_window.dicom = dcm.read_file(file_name, force=True)
             main_window.images = main_window.dicom.pixel_array
+            if main_window.images.ndim == 4:  # 3 channel input
+                main_window.images = main_window.images[:, :, :, 0]
             parse_dicom(main_window)
         except AttributeError:
             try:  # NIfTi
@@ -46,6 +47,7 @@ def read_image(main_window):
                 )
                 return None
 
+        main_window.file_name = os.path.splitext(file_name)[0]  # remove file extension
         main_window.metadata['num_frames'] = main_window.images.shape[0]
         main_window.display_slider.setMaximum(main_window.metadata['num_frames'] - 1)
 
