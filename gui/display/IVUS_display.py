@@ -64,9 +64,11 @@ class IVUSDisplay(QGraphicsView):
 
         self.main_window.data['lumen'] = lumen
         self.full_contours = [
-            Spline([lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'g')
-            if lumen[0][frame]
-            else None
+            (
+                Spline([lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'g')
+                if lumen[0][frame]
+                else None
+            )
             for frame in range(num_frames)
         ]
         self.images = images
@@ -265,16 +267,13 @@ class IVUSDisplay(QGraphicsView):
                             point / self.scaling_factor for point in downsampled[1]
                         ]
 
-                    self.stop_drawing()
+                    self.stop_contour()
                     return
 
             self.points_to_draw.append(Point((point.x(), point.y()), self.point_thickness, self.point_radius))
             self.graphics_scene.addItem(self.points_to_draw[-1])
 
-    def update_display(self):
-        self.display_image(update_image=True, update_contours=True, update_phase=True)
-
-    def start_drawing(self):
+    def start_contour(self):
         self.main_window.setCursor(Qt.CrossCursor)
         self.draw = True
         self.points_to_draw = []
@@ -282,7 +281,7 @@ class IVUSDisplay(QGraphicsView):
         self.main_window.data['lumen'][1][self.frame] = []
         self.display_image(update_contours=True)
 
-    def stop_drawing(self):
+    def stop_contour(self):
         if self.main_window.image_displayed:
             self.draw = False
             self.main_window.setCursor(Qt.ArrowCursor)
@@ -290,6 +289,15 @@ class IVUSDisplay(QGraphicsView):
             self.main_window.longitudinal_view.lview_contour(
                 self.frame, self.current_contour, self.scaling_factor, update=True
             )
+
+    def start_measure(self):
+        pass
+
+    def stop_measure(self):
+        pass
+
+    def update_display(self):
+        self.display_image(update_image=True, update_contours=True, update_phase=True)
 
     def set_frame(self, value):
         self.frame = value

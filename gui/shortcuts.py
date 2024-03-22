@@ -13,7 +13,7 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('H'), main_window, partial(hide_contours, main_window))
     QShortcut(QKeySequence('J'), main_window, partial(jiggle_frame, main_window))
     QShortcut(QKeySequence('E'), main_window, partial(new_contour, main_window))
-    QShortcut(QKeySequence('Escape'), main_window, main_window.display.stop_drawing)
+    QShortcut(QKeySequence('Escape'), main_window, main_window.display.stop_contour)
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
     # Windowing
@@ -86,7 +86,7 @@ def undo_delete(main_window):
         main_window.data['lumen'][1][main_window.display.frame] = main_window.tmp_lumen_y
         main_window.tmp_lumen_x = []
         main_window.tmp_lumen_y = []
-    main_window.display.stop_drawing()
+    main_window.display.stop_contour()
 
 
 def reset_windowing(main_window):
