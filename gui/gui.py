@@ -80,8 +80,18 @@ class Master(QMainWindow):
 
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
+        file_menu = self.menu_bar.addMenu('File')
+        open_action = file_menu.addAction('Open File', partial(read_image, self))
+        open_action.setShortcut('Ctrl+O')
+        file_menu.addSeparator()
+        file_menu.addAction('Save Contours', partial(write_contours, self))
+        file_menu.addAction('Save report', partial(report, self))
+        file_menu.addSeparator()
+        exit_action = file_menu.addAction('Exit', self.close)
+        exit_action.setShortcut('Ctrl+Q')
+
         help_menu = self.menu_bar.addMenu('Help')
-        help_menu.addAction('Shortcuts', partial(display_shortcuts_info, self))
+        help_menu.addAction('Keyboard Shortcuts', partial(display_shortcuts_info, self))
 
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
@@ -103,19 +113,13 @@ class Master(QMainWindow):
         main_window_hbox.addLayout(left_vbox)
         main_window_hbox.addLayout(right_vbox)
 
-        image_button = QPushButton('Read DICOM/NIfTi')
         gating_button = QPushButton('Extract Diastolic and Systolic Frames')
         segment_button = QPushButton('Segment')
         contour_button = QPushButton('Manual Contour')
-        write_button = QPushButton('Write Contours')
-        report_button = QPushButton('Write Report')
 
-        image_button.setToolTip('Load images in .dcm format')
         gating_button.setToolTip('Extract diastolic and systolic images from pullback')
         segment_button.setToolTip('Run deep learning based segmentation of lumen')
         contour_button.setToolTip('Manually draw new contour for lumen')
-        write_button.setToolTip('Manually save contours in .json file')
-        report_button.setToolTip('Write report to .txt file')
 
         vertical_header = QHeaderView(Qt.Vertical)
         vertical_header.hide()
@@ -136,12 +140,9 @@ class Master(QMainWindow):
         self.info_table.setHorizontalHeader(horizontal_header)
         self.info_table.horizontalHeader().setStretchLastSection(True)
 
-        image_button.clicked.connect(partial(read_image, self))
         gating_button.clicked.connect(self.contour_based_gating)
         segment_button.clicked.connect(partial(segment, self))
         contour_button.clicked.connect(partial(new_contour, self))
-        write_button.clicked.connect(partial(write_contours, self))
-        report_button.clicked.connect(partial(report, self))
 
         self.play_button = QPushButton()
         self.play_icon = self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay'))
@@ -205,12 +206,9 @@ class Master(QMainWindow):
         right_lower_vbox.addWidget(self.hide_contours_box)
         right_lower_vbox.addWidget(self.hide_special_points_box)
         right_lower_vbox.addWidget(self.use_diastolic_button)
-        right_lower_vbox.addWidget(image_button)
         right_lower_vbox.addWidget(gating_button)
         right_lower_vbox.addWidget(segment_button)
         right_lower_vbox.addWidget(contour_button)
-        right_lower_vbox.addWidget(write_button)
-        right_lower_vbox.addWidget(report_button)
 
         central_widget = QWidget()
         central_widget.setLayout(main_window_hbox)

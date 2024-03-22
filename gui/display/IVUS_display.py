@@ -159,9 +159,9 @@ class IVUSDisplay(QGraphicsView):
 
                     elliptic_ratio = (longest_distance / shortest_distance) if shortest_distance != 0 else 0
                     frame_metrics_text = QGraphicsTextItem(
-                        f'Lumen area:\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n'
+                        f'Lumen area:\t\t{round(lumen_area, 2)} (mm\N{SUPERSCRIPT TWO})\n'
                         f'Lumen circumf:\t{round(lumen_circumf, 2)} (mm)\n'
-                        f'Elliptic ratio:\t{round(elliptic_ratio, 2)}\n'
+                        f'Elliptic ratio:\t\t{round(elliptic_ratio, 2)}\n'
                         f'Longest distance:\t{round(longest_distance, 2)} (mm)\n'
                         f'Shortest distance:\t{round(shortest_distance, 2)} (mm)'
                     )

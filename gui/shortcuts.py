@@ -5,14 +5,11 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 
-from input_output.read_image import read_image
 from gui.display.contours_gui import new_contour
 
 
 def init_shortcuts(main_window):
     # General
-    QShortcut(QKeySequence('Ctrl+Q'), main_window, main_window.close)
-    QShortcut(QKeySequence('Ctrl+O'), main_window, partial(read_image, main_window))
     QShortcut(QKeySequence('H'), main_window, partial(hide_contours, main_window))
     QShortcut(QKeySequence('J'), main_window, partial(jiggle_frame, main_window))
     QShortcut(QKeySequence('E'), main_window, partial(new_contour, main_window))
