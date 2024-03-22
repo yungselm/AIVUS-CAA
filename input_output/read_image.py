@@ -119,7 +119,7 @@ def parse_dicom(main_window):
         pullback_rate, _ = QInputDialog.getText(
             main_window,
             'Pullback Speed',
-            'No pullback speed found, please enter pullback speeed (mm/s)',
+            'No pullback speed found, please enter pullback speed (mm/s)',
             QLineEdit.Normal,
             '0.5',
         )

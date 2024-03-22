@@ -66,7 +66,7 @@ class Master(QMainWindow):
         self.gated_frames_dia = []
         self.gated_frames_sys = []
         self.data = {}  # container to be saved in JSON file later, includes contours, etc.
-        self.metadata = {}  # metadata used outside of readDICOM (not saved to JSON file)
+        self.metadata = {}  # metadata used outside of read_image (not saved to JSON file)
         self.images = None
         self.diastole_color = (39, 69, 219)
         self.systole_color = (209, 55, 38)
