@@ -114,7 +114,7 @@ class Master(QMainWindow):
         main_window_hbox.addLayout(right_vbox)
 
         gating_button = QPushButton('Extract Diastolic and Systolic Frames')
-        segment_button = QPushButton('Segment')
+        segment_button = QPushButton('Automatic Segmentation')
         contour_button = QPushButton('Manual Contour')
 
         gating_button.setToolTip('Extract diastolic and systolic images from pullback')
@@ -203,8 +203,10 @@ class Master(QMainWindow):
 
         right_upper_hbox.addWidget(self.info_table)
         right_middle_hbox.addWidget(self.longitudinal_view)
-        right_lower_vbox.addWidget(self.hide_contours_box)
-        right_lower_vbox.addWidget(self.hide_special_points_box)
+        checkboxes = QHBoxLayout()
+        right_lower_vbox.addLayout(checkboxes)
+        checkboxes.addWidget(self.hide_contours_box)
+        checkboxes.addWidget(self.hide_special_points_box)
         right_lower_vbox.addWidget(self.use_diastolic_button)
         right_lower_vbox.addWidget(gating_button)
         right_lower_vbox.addWidget(segment_button)
