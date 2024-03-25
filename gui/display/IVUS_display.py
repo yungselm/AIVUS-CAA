@@ -301,6 +301,7 @@ class IVUSDisplay(QGraphicsView):
 
     def set_frame(self, value):
         self.frame = value
+        self.stop_contour()
 
     def mousePressEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
