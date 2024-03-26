@@ -5,7 +5,7 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 
-from gui.display.contours_gui import new_contour
+from gui.display.contours_gui import new_contour, new_measure
 
 
 def init_shortcuts(main_window):
@@ -13,7 +13,9 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('H'), main_window, partial(hide_contours, main_window))
     QShortcut(QKeySequence('J'), main_window, partial(jiggle_frame, main_window))
     QShortcut(QKeySequence('E'), main_window, partial(new_contour, main_window))
-    QShortcut(QKeySequence('Escape'), main_window, main_window.display.stop_contour)
+    QShortcut(QKeySequence('1'), main_window, partial(new_measure, main_window, index=0))
+    QShortcut(QKeySequence('2'), main_window, partial(new_measure, main_window, index=1))
+    QShortcut(QKeySequence('Escape'), main_window, partial(stop_all, main_window))
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
     # Windowing
@@ -69,6 +71,11 @@ def jiggle_frame(main_window):
         time.sleep(0.1)
         main_window.display_slider.setValue(current_frame)
         QApplication.processEvents()
+
+
+def stop_all(main_window):
+    main_window.display.stop_contour()
+    main_window.display.measure_index = None
 
 
 def delete_contour(main_window):
