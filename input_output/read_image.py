@@ -1,5 +1,4 @@
 import os
-import cv2
 
 import pydicom as dcm
 import SimpleITK as sitk

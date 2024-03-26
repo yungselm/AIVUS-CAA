@@ -74,7 +74,7 @@ class IVUSDisplay(QGraphicsView):
         ]
         self.images = images
         self.main_window.longitudinal_view.set_data(self.images, self.full_contours)
-        self.measure_points = [[None, None] for i in range(num_frames)]  # TODO: read measure points from file
+        self.measure_points = [[None, None] for _ in range(num_frames)]  # TODO: read measure points from file
         self.display_image(update_image=True, update_contours=True, update_phase=True)
 
     def display_image(self, update_image=False, update_contours=False, update_phase=False):
@@ -309,24 +309,25 @@ class IVUSDisplay(QGraphicsView):
 
     def add_measure(self, point, index=None, new=True):
         index = index if index is not None else self.measure_index
+        new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, 'r')
+        self.graphics_scene.addItem(new_point)
 
         if self.measure_points[self.frame][index] is None:
             self.measure_points[self.frame][index] = [point.x(), point.y()]
-            new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, 'r')
-            self.graphics_scene.addItem(new_point)
         else:  # second point
             self.measure_points[self.frame][index] += [point.x(), point.y()]
-            new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, 'r')
-            self.graphics_scene.addItem(new_point)
-            self.graphics_scene.addLine(
-                QLineF(
-                    self.measure_points[self.frame][index][0],
-                    self.measure_points[self.frame][index][1],
-                    self.measure_points[self.frame][index][2],
-                    self.measure_points[self.frame][index][3],
-                ),
-                QPen(Qt.red, self.point_thickness),
+            line = QLineF(
+                self.measure_points[self.frame][index][0],
+                self.measure_points[self.frame][index][1],
+                self.measure_points[self.frame][index][2],
+                self.measure_points[self.frame][index][3],
             )
+            length = QGraphicsTextItem(
+                f'{round(line.length() * self.main_window.metadata["resolution"] / self.scaling_factor, 2)} mm'
+            )
+            length.setPos(line.center().x(), line.center().y())
+            self.graphics_scene.addItem(length)
+            self.graphics_scene.addLine(line, QPen(Qt.red, self.point_thickness))
             if new:
                 self.measure_index = None
                 self.main_window.setCursor(Qt.ArrowCursor)
