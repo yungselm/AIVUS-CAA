@@ -46,6 +46,7 @@ class LongitudinalView(QGraphicsView):
         self.graphics_scene.addItem(marker)
 
     def lview_contour(self, frame, contour, scaling_factor=1, update=False):
+        index = None
         if self.points_on_marker[frame] is not None:  # remove previous points
             for point in self.points_on_marker[frame]:
                 self.graphics_scene.removeItem(point)
@@ -64,6 +65,8 @@ class LongitudinalView(QGraphicsView):
                 ):  # ensure the two points are from different sides of the contour
                     index = i
                     break
+            if index is None:  # no suitable points found
+                return
             self.points_on_marker[frame] = (
                 Point(
                     (frame, contour.full_contour[1][point_indices[0]] / scaling_factor),
