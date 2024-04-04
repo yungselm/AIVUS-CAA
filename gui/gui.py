@@ -27,7 +27,7 @@ from gui.display.IVUS_display import IVUSDisplay
 from gui.display.longitudinal_view import LongitudinalView
 from gui.slider import Slider, Communicate
 from gui.shortcuts import init_shortcuts, display_shortcuts_info
-from gui.display.contours_gui import new_contour
+from gui.display.contours_gui import new_contour, new_measure
 from input_output.read_image import read_image
 from input_output.contours_io import write_contours
 from gating.contour_based_gating import ContourBasedGating
@@ -85,7 +85,7 @@ class Master(QMainWindow):
         open_action.setShortcut('Ctrl+O')
         file_menu.addSeparator()
         file_menu.addAction('Save Contours', partial(write_contours, self))
-        file_menu.addAction('Save report', partial(report, self))
+        file_menu.addAction('Save Report', partial(report, self))
         file_menu.addSeparator()
         exit_action = file_menu.addAction('Exit', self.close)
         exit_action.setShortcut('Ctrl+Q')
@@ -113,13 +113,9 @@ class Master(QMainWindow):
         main_window_hbox.addLayout(left_vbox)
         main_window_hbox.addLayout(right_vbox)
 
-        gating_button = QPushButton('Extract Diastolic and Systolic Frames')
-        segment_button = QPushButton('Automatic Segmentation')
-        contour_button = QPushButton('Manual Contour')
-
-        gating_button.setToolTip('Extract diastolic and systolic images from pullback')
-        segment_button.setToolTip('Run deep learning based segmentation of lumen')
-        contour_button.setToolTip('Manually draw new contour for lumen')
+        self.display = IVUSDisplay(self, self.config)
+        self.display_frame_comms = Communicate()
+        self.display_frame_comms.updateBW[int].connect(self.display.set_frame)
 
         vertical_header = QHeaderView(Qt.Vertical)
         vertical_header.hide()
@@ -140,9 +136,21 @@ class Master(QMainWindow):
         self.info_table.setHorizontalHeader(horizontal_header)
         self.info_table.horizontalHeader().setStretchLastSection(True)
 
+        gating_button = QPushButton('Extract Diastolic and Systolic Frames')
+        gating_button.setToolTip('Extract diastolic and systolic images from pullback')
         gating_button.clicked.connect(self.contour_based_gating)
+        segment_button = QPushButton('Automatic Segmentation')
+        segment_button.setToolTip('Run deep learning based segmentation of lumen')
         segment_button.clicked.connect(partial(segment, self))
+        contour_button = QPushButton('Manual Contour')
+        contour_button.setToolTip('Manually draw new contour for lumen')
         contour_button.clicked.connect(partial(new_contour, self))
+        measure_button_1 = QPushButton('Measurement &1')
+        measure_button_1.setToolTip('Measure distance between two points')
+        measure_button_1.clicked.connect(partial(new_measure, self, index=0))
+        measure_button_2 = QPushButton('Measurement &2')
+        measure_button_2.setToolTip('Measure distance between two points')
+        measure_button_2.clicked.connect(partial(new_measure, self, index=1))
 
         self.play_button = QPushButton()
         self.play_icon = self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay'))
@@ -182,10 +190,6 @@ class Master(QMainWindow):
         self.use_diastolic_button.clicked.connect(self.use_diastolic)
         self.use_diastolic_button.setToolTip('Press button to switch between diastolic and systolic frames')
 
-        self.display = IVUSDisplay(self, self.config)
-        self.display_frame_comms = Communicate()
-        self.display_frame_comms.updateBW[int].connect(self.display.set_frame)
-
         self.longitudinal_view = LongitudinalView(self, self.config)
 
         self.frame_number_label = QLabel()
@@ -211,6 +215,10 @@ class Master(QMainWindow):
         right_lower_vbox.addWidget(gating_button)
         right_lower_vbox.addWidget(segment_button)
         right_lower_vbox.addWidget(contour_button)
+        measures = QHBoxLayout()
+        right_lower_vbox.addLayout(measures)
+        measures.addWidget(measure_button_1)
+        measures.addWidget(measure_button_2)
 
         central_widget = QWidget()
         central_widget.setLayout(main_window_hbox)

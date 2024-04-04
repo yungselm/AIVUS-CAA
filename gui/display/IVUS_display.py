@@ -4,7 +4,7 @@ import numpy as np
 from loguru import logger
 import cv2
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsTextItem
-from PyQt5.QtCore import Qt, QLineF
+from PyQt5.QtCore import Qt, QLineF, QPointF
 from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
 from shapely.geometry import Polygon
 
@@ -39,6 +39,7 @@ class IVUSDisplay(QGraphicsView):
         self.new_spline = None
         self.active_point = None
         self.active_point_index = None
+        self.measure_index = None
 
         # Store initial window level and window width (full width, middle level)
         self.initial_window_level = 128  # window level is the center which determines the brightness of the image
@@ -128,6 +129,7 @@ class IVUSDisplay(QGraphicsView):
         if not self.main_window.hide_contours:
             if update_contours:
                 self.draw_contour(self.main_window.data['lumen'])
+                self.draw_measure()
                 if self.main_window.data['lumen'][0][self.frame] and self.current_contour.full_contour[0] is not None:
                     lumen_x = [point / self.scaling_factor for point in self.current_contour.full_contour[0]]
                     lumen_y = [point / self.scaling_factor for point in self.current_contour.full_contour[1]]
@@ -274,12 +276,13 @@ class IVUSDisplay(QGraphicsView):
             self.graphics_scene.addItem(self.points_to_draw[-1])
 
     def start_contour(self):
+        self.measure_index = None
         self.main_window.setCursor(Qt.CrossCursor)
         self.draw = True
         self.points_to_draw = []
         self.main_window.data['lumen'][0][self.frame] = []
         self.main_window.data['lumen'][1][self.frame] = []
-        self.display_image(update_contours=True)
+        self.display_image(update_contours=True)  # clear previous contour
 
     def stop_contour(self):
         if self.main_window.image_displayed:
@@ -290,11 +293,56 @@ class IVUSDisplay(QGraphicsView):
                 self.frame, self.current_contour, self.scaling_factor, update=True
             )
 
-    def start_measure(self):
-        pass
+    def draw_measure(self):
+        for index in range(2):
+            if (
+                self.main_window.data['measures'][self.frame][index] is not None
+                and len(self.main_window.data['measures'][self.frame][index]) == 4
+            ):
+                first_point = QPointF(
+                    self.main_window.data['measures'][self.frame][index][0],
+                    self.main_window.data['measures'][self.frame][index][1],
+                )
+                second_point = QPointF(
+                    self.main_window.data['measures'][self.frame][index][2],
+                    self.main_window.data['measures'][self.frame][index][3],
+                )
+                self.main_window.data['measures'][self.frame][index] = None
+                self.add_measure(first_point, index=index, new=False)
+                self.add_measure(second_point, index=index, new=False)
 
-    def stop_measure(self):
-        pass
+    def add_measure(self, point, index=None, new=True):
+        index = index if index is not None else self.measure_index
+        new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, 'r')
+        self.graphics_scene.addItem(new_point)
+
+        if self.main_window.data['measures'][self.frame][index] is None:
+            self.main_window.data['measures'][self.frame][index] = [point.x(), point.y()]
+        else:  # second point
+            self.main_window.data['measures'][self.frame][index] += [point.x(), point.y()]
+            line = QLineF(
+                self.main_window.data['measures'][self.frame][index][0],
+                self.main_window.data['measures'][self.frame][index][1],
+                self.main_window.data['measures'][self.frame][index][2],
+                self.main_window.data['measures'][self.frame][index][3],
+            )
+            length = round(line.length() * self.main_window.metadata["resolution"] / self.scaling_factor, 2)
+            self.main_window.data['measure_lengths'][self.frame][index] = length
+            length_text = QGraphicsTextItem(f'{length} mm')
+            length_text.setPos(line.center().x(), line.center().y())
+            self.graphics_scene.addItem(length_text)
+            self.graphics_scene.addLine(line, QPen(Qt.red, self.point_thickness))
+            if new:
+                self.measure_index = None
+                self.main_window.setCursor(Qt.ArrowCursor)
+
+    def start_measure(self, index: int):
+        if self.draw:
+            self.stop_contour()
+        self.main_window.data['measures'][self.frame][index] = None  # reset this measure
+        self.main_window.setCursor(Qt.CrossCursor)
+        self.measure_index = index
+        self.display_image(update_contours=True)
 
     def update_display(self):
         self.display_image(update_image=True, update_contours=True, update_phase=True)
@@ -302,12 +350,16 @@ class IVUSDisplay(QGraphicsView):
     def set_frame(self, value):
         self.frame = value
         self.stop_contour()
+        if self.measure_index is not None:
+            self.stop_measure(self.measure_index)
 
     def mousePressEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
+            pos = self.mapToScene(event.pos())
             if self.draw:
-                pos = self.mapToScene(event.pos())
                 self.add_manual_contour(pos)
+            elif self.measure_index is not None:  # drawing measure
+                self.add_measure(pos)
             else:
                 # identify which point has been clicked
                 items = self.items(event.pos())
