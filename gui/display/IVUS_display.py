@@ -295,12 +295,17 @@ class IVUSDisplay(QGraphicsView):
 
     def draw_measure(self):
         for index in range(2):
-            if self.main_window.data['measures'][self.frame][index] is not None and len(self.main_window.data['measures'][self.frame][index]) == 4:
+            if (
+                self.main_window.data['measures'][self.frame][index] is not None
+                and len(self.main_window.data['measures'][self.frame][index]) == 4
+            ):
                 first_point = QPointF(
-                    self.main_window.data['measures'][self.frame][index][0], self.main_window.data['measures'][self.frame][index][1]
+                    self.main_window.data['measures'][self.frame][index][0],
+                    self.main_window.data['measures'][self.frame][index][1],
                 )
                 second_point = QPointF(
-                    self.main_window.data['measures'][self.frame][index][2], self.main_window.data['measures'][self.frame][index][3]
+                    self.main_window.data['measures'][self.frame][index][2],
+                    self.main_window.data['measures'][self.frame][index][3],
                 )
                 self.main_window.data['measures'][self.frame][index] = None
                 self.add_measure(first_point, index=index, new=False)
@@ -321,11 +326,11 @@ class IVUSDisplay(QGraphicsView):
                 self.main_window.data['measures'][self.frame][index][2],
                 self.main_window.data['measures'][self.frame][index][3],
             )
-            length = QGraphicsTextItem(
-                f'{round(line.length() * self.main_window.metadata["resolution"] / self.scaling_factor, 2)} mm'
-            )
-            length.setPos(line.center().x(), line.center().y())
-            self.graphics_scene.addItem(length)
+            length = round(line.length() * self.main_window.metadata["resolution"] / self.scaling_factor, 2)
+            self.main_window.data['measure_lengths'][self.frame][index] = length
+            length_text = QGraphicsTextItem(f'{length} mm')
+            length_text.setPos(line.center().x(), line.center().y())
+            self.graphics_scene.addItem(length_text)
             self.graphics_scene.addLine(line, QPen(Qt.red, self.point_thickness))
             if new:
                 self.measure_index = None
