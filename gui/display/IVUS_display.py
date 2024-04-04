@@ -74,7 +74,6 @@ class IVUSDisplay(QGraphicsView):
         ]
         self.images = images
         self.main_window.longitudinal_view.set_data(self.images, self.full_contours)
-        self.measure_points = [[None, None] for _ in range(num_frames)]  # TODO: read measure points from file
         self.display_image(update_image=True, update_contours=True, update_phase=True)
 
     def display_image(self, update_image=False, update_contours=False, update_phase=False):
@@ -296,14 +295,14 @@ class IVUSDisplay(QGraphicsView):
 
     def draw_measure(self):
         for index in range(2):
-            if self.measure_points[self.frame][index] is not None and len(self.measure_points[self.frame][index]) == 4:
+            if self.main_window.data['measures'][self.frame][index] is not None and len(self.main_window.data['measures'][self.frame][index]) == 4:
                 first_point = QPointF(
-                    self.measure_points[self.frame][index][0], self.measure_points[self.frame][index][1]
+                    self.main_window.data['measures'][self.frame][index][0], self.main_window.data['measures'][self.frame][index][1]
                 )
                 second_point = QPointF(
-                    self.measure_points[self.frame][index][2], self.measure_points[self.frame][index][3]
+                    self.main_window.data['measures'][self.frame][index][2], self.main_window.data['measures'][self.frame][index][3]
                 )
-                self.measure_points[self.frame][index] = None
+                self.main_window.data['measures'][self.frame][index] = None
                 self.add_measure(first_point, index=index, new=False)
                 self.add_measure(second_point, index=index, new=False)
 
@@ -312,15 +311,15 @@ class IVUSDisplay(QGraphicsView):
         new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, 'r')
         self.graphics_scene.addItem(new_point)
 
-        if self.measure_points[self.frame][index] is None:
-            self.measure_points[self.frame][index] = [point.x(), point.y()]
+        if self.main_window.data['measures'][self.frame][index] is None:
+            self.main_window.data['measures'][self.frame][index] = [point.x(), point.y()]
         else:  # second point
-            self.measure_points[self.frame][index] += [point.x(), point.y()]
+            self.main_window.data['measures'][self.frame][index] += [point.x(), point.y()]
             line = QLineF(
-                self.measure_points[self.frame][index][0],
-                self.measure_points[self.frame][index][1],
-                self.measure_points[self.frame][index][2],
-                self.measure_points[self.frame][index][3],
+                self.main_window.data['measures'][self.frame][index][0],
+                self.main_window.data['measures'][self.frame][index][1],
+                self.main_window.data['measures'][self.frame][index][2],
+                self.main_window.data['measures'][self.frame][index][3],
             )
             length = QGraphicsTextItem(
                 f'{round(line.length() * self.main_window.metadata["resolution"] / self.scaling_factor, 2)} mm'
@@ -335,7 +334,7 @@ class IVUSDisplay(QGraphicsView):
     def start_measure(self, index: int):
         if self.draw:
             self.stop_contour()
-        self.measure_points[self.frame][index] = None  # reset this measure
+        self.main_window.data['measures'][self.frame][index] = None  # reset this measure
         self.main_window.setCursor(Qt.CrossCursor)
         self.measure_index = index
         self.display_image(update_contours=True)

@@ -85,7 +85,7 @@ class Master(QMainWindow):
         open_action.setShortcut('Ctrl+O')
         file_menu.addSeparator()
         file_menu.addAction('Save Contours', partial(write_contours, self))
-        file_menu.addAction('Save report', partial(report, self))
+        file_menu.addAction('Save Report', partial(report, self))
         file_menu.addSeparator()
         exit_action = file_menu.addAction('Exit', self.close)
         exit_action.setShortcut('Ctrl+Q')

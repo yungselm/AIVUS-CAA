@@ -21,6 +21,8 @@ def read_contours(main_window, file_name=None):
         logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_json}')
         with open(newest_json, 'r') as in_file:
             main_window.data = json.load(in_file)
+        if 'measures' not in main_window.data:  # added in version 0.4.5
+            main_window.data['measures'] = [[None, None] for _ in range(main_window.metadata['num_frames'])]
         success = True
 
     elif xml_files:
