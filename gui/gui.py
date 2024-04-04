@@ -329,13 +329,16 @@ class Master(QMainWindow):
             else:
                 try:
                     self.gated_frames_dia.remove(frame)
-                    self.data['phases'][frame] = '-'
+                    if (
+                        self.data['phases'][frame] == 'D'
+                    ):  # do not reset when function is called from toggle_systolic_frame
+                        self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
             if self.use_diastolic_button.isChecked():
                 self.display_slider.set_gated_frames(self.gated_frames_dia)
 
-        self.display.display_image(update_phase=True)
+        self.display.update_display()
 
     def toggle_systolic_frame(self, state_true):
         if self.image_displayed:
@@ -351,13 +354,16 @@ class Master(QMainWindow):
             else:
                 try:
                     self.gated_frames_sys.remove(frame)
-                    self.data['phases'][frame] = '-'
+                    if (
+                        self.data['phases'][frame] == 'S'
+                    ):  # do not reset when function is called from toggle_diastolic_frame
+                        self.data['phases'][frame] = '-'
                 except ValueError:
                     pass
             if not self.use_diastolic_button.isChecked():
                 self.display_slider.set_gated_frames(self.gated_frames_sys)
 
-        self.display.display_image(update_phase=True)
+        self.display.update_display()
 
     def toggle_plaque_frame(self, state_true):
         if self.image_displayed:
