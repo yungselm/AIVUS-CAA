@@ -15,6 +15,9 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('E'), main_window, partial(new_contour, main_window))
     QShortcut(QKeySequence('1'), main_window, partial(new_measure, main_window, index=0))
     QShortcut(QKeySequence('2'), main_window, partial(new_measure, main_window, index=1))
+    QShortcut(QKeySequence('3'), main_window, partial(toggle_filter, main_window, index=0))
+    QShortcut(QKeySequence('4'), main_window, partial(toggle_filter, main_window, index=1))
+    QShortcut(QKeySequence('5'), main_window, partial(toggle_filter, main_window, index=2))
     QShortcut(QKeySequence('Escape'), main_window, partial(stop_all, main_window))
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
@@ -72,6 +75,13 @@ def jiggle_frame(main_window):
         main_window.display_slider.setValue(current_frame)
         QApplication.processEvents()
 
+def toggle_filter(main_window, index):
+    if main_window.image_displayed:
+        if main_window.filter == index:
+            main_window.filter = None
+        else:
+            main_window.filter = index
+        main_window.display.display_image(update_image=True)
 
 def stop_all(main_window):
     main_window.display.stop_contour()

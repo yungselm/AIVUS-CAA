@@ -97,6 +97,13 @@ class IVUSDisplay(QGraphicsView):
             normalised_data = ((normalised_data - lower_bound) / (upper_bound - lower_bound) * 255).astype(np.uint8)
             height, width = normalised_data.shape
 
+            if self.main_window.filter == 0:
+                normalised_data = cv2.medianBlur(normalised_data, 5)
+            elif self.main_window.filter == 1:
+                normalised_data = cv2.GaussianBlur(normalised_data, (5, 5), 0)
+            elif self.main_window.filter == 2:
+                normalised_data = cv2.bilateralFilter(normalised_data, 9, 75, 75)
+
             if self.main_window.colormap_enabled:
                 # Apply an orange-blue colormap
                 colormap = cv2.applyColorMap(normalised_data, cv2.COLORMAP_JET)
