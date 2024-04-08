@@ -107,7 +107,7 @@ class IVUSDisplay(QGraphicsView):
 
             if self.main_window.colormap_enabled:
                 # Apply an orange-blue colormap
-                colormap = cv2.applyColorMap(normalised_data, cv2.COLORMAP_JET)
+                colormap = cv2.applyColorMap(normalised_data, cv2.COLORMAP_COOL)
                 q_image = QImage(colormap.data, width, height, width * 3, QImage.Format.Format_RGB888).scaled(
                     self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
