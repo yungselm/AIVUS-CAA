@@ -76,15 +76,19 @@ This will open a graphical user interface (GUI) in which you have access to the 
 For ease-of-use, this application contains several keyboard shortcuts.\
 In the current state, these cannot be changed by the user (at least not without changing the source code).
 
+- Press <kbd>Ctrl</kbd> + <kbd>O</kbd> to open a DICOM/NIfTi file
 - Use the <kbd>A</kbd> and <kbd>D</kbd> keys to move through the IVUS images frame-by-frame
 - If gated (diastolic/systolic) frames are available, you can move through those using <kbd>S</kbd> and <kbd>W</kbd>\
   Make sure to select which gated frames you want to traverse using the corresponding button (blue for diastolic, red for systolic)
-- Press <kbd>E</kbd> to manually draw a new lumen contour
+- Press <kbd>E</kbd> to manually draw a new lumen contour\
+  In case you accidentally delete a contour, you can use <kbd>Ctrl</kbd> + <kbd>Z</kbd> to undo
+- Use <kbd>1</kbd>, <kbd>2</kbd> to draw measurements 1 and 2, respectively
+- Use <kbd>3</kbd>, <kbd>4</kbd> or <kbd>5</kbd> to apply image filters
 - Hold the right mouse button <kbd>RMB</kbd> for windowing (can be reset by pressing <kbd>R</kbd>)
 - Press <kbd>C</kbd> to toggle color mode
 - Press <kbd>H</kbd> to hide all contours
 - Press <kbd>J</kbd> to jiggle around the current frame
-- Press <kbd>Q</kbd> to close the program
+- Press <kbd>Ctrl</kbd> + <kbd>Q</kbd> to close the program
 
 ## Acknowledgements
 
