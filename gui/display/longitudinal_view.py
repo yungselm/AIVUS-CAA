@@ -30,7 +30,7 @@ class LongitudinalView(QGraphicsView):
         self.image_width = images.shape[1]
 
         slice = images[:, self.image_width // 2, :]
-        slice = np.flipud(np.transpose(slice, (1, 0))).copy()  # need .copy() to avoid QImage TypeError
+        slice = np.transpose(slice, (1, 0)).copy()  # need .copy() to avoid QImage TypeError
         longitudinal_image = QImage(
             slice.data, self.num_frames, self.image_width, self.num_frames, QImage.Format_Grayscale8
         )
