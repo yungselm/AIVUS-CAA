@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
 from PyQt5.QtCore import Qt, QUrl
 
 from gui.display.contours_gui import new_contour, new_measure
+from gui.error_message import ErrorMessage
 
 
 def init_shortcuts(main_window):
@@ -38,7 +39,7 @@ def init_shortcuts(main_window):
 def display_shortcuts_info(main_window):
     url = 'https://github.com/cardionaut/AAOCASeg?tab=readme-ov-file#keyboard-shortcuts'
     if not QDesktopServices.openUrl(QUrl(url)):
-        QMessageBox.warning(main_window, 'Error', 'Could not open the browser. Please visit\n' + url)
+        ErrorMessage(main_window, 'Could not open the browser. Please visit\n' + url)
 
 
 def hide_contours(main_window):

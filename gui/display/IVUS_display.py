@@ -357,6 +357,7 @@ class IVUSDisplay(QGraphicsView):
 
     def set_frame(self, value):
         self.frame = value
+        self.current_contour = None
         self.stop_contour()
         if self.measure_index is not None:
             self.stop_measure(self.measure_index)

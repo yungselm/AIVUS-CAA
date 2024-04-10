@@ -12,7 +12,6 @@
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Acknowledgements](#acknowledgements)
 
-
 ## Installation
 
 ### Basic
