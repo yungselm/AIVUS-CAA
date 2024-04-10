@@ -10,6 +10,7 @@ from gui.frame_range_dialog import FrameRangeDialog
 from report.report import report
 
 
+
 class ContourBasedGating:
     def __init__(self, main_window):
         self.main_window = main_window
@@ -27,6 +28,10 @@ class ContourBasedGating:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
 
+        self.frames = self.crop_frames(x1=50, x2=450, y1=50, y2=450)
+        self.shortest_distance = self.report_data['shortest_distance']
+        self.vector_angle = self.report_data['vector_angle']
+        self.vector_length = self.report_data['vector_length']
         self.define_intramural_part()
         self.frames = self.crop_frames(x1=50, x2=450, y1=50, y2=450)
         self.shortest_distance = self.report_data['shortest_distance']
@@ -57,7 +62,7 @@ class ContourBasedGating:
     def crop_frames(self, x1=50, x2=450, y1=50, y2=450):
         """Crops frames to a specific region."""
         cropped_frames = []
-        for frame in self.frames:
+        for frame in self.main_window.images:
             cropped_frame = frame[x1:x2, y1:y2]
             cropped_frames.append(cropped_frame)
         return cropped_frames
