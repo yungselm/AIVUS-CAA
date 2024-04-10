@@ -102,13 +102,13 @@ class Spline(QGraphicsPathItem):
 
 
 def get_qt_pen(color, thickness):
-    if color == 'y':
+    if color == 'yellow':
         return QPen(Qt.yellow, thickness)
-    elif color == 'r':
+    elif color == 'red':
         return QPen(Qt.red, thickness)
-    elif color == 'g':
+    elif color == 'green':
         return QPen(Qt.green, thickness)
-    elif color == 'c':
+    elif color == 'cyan':
         return QPen(Qt.cyan, thickness)
     else:
         return QPen(Qt.blue, thickness)

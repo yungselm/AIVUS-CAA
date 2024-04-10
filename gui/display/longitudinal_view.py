@@ -72,13 +72,13 @@ class LongitudinalView(QGraphicsView):
                     (frame, contour.full_contour[1][point_indices[0]] / scaling_factor),
                     line_thickness=self.lview_contour_size,
                     point_radius=self.lview_contour_size,
-                    color='g',
+                    color='green',
                 ),
                 Point(
                     (frame, contour.full_contour[1][point_indices[index]] / scaling_factor),
                     line_thickness=self.lview_contour_size,
                     point_radius=self.lview_contour_size,
-                    color='g',
+                    color='green',
                 ),
             )
         for point in self.points_on_marker[frame]:

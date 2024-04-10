@@ -40,7 +40,7 @@ class IVUSDisplay(QGraphicsView):
         self.active_point = None
         self.active_point_index = None
         self.measure_index = None
-        self.measure_colors = ['r', 'c']
+        self.measure_colors = self.main_window.measure_colors
 
         # Store initial window level and window width (full width, middle level)
         self.initial_window_level = 128  # window level is the center which determines the brightness of the image
@@ -67,7 +67,7 @@ class IVUSDisplay(QGraphicsView):
         self.main_window.data['lumen'] = lumen
         self.full_contours = [
             (
-                Spline([lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'g')
+                Spline([lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'green')
                 if lumen[0][frame]
                 else None
             )
@@ -214,14 +214,14 @@ class IVUSDisplay(QGraphicsView):
         if lumen[0][self.frame]:
             lumen_x = [point * self.scaling_factor for point in lumen[0][self.frame]]
             lumen_y = [point * self.scaling_factor for point in lumen[1][self.frame]]
-            self.current_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'g')
+            self.current_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'green')
             if self.current_contour.full_contour[0] is not None:
                 self.contour_points = [
                     Point(
                         (self.current_contour.knot_points[0][i], self.current_contour.knot_points[1][i]),
                         self.point_thickness,
                         self.point_radius,
-                        'g',
+                        'green',
                     )
                     for i in range(len(self.current_contour.knot_points[0]) - 1)
                 ]

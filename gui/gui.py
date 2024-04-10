@@ -71,6 +71,7 @@ class Master(QMainWindow):
         self.images = None
         self.diastole_color = (39, 69, 219)
         self.systole_color = (209, 55, 38)
+        self.measure_colors = ['red', 'cyan']
         self.waiting_status = 'Waiting for user input...'
         self.init_gui()
         init_shortcuts(self)
@@ -149,9 +150,11 @@ class Master(QMainWindow):
         measure_button_1 = QPushButton('Measurement &1')
         measure_button_1.setToolTip('Measure distance between two points')
         measure_button_1.clicked.connect(partial(new_measure, self, index=0))
+        measure_button_1.setStyleSheet(f'border-color: {self.measure_colors[0]}')
         measure_button_2 = QPushButton('Measurement &2')
         measure_button_2.setToolTip('Measure distance between two points')
         measure_button_2.clicked.connect(partial(new_measure, self, index=1))
+        measure_button_2.setStyleSheet(f'border-color: {self.measure_colors[1]}')
 
         self.play_button = QPushButton()
         self.play_icon = self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay'))
