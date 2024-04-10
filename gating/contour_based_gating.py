@@ -10,7 +10,6 @@ from gui.frame_range_dialog import FrameRangeDialog
 from report.report import report
 
 
-
 class ContourBasedGating:
     def __init__(self, main_window):
         self.main_window = main_window
@@ -19,6 +18,9 @@ class ContourBasedGating:
         self.blurring = None
         self.vertical_lines = []
         self.selected_line = None
+        self.phases = []
+        self.systolic_indices = []
+        self.diastolic_indices = []
 
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
@@ -28,18 +30,14 @@ class ContourBasedGating:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
 
-        self.frames = self.crop_frames(x1=50, x2=450, y1=50, y2=450)
-        self.shortest_distance = self.report_data['shortest_distance']
-        self.vector_angle = self.report_data['vector_angle']
-        self.vector_length = self.report_data['vector_length']
         self.define_intramural_part()
         self.frames = self.crop_frames(x1=50, x2=450, y1=50, y2=450)
         self.shortest_distance = self.report_data['shortest_distance']
         self.vector_angle = self.report_data['vector_angle']
         self.vector_length = self.report_data['vector_length']
         self.prepare_data()
-        success, phases = self.plot_data()
-        print(phases)
+        success = self.plot_data()
+        logger.debug(self.phases)
         if success:
             self.propagate_gating()
             self.update_main_window()
@@ -55,8 +53,7 @@ class ContourBasedGating:
                 lower_limit == 0 and upper_limit == self.main_window.images.shape[0]
             ):  # automatic detection of intramural part
                 mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
-            self.report_data = self.report_data[
-                self.report_data['frame'].between(lower_limit, upper_limit)]
+            self.report_data = self.report_data[self.report_data['frame'].between(lower_limit, upper_limit)]
             self.frames = self.main_window.images[lower_limit:upper_limit]
 
     def crop_frames(self, x1=50, x2=450, y1=50, y2=450):
@@ -66,6 +63,18 @@ class ContourBasedGating:
             cropped_frame = frame[x1:x2, y1:y2]
             cropped_frames.append(cropped_frame)
         return cropped_frames
+
+    def prepare_data(self):
+        """Prepares data for plotting."""
+        self.correlation = self.normalize_data(self.calculate_correlation())
+        self.blurring = self.normalize_data(self.calculate_blurring_fft())
+        self.shortest_distance = self.normalize_data(self.shortest_distance)
+        self.vector_angle = self.normalize_data(self.vector_angle)
+        self.vector_length = self.normalize_data(self.vector_length)
+        print("Data prepared successfully")
+        
+    def normalize_data(self, data):
+        return (data - np.min(data)) / np.sum(data - np.min(data))
 
     def calculate_correlation(self):
         """Calculates correlation coefficients between consecutive frames."""
@@ -87,23 +96,6 @@ class ContourBasedGating:
             blurring_score = np.mean(sorted_magnitude_spectrum[threshold:])
             blurring_scores.append(blurring_score)
         return blurring_scores
-
-    def normalize_data(self, data):
-        return (data - np.min(data)) / np.sum(data - np.min(data))
-
-    def prepare_data(self):
-        """Prepares data for plotting."""
-        self.correlation = self.normalize_data(
-            self.calculate_correlation()
-        )  # Pass frames as an argument to calculate_correlation()
-        self.blurring = self.normalize_data(self.calculate_blurring_fft())
-        self.shortest_distance = self.normalize_data(self.shortest_distance)
-        self.vector_angle = self.normalize_data(self.vector_angle)
-        self.vector_length = self.normalize_data(self.vector_length)
-        print("Data prepared successfully")
-
-    def smooth_curve(self, signal, window_size=5):
-        return np.convolve(signal, np.ones(window_size) / window_size, mode='valid')
 
     def identify_extrema(self, signal):
         maxima_indices = argrelextrema(signal, np.greater)[0]
@@ -151,6 +143,9 @@ class ContourBasedGating:
             combined_signal += weights[i] * signal
 
         return combined_signal
+    
+    def smooth_curve(self, signal, window_size=5):
+        return np.convolve(signal, np.ones(window_size) / window_size, mode='valid')
 
     def on_click(self, event):
         if event.inaxes:
@@ -170,6 +165,8 @@ class ContourBasedGating:
                     self.vertical_lines.append(new_line)
                 plt.draw()
 
+        logger.debug(self.vertical_lines)
+
     def on_release(self, event):
         self.selected_line = None
 
@@ -178,8 +175,10 @@ class ContourBasedGating:
             self.selected_line.set_xdata([event.xdata] * 2)
             plt.draw()
 
+    def on_close(self, event):
+        plt.close()
+
     def get_x_indices(self):
-        print(self.vertical_lines)
         x_indices = [line.get_xdata()[0] for line in self.vertical_lines]
         return x_indices
 
@@ -240,14 +239,23 @@ class ContourBasedGating:
         plt.connect('button_press_event', self.on_click)
         plt.connect('motion_notify_event', self.on_motion)
         plt.connect('button_release_event', self.on_release)
+        plt.connect('close_event', self.on_close)
 
-        plt.show()
+        plt.show(block=True)
 
-        # Example usage to get x indices
-        phases = self.get_x_indices()
-        phases = [round(phase, 0) for phase in phases]
+        self.phases = self.get_x_indices()
+        self.phases = [round(phase, 0) for phase in self.phases]
 
-        return True, phases
+        return True
+
+    def identify_systole_diastole(self):
+        # split self.phases by every second element
+        first_indices = self.phases[::2]
+        second_indices = self.phases[1::2]
+
+        first_elliptic_ratio = np.mean(self.report_data['frame'][first_indices])
+
+        pass
 
     def propagate_gating(self):
         sys_mean_diff = round(np.mean(np.diff(self.systolic_indices)))
