@@ -1,9 +1,9 @@
 import time
 
 from functools import partial
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QDesktopServices
 from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 
 from gui.display.contours_gui import new_contour, new_measure
 
@@ -36,20 +36,9 @@ def init_shortcuts(main_window):
 
 
 def display_shortcuts_info(main_window):
-    text = (
-        '\n'
-        'First, load a DICOM/NIfTi file using the button below or by pressing Ctrl+O.\n'
-        'If available, contours for that file will be read automatically.\n'
-        'Use the A and D keys to move through all frames, S and W keys to move through gated frames.\n'
-        'Press E to draw a new Lumen contour.\n'
-        'Press Delete to delete the current Lumen contour.\n'
-        'Hold the right mouse button for windowing (can be reset by pressing R).\n'
-        'Press C to toggle color mode.\n'
-        'Press H to hide all contours.\n'
-        'Press J to jiggle around the current frame.\n'
-        'Press Ctrl+Q to close the program.\n'
-    )
-    QMessageBox.information(main_window, 'Keyboard Shortcuts', text)
+    url = 'https://github.com/cardionaut/AAOCASeg?tab=readme-ov-file#keyboard-shortcuts'
+    if not QDesktopServices.openUrl(QUrl(url)):
+        QMessageBox.warning(main_window, 'Error', 'Could not open the browser. Please visit\n' + url)
 
 
 def hide_contours(main_window):
