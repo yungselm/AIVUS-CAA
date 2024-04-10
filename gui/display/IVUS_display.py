@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt, QLineF, QPointF
 from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
 from shapely.geometry import Polygon
 
-from gui.geometry import Point, Spline
+from gui.geometry import Point, Spline, get_qt_pen
 from gui.display.longitudinal_view import Marker
 from report.report import compute_polygon_metrics, farthest_points, closest_points
 from segmentation.segment import downsample
@@ -40,6 +40,7 @@ class IVUSDisplay(QGraphicsView):
         self.active_point = None
         self.active_point_index = None
         self.measure_index = None
+        self.measure_colors = ['r', 'c']
 
         # Store initial window level and window width (full width, middle level)
         self.initial_window_level = 128  # window level is the center which determines the brightness of the image
@@ -320,7 +321,7 @@ class IVUSDisplay(QGraphicsView):
 
     def add_measure(self, point, index=None, new=True):
         index = index if index is not None else self.measure_index
-        new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, 'r')
+        new_point = Point((point.x(), point.y()), self.point_thickness, self.point_radius, self.measure_colors[index])
         self.graphics_scene.addItem(new_point)
 
         if self.main_window.data['measures'][self.frame][index] is None:
@@ -338,7 +339,7 @@ class IVUSDisplay(QGraphicsView):
             length_text = QGraphicsTextItem(f'{length} mm')
             length_text.setPos(line.center().x(), line.center().y())
             self.graphics_scene.addItem(length_text)
-            self.graphics_scene.addLine(line, QPen(Qt.red, self.point_thickness))
+            self.graphics_scene.addLine(line, get_qt_pen(self.measure_colors[index], self.point_thickness))
             if new:
                 self.measure_index = None
                 self.main_window.setCursor(Qt.ArrowCursor)

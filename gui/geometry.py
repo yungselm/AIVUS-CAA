@@ -13,15 +13,7 @@ class Point(QGraphicsEllipseItem):
         super(Point, self).__init__()
         self.line_thickness = line_thickness
         self.point_radius = point_radius
-
-        if color == 'y':
-            self.default_color = QPen(Qt.yellow, self.line_thickness)
-        elif color == 'r':
-            self.default_color = QPen(Qt.red, self.line_thickness)
-        elif color == 'g':
-            self.default_color = QPen(Qt.green, self.line_thickness)
-        else:
-            self.default_color = QPen(Qt.blue, self.line_thickness)
+        self.default_color = get_qt_pen(color, line_thickness)
 
         self.setPen(self.default_color)
         self.setRect(
@@ -58,15 +50,7 @@ class Spline(QGraphicsPathItem):
         self.knot_points = None
         self.full_contour = None
         self.set_knot_points(points)
-
-        if color == 'y':
-            self.setPen(QPen(Qt.yellow, line_thickness))
-        elif color == 'r':
-            self.setPen(QPen(Qt.red, line_thickness))
-        elif color == 'g':
-            self.setPen(QPen(Qt.green, line_thickness))
-        else:
-            self.setPen(QPen(Qt.blue, line_thickness))
+        self.setPen(get_qt_pen(color, line_thickness))
 
     def set_knot_points(self, points):
         try:
@@ -115,3 +99,16 @@ class Spline(QGraphicsPathItem):
         for i in range(0, len(self.full_contour[0])):
             self.path.setElementPositionAt(i, self.full_contour[0][i], self.full_contour[1][i])
         self.setPath(self.path)
+
+
+def get_qt_pen(color, thickness):
+    if color == 'y':
+        return QPen(Qt.yellow, thickness)
+    elif color == 'r':
+        return QPen(Qt.red, thickness)
+    elif color == 'g':
+        return QPen(Qt.green, thickness)
+    elif color == 'c':
+        return QPen(Qt.cyan, thickness)
+    else:
+        return QPen(Qt.blue, thickness)
