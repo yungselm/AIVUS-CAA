@@ -337,7 +337,7 @@ class IVUSDisplay(QGraphicsView):
             length = round(line.length() * self.main_window.metadata["resolution"] / self.scaling_factor, 2)
             self.main_window.data['measure_lengths'][self.frame][index] = length
             length_text = QGraphicsTextItem(f'{length} mm')
-            length_text.setPos(line.center().x(), line.center().y())
+            length_text.setPos(point.x(), point.y())
             self.graphics_scene.addItem(length_text)
             self.graphics_scene.addLine(line, get_qt_pen(self.measure_colors[index], self.point_thickness))
             if new:
