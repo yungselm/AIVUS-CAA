@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QMenuBar,
     QStatusBar,
+    QGridLayout,
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
@@ -102,7 +103,7 @@ class Master(QMainWindow):
         main_window_hbox = QHBoxLayout()
         left_vbox = QVBoxLayout()
         right_vbox = QVBoxLayout()
-        left_lower_hbox = QHBoxLayout()
+        left_lower_vbox = QVBoxLayout()
 
         left_vbox.setContentsMargins(0, 0, SPACING, SPACING)
         right_vbox.setContentsMargins(SPACING, 0, 0, SPACING)
@@ -201,20 +202,27 @@ class Master(QMainWindow):
         self.frame_number_label.setText(f'Frame {self.display_slider.value() + 1}')
 
         left_vbox.addWidget(self.display)
-        left_lower_hbox.addWidget(self.play_button)
-        left_lower_hbox.addWidget(self.display_slider)
-        left_lower_hbox.addWidget(self.diastolic_frame_box)
-        left_lower_hbox.addWidget(self.systolic_frame_box)
-        left_lower_hbox.addWidget(self.plaque_frame_box)
-        left_vbox.addLayout(left_lower_hbox)
-        left_vbox.addWidget(self.frame_number_label)
+        left_lower_grid = QGridLayout()
+        left_lower_hbox_1 = QHBoxLayout()
+        left_lower_hbox_1.addWidget(self.diastolic_frame_box)
+        left_lower_hbox_1.addWidget(self.systolic_frame_box)
+        left_lower_hbox_1.addWidget(self.plaque_frame_box)
+        left_lower_grid.addLayout(left_lower_hbox_1, 0, 0)
+        left_lower_hbox_2 = QHBoxLayout()
+        left_lower_hbox_2.addWidget(self.play_button)
+        left_lower_hbox_2.addWidget(self.display_slider)
+        left_lower_grid.addLayout(left_lower_hbox_2, 0, 1)
+        left_lower_hbox_3 = QHBoxLayout()
+        left_lower_hbox_3.addWidget(self.hide_contours_box)
+        left_lower_hbox_3.addWidget(self.hide_special_points_box)
+        left_lower_grid.addLayout(left_lower_hbox_3, 1, 0)
+        left_lower_hbox_4 = QHBoxLayout()
+        left_lower_hbox_4.addWidget(self.frame_number_label)
+        left_lower_grid.addLayout(left_lower_hbox_4, 1, 1)
+        left_vbox.addLayout(left_lower_grid)
 
         right_upper_hbox.addWidget(self.info_table)
         right_middle_hbox.addWidget(self.longitudinal_view)
-        checkboxes = QHBoxLayout()
-        right_lower_vbox.addLayout(checkboxes)
-        checkboxes.addWidget(self.hide_contours_box)
-        checkboxes.addWidget(self.hide_special_points_box)
         right_lower_vbox.addWidget(self.use_diastolic_button)
         right_lower_vbox.addWidget(gating_button)
         right_lower_vbox.addWidget(segment_button)
@@ -249,8 +257,10 @@ class Master(QMainWindow):
 
     def play(self):
         """Plays all frames until end of pullback starting from currently selected frame"""
+        if not self.image_displayed:
+            return
+        
         start_frame = self.display_slider.value()
-
         if self.paused:
             self.paused = False
             self.play_button.setIcon(self.pause_icon)
