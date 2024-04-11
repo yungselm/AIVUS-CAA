@@ -37,6 +37,7 @@ from gui.shortcuts import (
     toggle_color,
 )
 from gui.display.contours_gui import new_contour, new_measure
+from gui.display.gating_display import GatingDisplay
 from input_output.read_image import read_image
 from input_output.contours_io import write_contours
 from gating.contour_based_gating import ContourBasedGating
@@ -148,10 +149,10 @@ class Master(QMainWindow):
 
         left_vbox.setContentsMargins(0, 0, SPACING, SPACING)
         right_vbox.setContentsMargins(SPACING, 0, 0, SPACING)
-        # right_upper_hbox = QHBoxLayout()
+        right_upper_hbox = QHBoxLayout()
         right_middle_hbox = QHBoxLayout()
         right_lower_vbox = QVBoxLayout()
-        # right_vbox.addLayout(right_upper_hbox, stretch=1)
+        right_vbox.addLayout(right_upper_hbox, stretch=1)
         right_vbox.addLayout(right_middle_hbox, stretch=2)
         right_vbox.addLayout(right_lower_vbox)
         main_window_hbox.addLayout(left_vbox)
@@ -233,7 +234,13 @@ class Master(QMainWindow):
         self.use_diastolic_button.clicked.connect(self.use_diastolic)
         self.use_diastolic_button.setToolTip('Press button to switch between diastolic and systolic frames')
 
+        self.gating_display = GatingDisplay(self)
+        gating_display_vbox = QVBoxLayout()
+        gating_display_vbox.addWidget(self.gating_display.toolbar)
+        gating_display_vbox.addWidget(self.gating_display)
+        right_upper_hbox.addLayout(gating_display_vbox)
         self.longitudinal_view = LongitudinalView(self, self.config)
+        right_middle_hbox.addWidget(self.longitudinal_view)
 
         self.frame_number_label = QLabel()
         self.frame_number_label.setAlignment(Qt.AlignCenter)
@@ -259,8 +266,6 @@ class Master(QMainWindow):
         left_lower_grid.addLayout(frame_num_hbox, 1, 1)
         left_vbox.addLayout(left_lower_grid)
 
-        # right_upper_hbox.addWidget(self.info_table)
-        right_middle_hbox.addWidget(self.longitudinal_view)
         right_lower_vbox.addWidget(self.use_diastolic_button)
         command_buttons = QHBoxLayout()
         right_lower_vbox.addLayout(command_buttons)
