@@ -2,29 +2,18 @@ import time
 
 from functools import partial
 from PyQt5.QtGui import QKeySequence, QDesktopServices
-from PyQt5.QtWidgets import QShortcut, QApplication, QMessageBox
+from PyQt5.QtWidgets import QShortcut, QApplication
 from PyQt5.QtCore import Qt, QUrl
 
-from gui.display.contours_gui import new_contour, new_measure
 from gui.error_message import ErrorMessage
 
 
 def init_shortcuts(main_window):
     # General
-    QShortcut(QKeySequence('H'), main_window, partial(hide_contours, main_window))
     QShortcut(QKeySequence('J'), main_window, partial(jiggle_frame, main_window))
-    QShortcut(QKeySequence('E'), main_window, partial(new_contour, main_window))
-    QShortcut(QKeySequence('1'), main_window, partial(new_measure, main_window, index=0))
-    QShortcut(QKeySequence('2'), main_window, partial(new_measure, main_window, index=1))
-    QShortcut(QKeySequence('3'), main_window, partial(toggle_filter, main_window, index=0))
-    QShortcut(QKeySequence('4'), main_window, partial(toggle_filter, main_window, index=1))
-    QShortcut(QKeySequence('5'), main_window, partial(toggle_filter, main_window, index=2))
     QShortcut(QKeySequence('Escape'), main_window, partial(stop_all, main_window))
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
-    # Windowing
-    QShortcut(QKeySequence('R'), main_window, partial(reset_windowing, main_window))
-    QShortcut(QKeySequence('C'), main_window, partial(toggle_color, main_window))
     # Traverse frames
     QShortcut(QKeySequence('W'), main_window, main_window.display_slider.next_gated_frame)
     QShortcut(QKeySequence(Qt.Key_Up), main_window, main_window.display_slider.next_gated_frame)
@@ -36,18 +25,25 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence(Qt.Key_Right), main_window, main_window.display_slider.next_frame)
 
 
-def display_shortcuts_info(main_window):
-    url = 'https://github.com/cardionaut/AAOCASeg?tab=readme-ov-file#keyboard-shortcuts'
+def open_url(main_window, description=None):
+    if description == 'github':
+        url = 'https://github.com/cardionaut/AAOCASeg'
+    elif description == 'keyboard_shortcuts':
+        url = 'https://github.com/cardionaut/AAOCASeg?tab=readme-ov-file#keyboard-shortcuts'
+    else:
+        url = 'https://www.youtube.com/watch?v=xvFZjo5PgG0'
     if not QDesktopServices.openUrl(QUrl(url)):
         ErrorMessage(main_window, 'Could not open the browser. Please visit\n' + url)
 
 
 def hide_contours(main_window):
     if main_window.image_displayed:
-        if not main_window.hide_contours_box.isChecked():
-            main_window.hide_contours_box.setChecked(True)
-        elif main_window.hide_contours_box.isChecked():
-            main_window.hide_contours_box.setChecked(False)
+        main_window.hide_contours_box.setChecked(not main_window.hide_contours_box.isChecked())
+
+
+def hide_special_points(main_window):
+    if main_window.image_displayed:
+        main_window.hide_special_points_box.setChecked(not main_window.hide_special_points_box.isChecked())
 
 
 def jiggle_frame(main_window):
@@ -65,6 +61,7 @@ def jiggle_frame(main_window):
         main_window.display_slider.setValue(current_frame)
         QApplication.processEvents()
 
+
 def toggle_filter(main_window, index):
     if main_window.image_displayed:
         if main_window.filter == index:
@@ -72,6 +69,7 @@ def toggle_filter(main_window, index):
         else:
             main_window.filter = index
         main_window.display.display_image(update_image=True)
+
 
 def stop_all(main_window):
     main_window.display.stop_contour()

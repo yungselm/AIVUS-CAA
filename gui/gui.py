@@ -27,7 +27,15 @@ from PyQt5.QtGui import QIcon
 from gui.display.IVUS_display import IVUSDisplay
 from gui.display.longitudinal_view import LongitudinalView
 from gui.slider import Slider, Communicate
-from gui.shortcuts import init_shortcuts, display_shortcuts_info
+from gui.shortcuts import (
+    init_shortcuts,
+    open_url,
+    hide_contours,
+    hide_special_points,
+    toggle_filter,
+    reset_windowing,
+    toggle_color,
+)
 from gui.display.contours_gui import new_contour, new_measure
 from input_output.read_image import read_image
 from input_output.contours_io import write_contours
@@ -93,8 +101,42 @@ class Master(QMainWindow):
         exit_action = file_menu.addAction('Exit', self.close)
         exit_action.setShortcut('Ctrl+Q')
 
+        edit_menu = self.menu_bar.addMenu('Edit')
+        manual_contour = edit_menu.addAction('Manual Contour', partial(new_contour, self))
+        manual_contour.setShortcut('E')
+        edit_menu.addSeparator()
+        measure_1 = edit_menu.addAction('Measurement 1', partial(new_measure, self, index=0))
+        measure_1.setShortcut('1')
+        measure_2 = edit_menu.addAction('Measurement 2', partial(new_measure, self, index=1))
+        measure_2.setShortcut('2')
+
+        view_menu = self.menu_bar.addMenu('View')
+        hide_contours_action = view_menu.addAction('Hide Contours', partial(hide_contours, self))
+        hide_contours_action.setShortcut('H')
+        hide_special_points_action = view_menu.addAction('Hide Special Points', partial(hide_special_points, self))
+        hide_special_points_action.setShortcut('G')
+        view_menu.addSeparator()
+        reset_windowing_action = view_menu.addAction('Reset Windowing', partial(reset_windowing, self))
+        reset_windowing_action.setShortcut('R')
+        toggle_color_action = view_menu.addAction('Toggle Color', partial(toggle_color, self))
+        toggle_color_action.setShortcut('C')
+        view_menu.addSeparator()
+        filter_1 = view_menu.addAction('Apply Median Blur', partial(toggle_filter, self, index=0))
+        filter_1.setShortcut('3')
+        filter_2 = view_menu.addAction('Apply Gaussian Blur', partial(toggle_filter, self, index=1))
+        filter_2.setShortcut('4')
+        filter_3 = view_menu.addAction('Apply Bilateral Filter', partial(toggle_filter, self, index=2))
+        filter_3.setShortcut('5')
+
+        run_menu = self.menu_bar.addMenu('Run')
+        run_menu.addAction('Extract Diastolic and Systolic Frames', self.contour_based_gating)
+        run_menu.addAction('Automatic Segmentation', partial(segment, self))
+
         help_menu = self.menu_bar.addMenu('Help')
-        help_menu.addAction('Keyboard Shortcuts', partial(display_shortcuts_info, self))
+        help_menu.addAction('GitHub Page', partial(open_url, self, description='github'))
+        help_menu.addAction('Keyboard Shortcuts', partial(open_url, self, description='keyboard_shortcuts'))
+        help_menu.addSeparator()
+        help_menu.addAction('About', partial(open_url, self))
 
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
@@ -103,14 +145,13 @@ class Master(QMainWindow):
         main_window_hbox = QHBoxLayout()
         left_vbox = QVBoxLayout()
         right_vbox = QVBoxLayout()
-        left_lower_vbox = QVBoxLayout()
 
         left_vbox.setContentsMargins(0, 0, SPACING, SPACING)
         right_vbox.setContentsMargins(SPACING, 0, 0, SPACING)
-        right_upper_hbox = QHBoxLayout()
+        # right_upper_hbox = QHBoxLayout()
         right_middle_hbox = QHBoxLayout()
         right_lower_vbox = QVBoxLayout()
-        right_vbox.addLayout(right_upper_hbox, stretch=1)
+        # right_vbox.addLayout(right_upper_hbox, stretch=1)
         right_vbox.addLayout(right_middle_hbox, stretch=2)
         right_vbox.addLayout(right_lower_vbox)
         main_window_hbox.addLayout(left_vbox)
@@ -120,24 +161,24 @@ class Master(QMainWindow):
         self.display_frame_comms = Communicate()
         self.display_frame_comms.updateBW[int].connect(self.display.set_frame)
 
-        vertical_header = QHeaderView(Qt.Vertical)
-        vertical_header.hide()
-        horizontal_header = QHeaderView(Qt.Horizontal)
-        horizontal_header.hide()
+        # vertical_header = QHeaderView(Qt.Vertical)
+        # vertical_header.hide()
+        # horizontal_header = QHeaderView(Qt.Horizontal)
+        # horizontal_header.hide()
         self.info_table = QTableWidget()
-        self.info_table.setRowCount(8)
-        self.info_table.setColumnCount(2)
-        self.info_table.setItem(0, 0, QTableWidgetItem('Patient Name'))
-        self.info_table.setItem(1, 0, QTableWidgetItem('Patient DOB'))
-        self.info_table.setItem(2, 0, QTableWidgetItem('Patient Sex'))
-        self.info_table.setItem(3, 0, QTableWidgetItem('Pullback Speed'))
-        self.info_table.setItem(4, 0, QTableWidgetItem('Resolution (mm)'))
-        self.info_table.setItem(5, 0, QTableWidgetItem('Dimensions'))
-        self.info_table.setItem(6, 0, QTableWidgetItem('Manufacturer'))
-        self.info_table.setItem(7, 0, QTableWidgetItem('Model'))
-        self.info_table.setVerticalHeader(vertical_header)
-        self.info_table.setHorizontalHeader(horizontal_header)
-        self.info_table.horizontalHeader().setStretchLastSection(True)
+        # self.info_table.setRowCount(8)
+        # self.info_table.setColumnCount(2)
+        # self.info_table.setItem(0, 0, QTableWidgetItem('Patient Name'))
+        # self.info_table.setItem(1, 0, QTableWidgetItem('Patient DOB'))
+        # self.info_table.setItem(2, 0, QTableWidgetItem('Patient Sex'))
+        # self.info_table.setItem(3, 0, QTableWidgetItem('Pullback Speed'))
+        # self.info_table.setItem(4, 0, QTableWidgetItem('Resolution (mm)'))
+        # self.info_table.setItem(5, 0, QTableWidgetItem('Dimensions'))
+        # self.info_table.setItem(6, 0, QTableWidgetItem('Manufacturer'))
+        # self.info_table.setItem(7, 0, QTableWidgetItem('Model'))
+        # self.info_table.setVerticalHeader(vertical_header)
+        # self.info_table.setHorizontalHeader(horizontal_header)
+        # self.info_table.horizontalHeader().setStretchLastSection(True)
 
         gating_button = QPushButton('Extract Diastolic and Systolic Frames')
         gating_button.setToolTip('Extract diastolic and systolic images from pullback')
@@ -145,9 +186,6 @@ class Master(QMainWindow):
         segment_button = QPushButton('Automatic Segmentation')
         segment_button.setToolTip('Run deep learning based segmentation of lumen')
         segment_button.clicked.connect(partial(segment, self))
-        contour_button = QPushButton('Manual Contour')
-        contour_button.setToolTip('Manually draw new contour for lumen')
-        contour_button.clicked.connect(partial(new_contour, self))
         measure_button_1 = QPushButton('Measurement &1')
         measure_button_1.setToolTip('Measure distance between two points')
         measure_button_1.clicked.connect(partial(new_measure, self, index=0))
@@ -221,12 +259,13 @@ class Master(QMainWindow):
         left_lower_grid.addLayout(frame_num_hbox, 1, 1)
         left_vbox.addLayout(left_lower_grid)
 
-        right_upper_hbox.addWidget(self.info_table)
+        # right_upper_hbox.addWidget(self.info_table)
         right_middle_hbox.addWidget(self.longitudinal_view)
         right_lower_vbox.addWidget(self.use_diastolic_button)
-        right_lower_vbox.addWidget(gating_button)
-        right_lower_vbox.addWidget(segment_button)
-        right_lower_vbox.addWidget(contour_button)
+        command_buttons = QHBoxLayout()
+        right_lower_vbox.addLayout(command_buttons)
+        command_buttons.addWidget(gating_button)
+        command_buttons.addWidget(segment_button)
         measures = QHBoxLayout()
         right_lower_vbox.addLayout(measures)
         measures.addWidget(measure_button_1)
@@ -259,7 +298,7 @@ class Master(QMainWindow):
         """Plays all frames until end of pullback starting from currently selected frame"""
         if not self.image_displayed:
             return
-        
+
         start_frame = self.display_slider.value()
         if self.paused:
             self.paused = False
