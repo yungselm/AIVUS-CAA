@@ -59,7 +59,7 @@ class ContourBasedGating:
     def crop_frames(self, x1=50, x2=450, y1=50, y2=450):
         """Crops frames to a specific region."""
         cropped_frames = []
-        for frame in self.frames:
+        for frame in self.main_window.images:
             cropped_frame = frame[x1:x2, y1:y2]
             cropped_frames.append(cropped_frame)
         return cropped_frames
