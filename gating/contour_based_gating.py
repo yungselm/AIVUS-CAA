@@ -30,7 +30,10 @@ class ContourBasedGating:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
 
-        self.define_intramural_part()
+        success = self.define_intramural_part()
+        if not success:
+            self.main_window.status_bar.showMessage(self.main_window.waiting_status)
+            return
         self.frames = self.crop_frames(x1=50, x2=450, y1=50, y2=450)
         self.shortest_distance = self.report_data['shortest_distance']
         self.vector_angle = self.report_data['vector_angle']
@@ -55,6 +58,8 @@ class ContourBasedGating:
                 mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
             self.report_data = self.report_data[self.report_data['frame'].between(lower_limit, upper_limit)]
             self.frames = self.main_window.images[lower_limit:upper_limit]
+            return True
+        return False
 
     def crop_frames(self, x1=50, x2=450, y1=50, y2=450):
         """Crops frames to a specific region."""
