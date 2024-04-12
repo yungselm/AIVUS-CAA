@@ -12,10 +12,10 @@ class LongitudinalView(QGraphicsView):
     Displays the longitudinal view of the IVUS pullback.
     """
 
-    def __init__(self, main_window, config):
+    def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
-        self.image_size = config.display.image_size
+        self.image_size = main_window.config.display.image_size
         self.lview_contour_size = 2
         self.graphics_scene = QGraphicsScene()
 

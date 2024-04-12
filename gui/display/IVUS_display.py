@@ -19,9 +19,10 @@ class IVUSDisplay(QGraphicsView):
     Displays images and contours and allows the user to add and manipulate contours.
     """
 
-    def __init__(self, main_window, config):
+    def __init__(self, main_window):
         super(IVUSDisplay, self).__init__()
         self.main_window = main_window
+        config = main_window.config
         self.n_interactive_points = config.display.n_interactive_points
         self.n_points_contour = config.display.n_points_contour
         self.image_size = config.display.image_size
