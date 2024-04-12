@@ -87,6 +87,8 @@ In the current state, these cannot be changed by the user (at least not without 
 - Press <kbd>C</kbd> to toggle color mode
 - Press <kbd>H</kbd> to hide all contours
 - Press <kbd>J</kbd> to jiggle around the current frame
+- Press <kbd>Ctrl</kbd> + <kbd>S</kbd> to manually save contours (auto-save is enabled by default)
+- Press <kbd>Ctrl</kbd> + <kbd>R</kbd> to generate report file
 - Press <kbd>Ctrl</kbd> + <kbd>Q</kbd> to close the program
 
 ## Acknowledgements

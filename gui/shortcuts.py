@@ -31,13 +31,16 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('D'), main_window, main_window.display_slider.next_frame)
     QShortcut(QKeySequence(Qt.Key_Right), main_window, main_window.display_slider.next_frame)
 
+
 def init_menu(main_window):
     file_menu = main_window.menu_bar.addMenu('File')
     open_action = file_menu.addAction('Open File', partial(read_image, main_window))
     open_action.setShortcut('Ctrl+O')
     file_menu.addSeparator()
-    file_menu.addAction('Save Contours', partial(write_contours, main_window))
-    file_menu.addAction('Save Report', partial(report, main_window))
+    save_contours = file_menu.addAction('Save Contours', partial(write_contours, main_window))
+    save_contours.setShortcut('Ctrl+S')
+    save_report = file_menu.addAction('Save Report', partial(report, main_window))
+    save_report.setShortcut('Ctrl+R')
     file_menu.addSeparator()
     exit_action = file_menu.addAction('Exit', main_window.close)
     exit_action.setShortcut('Ctrl+Q')
@@ -82,10 +85,12 @@ def init_menu(main_window):
     help_menu.addSeparator()
     help_menu.addAction('About', partial(open_url, main_window))
 
+
 def show_metadata(main_window):
     if main_window.image_displayed:
         metadata_window = MetadataWindow(main_window)
         metadata_window.show()
+
 
 def open_url(main_window, description=None):
     if description == 'github':
