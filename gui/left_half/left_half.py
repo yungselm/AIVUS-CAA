@@ -121,6 +121,8 @@ class LeftHalf:
         if self.main_window.image_displayed:
             self.main_window.hide_contours = value
             self.main_window.display.update_display()
+            if not value:
+                self.main_window.longitudinal_view.show_lview_contours()
 
     def toggle_hide_special_points(self, value):
         if self.main_window.image_displayed:

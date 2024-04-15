@@ -135,7 +135,9 @@ class IVUSDisplay(QGraphicsView):
             for item in self.graphics_scene.items()
             if not isinstance(item, image_types)
         ]  # clear previous scene
-        if not self.main_window.hide_contours:
+        if self.main_window.hide_contours:
+            self.main_window.longitudinal_view.hide_lview_contours()
+        else:
             if update_contours:
                 self.draw_contour(self.main_window.data['lumen'])
                 self.draw_measure()

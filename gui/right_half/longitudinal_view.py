@@ -29,7 +29,7 @@ class LongitudinalView(QGraphicsView):
         self.points_on_marker = [None] * self.num_frames
         self.image_height = images.shape[1]
 
-        slice = images[:, self.image_height // 2, :]
+        slice = images[:, :, self.image_height // 2]
         slice = np.transpose(slice, (1, 0)).copy()  # need .copy() to avoid QImage TypeError
         longitudinal_image = QImage(
             slice.data, self.num_frames, self.image_height, self.num_frames, QImage.Format_Grayscale8
@@ -83,6 +83,14 @@ class LongitudinalView(QGraphicsView):
             )
         for point in self.points_on_marker[frame]:
             self.graphics_scene.addItem(point)
+        
+    def hide_lview_contours(self):
+        [self.graphics_scene.removeItem(item) for item in self.graphics_scene.items() if isinstance(item, Point)]
+
+    def show_lview_contours(self):
+        for point in self.points_on_marker:
+            self.graphics_scene.addItem(point[0])
+            self.graphics_scene.addItem(point[1])
 
 
 class Marker(QGraphicsLineItem):
