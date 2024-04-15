@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 from PyQt5.QtWidgets import QFileDialog
 
-from gui.error_message import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage
 from input_output.metadata import parse_dicom
 from input_output.contours_io import read_contours
 

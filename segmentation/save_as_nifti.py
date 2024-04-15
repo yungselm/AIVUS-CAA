@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QProgressDialog, QApplication
 from PyQt5.QtCore import Qt
 from skimage.draw import polygon2mask
 
-from gui.error_message import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage
 
 
 def save_as_nifti(main_window):

@@ -1,9 +1,10 @@
+from loguru import logger
 from functools import partial
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton
 
-from gui.display.gating_display import GatingDisplay
-from gui.display.longitudinal_view import LongitudinalView
-from gui.display.contours_gui import new_measure
+from gui.right_half.gating_display import GatingDisplay
+from gui.right_half.longitudinal_view import LongitudinalView
+from gui.utils.contours_gui import new_measure
 from segmentation.segment import segment
 
 
@@ -29,7 +30,7 @@ class RightHalf:
         self.main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.main_window.diastole_color}')
         self.main_window.use_diastolic_button.setCheckable(True)
         self.main_window.use_diastolic_button.setChecked(True)
-        self.main_window.use_diastolic_button.clicked.connect(self.use_diastolic)
+        self.main_window.use_diastolic_button.clicked.connect(partial(self.use_diastolic, main_window))
         self.main_window.use_diastolic_button.setToolTip('Press button to switch between diastolic and systolic frames')
         gating_button = QPushButton('Extract Diastolic and Systolic Frames')
         gating_button.setToolTip('Extract diastolic and systolic images from pullback')
@@ -56,19 +57,19 @@ class RightHalf:
         right_lower_vbox.addLayout(measures)
         main_window.right_vbox.addLayout(right_lower_vbox)
 
-    def use_diastolic(self):
-        if self.main_window.image_displayed:
-            if self.main_window.use_diastolic_button.isChecked():
-                self.main_window.use_diastolic_button.setText('Diastolic Frames')
-                self.main_window.use_diastolic_button.setStyleSheet(
-                    f'background-color: rgb{self.main_window.diastole_color}'
+    def use_diastolic(self, main_window):
+        if main_window.image_displayed:
+            if main_window.use_diastolic_button.isChecked():
+                main_window.use_diastolic_button.setText('Diastolic Frames')
+                main_window.use_diastolic_button.setStyleSheet(
+                    f'background-color: rgb{main_window.diastole_color}'
                 )
-                self.main_window.gated_frames = self.main_window.gated_frames_dia
+                main_window.gated_frames = main_window.gated_frames_dia
             else:
-                self.main_window.use_diastolic_button.setText('Systolic Frames')
-                self.main_window.use_diastolic_button.setStyleSheet(
-                    f'background-color: rgb{self.main_window.systole_color}'
+                main_window.use_diastolic_button.setText('Systolic Frames')
+                main_window.use_diastolic_button.setStyleSheet(
+                    f'background-color: rgb{main_window.systole_color}'
                 )
-                self.main_window.gated_frames = self.main_window.gated_frames_sys
+                main_window.gated_frames = main_window.gated_frames_sys
 
-            self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames)
+            main_window.display_slider.set_gated_frames(main_window.gated_frames)

@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 
 from version import version_file_str
-from gui.error_message import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage
 from input_output.read_xml import read_xml
 from input_output.write_xml import write_xml
 
@@ -17,7 +17,7 @@ def read_contours(main_window, file_name=None):
     json_files = glob.glob(f'{file_name}_contours*.json')
     xml_files = glob.glob(f'{file_name}_contours*.xml')
 
-    if not main_window.use_xml_files and json_files:  # json files have priority over xml unless desired
+    if not main_window.config.save.use_xml_files and json_files:  # json files have priority over xml unless desired
         newest_json = max(json_files)  # find file with most recent version
         logger.info(f'Current version is {version_file_str}, file found with most recent version is {newest_json}')
         with open(newest_json, 'r') as in_file:
@@ -66,7 +66,7 @@ def write_contours(main_window):
         ErrorMessage(main_window, 'Cannot write contours before reading DICOM file')
         return
 
-    if main_window.use_xml_files:
+    if main_window.config.save.use_xml_files:
         # reformat data for compatibility with write_xml function
         x, y = [], []
         for frame in range(main_window.metadata['num_frames']):

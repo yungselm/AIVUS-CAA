@@ -4,6 +4,8 @@ from loguru import logger
 from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 
+from gui.popup_windows.message_boxes import SuccessMessage
+
 
 class Predict:
     def __init__(self, main_window) -> None:
@@ -58,6 +60,6 @@ class Predict:
                 self.images[self.lower_limit : self.upper_limit, :, :], batch_size=self.batch_size, verbose=0
             )
             mask[self.lower_limit : self.upper_limit, :, :] = np.array(prediction)[0, :, :, :, 0]
-            self.main_window.successMessage('Automatic segmentation')
+            SuccessMessage(self.main_window, 'Automatic segmentation')
 
         return mask

@@ -8,8 +8,8 @@ from PyQt5.QtCore import Qt, QLineF, QPointF
 from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
 from shapely.geometry import Polygon
 
-from gui.geometry import Point, Spline, get_qt_pen
-from gui.display.longitudinal_view import Marker
+from gui.utils.geometry import Point, Spline, get_qt_pen
+from gui.right_half.longitudinal_view import Marker
 from report.report import compute_polygon_metrics, farthest_points, closest_points
 from segmentation.segment import downsample
 

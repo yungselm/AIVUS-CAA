@@ -6,8 +6,8 @@ from functools import partial
 from PyQt5.QtWidgets import QPushButton, QStyle, QApplication, QLabel, QCheckBox, QHBoxLayout, QGridLayout
 from PyQt5.QtCore import Qt
 
-from gui.display.IVUS_display import IVUSDisplay
-from gui.slider import Slider, Communicate
+from gui.left_half.IVUS_display import IVUSDisplay
+from gui.utils.slider import Slider, Communicate
 
 
 class LeftHalf:

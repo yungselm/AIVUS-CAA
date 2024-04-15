@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPen
 
-from gui.geometry import Point
+from gui.utils.geometry import Point
 
 
 class LongitudinalView(QGraphicsView):

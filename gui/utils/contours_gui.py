@@ -1,4 +1,4 @@
-from gui.error_message import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage
 
 
 def new_contour(main_window):

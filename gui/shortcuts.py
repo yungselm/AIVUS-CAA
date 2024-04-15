@@ -6,13 +6,13 @@ from PyQt5.QtGui import QKeySequence, QDesktopServices
 from PyQt5.QtWidgets import QShortcut, QApplication
 from PyQt5.QtCore import Qt, QUrl
 
-from gui.error_message import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage
+from gui.utils.contours_gui import new_contour, new_measure
 from input_output.metadata import MetadataWindow
 from input_output.read_image import read_image
 from input_output.contours_io import write_contours
-from report.report import report
-from gui.display.contours_gui import new_contour, new_measure
 from segmentation.segment import segment
+from report.report import report
 
 
 def init_shortcuts(main_window):

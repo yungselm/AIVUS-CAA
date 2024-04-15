@@ -5,8 +5,8 @@ from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 from scipy.signal import argrelextrema
 
-from gui.error_message import ErrorMessage
-from gui.frame_range_dialog import FrameRangeDialog
+from gui.popup_windows.message_boxes import ErrorMessage
+from gui.popup_windows.frame_range_dialog import FrameRangeDialog
 from report.report import report
 
 
