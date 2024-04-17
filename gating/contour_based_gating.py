@@ -56,7 +56,9 @@ class ContourBasedGating:
             ):  # automatic detection of intramural part
                 mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
 
-            self.report_data = self.report_data[self.report_data['frame'].between(lower_limit + 1, upper_limit)]
+            self.report_data = self.report_data[
+                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='left')
+            ]
             self.frames = self.main_window.images[lower_limit : upper_limit - 1]
             self.x = range(lower_limit + 1, upper_limit)  # want actual frame numbers for GUI, not indices
             return True
