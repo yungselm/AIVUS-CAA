@@ -16,7 +16,6 @@ from gui.shortcuts import init_shortcuts, init_menu
 from input_output.contours_io import write_contours
 from gating.contour_based_gating import ContourBasedGating
 from segmentation.predict import Predict
-from segmentation.save_as_nifti import save_as_nifti
 
 
 class Master(QMainWindow):
@@ -83,11 +82,3 @@ class Master(QMainWindow):
     def auto_save(self):
         if self.image_displayed:
             write_contours(self)
-
-    def closeEvent(self, event):
-        """Tasks to be performed before closing the program"""
-        if self.image_displayed:
-            self.status_bar.showMessage('Saving contours and NIfTi files...')
-            write_contours(self)
-            save_as_nifti(self)
-            self.status_bar.showMessage(self.waiting_status)
