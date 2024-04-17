@@ -83,7 +83,7 @@ class LongitudinalView(QGraphicsView):
             )
         for point in self.points_on_marker[frame]:
             self.graphics_scene.addItem(point)
-        
+
     def hide_lview_contours(self):
         [self.graphics_scene.removeItem(item) for item in self.graphics_scene.items() if isinstance(item, Point)]
 
@@ -91,6 +91,13 @@ class LongitudinalView(QGraphicsView):
         for point in self.points_on_marker:
             self.graphics_scene.addItem(point[0])
             self.graphics_scene.addItem(point[1])
+
+    def remove_contours(self, lower_limit, upper_limit):
+        for frame in range(lower_limit, upper_limit):
+            if self.points_on_marker[frame] is not None:
+                for point in self.points_on_marker[frame]:
+                    self.graphics_scene.removeItem(point)
+                self.points_on_marker[frame] = None
 
 
 class Marker(QGraphicsLineItem):
