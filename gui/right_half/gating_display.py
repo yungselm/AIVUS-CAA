@@ -1,10 +1,12 @@
 import darkdetect
 import matplotlib
-matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 from loguru import logger
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+from matplotlib.figure import Figure
+
+matplotlib.use('Qt5Agg')  # needed to embed matplotlib figure in PyQt5 window
 
 
 class GatingDisplay(FigureCanvasQTAgg):
@@ -16,7 +18,8 @@ class GatingDisplay(FigureCanvasQTAgg):
         height = width // 2 if height is None else height
         width /= dpi  # convert pixels to inches
         height /= dpi
-        fig = plt.figure(figsize=(width, height), dpi=dpi)
-        super().__init__(fig)
+        self.fig = plt.figure(figsize=(width, height), dpi=dpi)
+        super().__init__(self.fig)
+
         self.setParent(parent)
         self.toolbar = NavigationToolbar2QT(self, parent)
