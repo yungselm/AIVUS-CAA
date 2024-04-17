@@ -113,13 +113,6 @@ class ContourBasedGating:
         return extrema_indices, maxima_indices
 
     def combined_signal(self, signal_list, window_size=5, maxima_only=False):
-        # Find the minimum length among all signals
-        min_length = min(signal.shape[0] for signal in signal_list)
-
-        # Trim signals to the minimum length
-        for i, signal in enumerate(signal_list):
-            signal_list[i] = signal[:min_length]
-
         # smooth_curve for all signals
         smoothed_signals = []
         for signal in signal_list:

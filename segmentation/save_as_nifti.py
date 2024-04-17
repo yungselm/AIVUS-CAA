@@ -27,6 +27,7 @@ def save_as_nifti(main_window, mode=None):
         return  # nothing to save
 
     if frames_to_save:
+        main_window.status_bar.showMessage('Saving frames as NIfTi files...')
         file_name = os.path.splitext(os.path.basename(main_window.file_name))[0]  # remove file extension
         os.makedirs(out_path, exist_ok=True)
         mask = contours_to_mask(main_window.images[frames_to_save], frames_to_save, main_window.data['lumen'])
@@ -63,7 +64,8 @@ def save_as_nifti(main_window, mode=None):
             if any(main_window.data['lumen'][0]):  # only save mask if any contour exists
                 sitk.WriteImage(sitk.GetImageFromArray(mask), os.path.join(out_path, f'{file_name}_seg.nii.gz'))
             sitk.WriteImage(
-                sitk.GetImageFromArray(main_window.images), os.path.join(out_path, f'{file_name}_img.nii.gz')
+                sitk.GetImageFromArray(main_window.images[frames_to_save]),
+                os.path.join(out_path, f'{file_name}_img.nii.gz'),
             )
             progress.setValue(len(frames_to_save) * main_window.config.save.save_2d + 1)
             QApplication.processEvents()
