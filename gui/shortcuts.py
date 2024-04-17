@@ -6,6 +6,7 @@ from PyQt5.QtGui import QKeySequence, QDesktopServices
 from PyQt5.QtWidgets import QShortcut, QApplication
 from PyQt5.QtCore import Qt, QUrl
 
+from gui.popup_windows.frame_range_dialog import FrameRangeDialog
 from gui.popup_windows.message_boxes import ErrorMessage
 from gui.utils.contours_gui import new_contour, new_measure
 from input_output.metadata import MetadataWindow
@@ -52,6 +53,7 @@ def init_menu(main_window):
     edit_menu = main_window.menu_bar.addMenu('Edit')
     manual_contour = edit_menu.addAction('Manual Contour', partial(new_contour, main_window))
     manual_contour.setShortcut('E')
+    edit_menu.addAction('Remove Contours', partial(remove_contours, main_window))
     edit_menu.addSeparator()
     measure_1 = edit_menu.addAction('Measurement 1', partial(new_measure, main_window, index=0))
     measure_1.setShortcut('1')
@@ -88,6 +90,20 @@ def init_menu(main_window):
     help_menu.addAction('Keyboard Shortcuts', partial(open_url, main_window, description='keyboard_shortcuts'))
     help_menu.addSeparator()
     help_menu.addAction('About', partial(open_url, main_window))
+
+
+def remove_contours(main_window):
+    if main_window.image_displayed:
+        dialog = FrameRangeDialog(main_window)
+        if dialog.exec_():
+            main_window.status_bar.showMessage('Removing contours...')
+            lower_limit, upper_limit = dialog.getInputs()
+            for frame in range(lower_limit, upper_limit):
+                main_window.data['lumen'][0][frame] = []
+                main_window.data['lumen'][1][frame] = []
+            main_window.longitudinal_view.remove_contours(lower_limit, upper_limit)
+            main_window.display.update_display()
+            main_window.status_bar.showMessage(main_window.waiting_status)
 
 
 def show_metadata(main_window):

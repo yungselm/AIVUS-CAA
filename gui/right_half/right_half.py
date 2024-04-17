@@ -61,15 +61,11 @@ class RightHalf:
         if main_window.image_displayed:
             if main_window.use_diastolic_button.isChecked():
                 main_window.use_diastolic_button.setText('Diastolic Frames')
-                main_window.use_diastolic_button.setStyleSheet(
-                    f'background-color: rgb{main_window.diastole_color}'
-                )
+                main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.diastole_color}')
                 main_window.gated_frames = main_window.gated_frames_dia
             else:
                 main_window.use_diastolic_button.setText('Systolic Frames')
-                main_window.use_diastolic_button.setStyleSheet(
-                    f'background-color: rgb{main_window.systole_color}'
-                )
+                main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.systole_color}')
                 main_window.gated_frames = main_window.gated_frames_sys
 
             main_window.display_slider.set_gated_frames(main_window.gated_frames)
