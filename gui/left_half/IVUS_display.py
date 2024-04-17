@@ -8,8 +8,8 @@ from PyQt5.QtCore import Qt, QLineF, QPointF
 from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen
 from shapely.geometry import Polygon
 
-from gui.geometry import Point, Spline, get_qt_pen
-from gui.display.longitudinal_view import Marker
+from gui.utils.geometry import Point, Spline, get_qt_pen
+from gui.right_half.longitudinal_view import Marker
 from report.report import compute_polygon_metrics, farthest_points, closest_points
 from segmentation.segment import downsample
 
@@ -19,9 +19,10 @@ class IVUSDisplay(QGraphicsView):
     Displays images and contours and allows the user to add and manipulate contours.
     """
 
-    def __init__(self, main_window, config):
+    def __init__(self, main_window):
         super(IVUSDisplay, self).__init__()
         self.main_window = main_window
+        config = main_window.config
         self.n_interactive_points = config.display.n_interactive_points
         self.n_points_contour = config.display.n_points_contour
         self.image_size = config.display.image_size
@@ -107,7 +108,7 @@ class IVUSDisplay(QGraphicsView):
 
             if self.main_window.colormap_enabled:
                 # Apply an orange-blue colormap
-                colormap = cv2.applyColorMap(normalised_data, cv2.COLORMAP_JET)
+                colormap = cv2.applyColorMap(normalised_data, cv2.COLORMAP_COOL)
                 q_image = QImage(colormap.data, width, height, width * 3, QImage.Format.Format_RGB888).scaled(
                     self.image_size, self.image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
                 )
@@ -134,7 +135,9 @@ class IVUSDisplay(QGraphicsView):
             for item in self.graphics_scene.items()
             if not isinstance(item, image_types)
         ]  # clear previous scene
-        if not self.main_window.hide_contours:
+        if self.main_window.hide_contours:
+            self.main_window.longitudinal_view.hide_lview_contours()
+        else:
             if update_contours:
                 self.draw_contour(self.main_window.data['lumen'])
                 self.draw_measure()

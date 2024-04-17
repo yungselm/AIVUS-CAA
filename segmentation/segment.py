@@ -3,8 +3,8 @@ import matplotlib.path as mplPath
 from loguru import logger
 from skimage import measure
 
-from gui.error_message import ErrorMessage
-from gui.frame_range_dialog import FrameRangeDialog
+from gui.popup_windows.message_boxes import ErrorMessage
+from gui.popup_windows.frame_range_dialog import FrameRangeDialog
 
 
 def segment(main_window):

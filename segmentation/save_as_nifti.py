@@ -7,20 +7,21 @@ from PyQt5.QtWidgets import QProgressDialog, QApplication
 from PyQt5.QtCore import Qt
 from skimage.draw import polygon2mask
 
-from gui.error_message import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage
 
 
-def save_as_nifti(main_window):
+def save_as_nifti(main_window, mode=None):
+    main_window.status_bar.showMessage('Saving frames as NIfTi files...')
     if not main_window.image_displayed:
-        ErrorMessage(main_window, 'Cannot save as NIfTi before reading DICOM file')
+        ErrorMessage(main_window, 'Cannot save as NIfTi before reading input file')
         return
 
-    out_path = f'{main_window.config.save.nifti_dir}_{main_window.config.save.save_niftis}_frames'
-    if main_window.config.save.save_niftis == 'contoured':
+    out_path = f'{main_window.config.save.nifti_dir}_{mode}_frames'
+    if mode == 'contoured':
         frames_to_save = [
             frame for frame in range(main_window.metadata['num_frames']) if main_window.data['lumen'][0][frame]
         ]  # find frames with contours (no need to save the others)
-    elif main_window.config.save.save_niftis == 'all':
+    elif mode == 'all':
         frames_to_save = range(main_window.metadata['num_frames'])
     else:
         return  # nothing to save
@@ -68,6 +69,7 @@ def save_as_nifti(main_window):
             QApplication.processEvents()
 
         progress.close()
+        main_window.status_bar.showMessage(main_window.waiting_status)
 
 
 def contours_to_mask(images, contoured_frames, lumen):

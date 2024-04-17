@@ -25,7 +25,7 @@ class Slider(QSlider):
         size_policy.setHorizontalPolicy(QSizePolicy.Fixed)
         size_policy.setVerticalPolicy(QSizePolicy.Fixed)
         self.setSizePolicy(size_policy)
-        self.setMinimumSize(QSize(400, 25))
+        self.setMinimumSize(QSize(200, 25))
         self.setMaximumSize(QSize(1000, 25))
         self.gated_frames = []
 

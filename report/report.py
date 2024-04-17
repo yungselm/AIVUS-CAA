@@ -11,8 +11,8 @@ from PyQt5.QtCore import Qt
 from shapely.geometry import Polygon
 from itertools import combinations
 
-from gui.error_message import ErrorMessage
-from gui.geometry import Spline
+from gui.popup_windows.message_boxes import ErrorMessage, SuccessMessage
+from gui.utils.geometry import Spline
 
 
 def report(main_window, suppress_messages=False):
@@ -48,7 +48,7 @@ def report(main_window, suppress_messages=False):
         )
 
         if not suppress_messages:
-            main_window.successMessage('Write report')
+            SuccessMessage(main_window, 'Write report')
 
     return report_data
 

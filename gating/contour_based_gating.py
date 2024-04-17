@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backend_bases import MouseButton
 from loguru import logger
 from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 from scipy.signal import argrelextrema
 
-from gui.error_message import ErrorMessage
-from gui.frame_range_dialog import FrameRangeDialog
+from gui.popup_windows.message_boxes import ErrorMessage
+from gui.popup_windows.frame_range_dialog import FrameRangeDialog
 from report.report import report
 
 
@@ -14,9 +15,13 @@ class ContourBasedGating:
     def __init__(self, main_window):
         self.main_window = main_window
         self.intramural_threshold = main_window.config.gating.intramural_threshold
-        self.min_window_size = main_window.config.gating.min_window_size
-        self.max_window_size = main_window.config.gating.max_window_size
-        self.step_size = main_window.config.gating.step_size
+        self.correlation = None
+        self.blurring = None
+        self.vertical_lines = []
+        self.selected_line = None
+        self.phases = []
+        self.systolic_indices = []
+        self.diastolic_indices = []
 
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
@@ -26,13 +31,19 @@ class ContourBasedGating:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
 
-        self.define_intramural_part()
-        self.data_preparation()
-        success = self.optimize_window_size_and_weights()
-        if success:
-            self.propagate_gating()
-            self.update_main_window()
-            self.plot_results()
+        dialog_success = self.define_intramural_part()
+        if not dialog_success:
+            self.main_window.status_bar.showMessage(self.main_window.waiting_status)
+            return
+        self.shortest_distance = self.report_data['shortest_distance']
+        self.vector_angle = self.report_data['vector_angle']
+        self.vector_length = self.report_data['vector_length']
+        self.crop_frames(x1=50, x2=450, y1=50, y2=450)
+        self.prepare_data()
+        self.plot_data()
+        # self.propagate_gating()
+        # self.update_main_window()
+        # self.plot_results()
 
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
 
@@ -45,155 +56,214 @@ class ContourBasedGating:
             ):  # automatic detection of intramural part
                 mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
 
-            self.report_data = self.report_data.iloc[lower_limit:upper_limit, :]
+            self.report_data = self.report_data[
+                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='left')
+            ]
+            self.frames = self.main_window.images[lower_limit : upper_limit - 1]
+            self.x = range(lower_limit + 1, upper_limit)  # want actual frame numbers for GUI, not indices
+            return True
+        return False
 
-    def data_preparation(self):
-        self.report_data['lumen_area'] = self.report_data['lumen_area'] / self.report_data['lumen_area'].max()
-        self.report_data['elliptic_ratio'] = (
-            self.report_data['elliptic_ratio'] / self.report_data['elliptic_ratio'].max()
-        )
-        self.report_data['elliptic_ratio'] = (self.report_data['elliptic_ratio'] - 1) * -1
-        self.report_data['vector_angle'] = self.report_data['vector_angle'] / self.report_data['vector_angle'].max()
-        self.report_data['vector_length'] = self.report_data['vector_length'] / self.report_data['vector_length'].max()
-        self.report_data['vector'] = (self.report_data['vector_angle'] + self.report_data['vector_length']) / 2
-        self.report_data['vector'] = (self.report_data['vector'] - 1) * -1
+    def crop_frames(self, x1=50, x2=450, y1=50, y2=450):
+        """Crops frames to a specific region."""
+        self.frames = self.frames[:, x1:x2, y1:y2]
 
-    def optimize_window_size_and_weights(self):
-        combinations = self.lookup_table_weights_combinations()
+    def prepare_data(self):
+        """Prepares data for plotting."""
+        self.correlation = self.normalize_data(self.calculate_correlation())
+        self.blurring = self.normalize_data(self.calculate_blurring_fft())
+        self.shortest_distance = self.normalize_data(self.shortest_distance)
+        self.vector_angle = self.normalize_data(self.vector_angle)
+        self.vector_length = self.normalize_data(self.vector_length)
+        print("Data prepared successfully")
 
-        variance_maxima = []
-        variance_minima = []
-        weights_greater = []
-        weights_lesser = []
-        window_sizes = []
-        systolic_idx = []
-        diastolic_idx = []
-        signals_systole = []
-        signals_diastole = []
+    def normalize_data(self, data):
+        return (data - np.min(data)) / np.sum(data - np.min(data))
 
-        progress = QProgressDialog(self.main_window)
-        progress.setWindowFlags(Qt.Dialog)
-        progress.setModal(True)
-        progress.setMinimum(self.min_window_size)
-        progress.setMaximum(self.max_window_size + 1)
-        progress.resize(500, 100)
-        progress.setValue(0)
-        progress.setValue(1)
-        progress.setValue(0)  # trick to make progress bar appear
-        progress.setWindowTitle('Extracting diastolic and systolic frames...')
-        progress.show()
+    def calculate_correlation(self):
+        """Calculates correlation coefficients between consecutive frames."""
+        correlations = []
+        for i in range(len(self.frames) - 1):
+            corr = np.corrcoef(self.frames[i].ravel(), self.frames[i + 1].ravel())[0, 1]
+            correlations.append(corr)
+        correlations.append(0)  # to match the length of the frames
+        return correlations
 
-        for window_size in range(self.min_window_size, self.max_window_size + 1):
-            progress.setValue(window_size)
-            if progress.wasCanceled():
-                return False
-            self.smooth(window_size=window_size)
-            variance_greater = []
-            local_maxima_indices = []
-            signals_sys = []
-            for weights in combinations:
-                local_extrema_differences, local_extrema_indices, signal = self.variance_of_local_extrema_weights(
-                    weights, np.greater
-                )
-                variance_greater.append(np.var(local_extrema_differences))
-                local_maxima_indices.append(local_extrema_indices)
-                signals_sys.append(signal)
+    def calculate_blurring_fft(self):
+        """Calculates blurring using Fast Fourier Transform. Take average of the 90% highest frequencies."""
+        blurring_scores = []
+        for frame in self.frames:
+            fft_data = np.fft.fft2(frame)
+            fft_shifted = np.fft.fftshift(fft_data)
+            magnitude_spectrum = np.abs(fft_shifted)
+            sorted_magnitude_spectrum = np.sort(magnitude_spectrum.ravel())
+            threshold = int(0.9 * len(sorted_magnitude_spectrum))
+            blurring_score = np.mean(sorted_magnitude_spectrum[threshold:])
+            blurring_scores.append(blurring_score)
+        return blurring_scores
 
-            variance_lesser = []
-            local_minima_indices = []
-            signals_dia = []
-            for weights in combinations:
-                local_extrema_differences, local_extrema_indices, signal = self.variance_of_local_extrema_weights(
-                    weights, np.less
-                )
-                variance_lesser.append(np.var(local_extrema_differences))
-                local_minima_indices.append(local_extrema_indices)
-                signals_dia.append(signal)
+    def identify_extrema(self, signal):
+        maxima_indices = argrelextrema(signal, np.greater)[0]
+        minima_indices = argrelextrema(signal, np.less)[0]
 
-            weights_max = combinations[np.argmin(variance_greater)]
-            weights_min = combinations[np.argmin(variance_lesser)]
+        # Combine maxima and minima indices into one array
+        extrema_indices = np.concatenate((maxima_indices, minima_indices))
+        extrema_indices = np.sort(extrema_indices)
 
-            variance_max = np.min(variance_greater)
-            variance_min = np.min(variance_lesser)
+        return extrema_indices, maxima_indices
 
-            systolic_indices_loop = local_maxima_indices[np.argmin(variance_greater)]
-            diastolic_indices_loop = local_minima_indices[np.argmin(variance_lesser)]
+    def combined_signal(self, signal_list, window_size=5, maxima_only=False):
+        # Find the minimum length among all signals
+        min_length = min(signal.shape[0] for signal in signal_list)
 
-            signals_sys_min = signals_sys[np.argmin(variance_greater)]
-            signals_dia_min = signals_dia[np.argmin(variance_lesser)]
+        # Trim signals to the minimum length
+        for i, signal in enumerate(signal_list):
+            signal_list[i] = signal[:min_length]
 
-            variance_maxima.append(variance_max)
-            variance_minima.append(variance_min)
-            weights_greater.append(weights_max)
-            weights_lesser.append(weights_min)
-            window_sizes.append(window_size)
-            systolic_idx.append(systolic_indices_loop)
-            diastolic_idx.append(diastolic_indices_loop)
-            signals_systole.append(signals_sys_min)
-            signals_diastole.append(signals_dia_min)
+        # smooth_curve for all signals
+        smoothed_signals = []
+        for signal in signal_list:
+            smoothed_signal = self.smooth_curve(signal, window_size=window_size)
+            smoothed_signals.append(smoothed_signal)
 
-        progress.close()
+        # find extrema indices for all curves
+        extrema_indices = []
+        for signal in smoothed_signals:
+            if maxima_only:
+                extrema_indices.append(self.identify_extrema(signal)[1])
+            else:
+                extrema_indices.append(self.identify_extrema(signal)[0])
 
-        # find the minimum variance in the result and return the index
-        sum_var = [sum(x) for x in zip(variance_maxima, variance_minima)]
+        # find variability in extrema indices
+        variability = []
+        for extrema in extrema_indices:
+            variability.append(np.std(np.diff(extrema)))
 
-        # find min index and use this to find value at same index in window_size
-        idx = np.argmin(sum_var)
-        window = window_sizes[idx]
-        weights_systole = weights_greater[idx]
-        weigths_diastole = weights_lesser[idx]
-        self.systolic_indices = systolic_idx[idx]
-        self.diastolic_indices = diastolic_idx[idx]
-        self.signal_systole = signals_systole[idx]
-        self.signal_diastole = signals_diastole[idx]
-        logger.info(f'Optimal window size: {window}')
-        logger.info(
-            f'\033[91mOptimal weights Systole:\033[0m\nLumen area: {weights_systole[0]}'
-            f', Elliptic Ratio: {weights_systole[1]}, Vector: {weights_systole[2]}'
-        )
-        logger.info(
-            f'\033[94mOptimal weights Diastole:\033[0m\nLumen area: {weigths_diastole[0]}'
-            f', Elliptic Ratio: {weigths_diastole[1]}, Vector: {weigths_diastole[2]}'
-        )
+        # calculate sum of all variabilities and then create a combined signal with weights as percent of variability
+        sum_variability = np.sum(variability)
+        weights = [(var / sum_variability) ** -1 for var in variability]
+
+        combined_signal = np.zeros(len(signal_list[0]))
+        for i, signal in enumerate(signal_list):
+            combined_signal += weights[i] * signal
+
+        return combined_signal
+
+    def smooth_curve(self, signal, window_size=5):
+        return np.convolve(signal, np.ones(window_size) / window_size, mode='same')
+
+    def on_click(self, event):
+        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
+            return
+        if event.button is MouseButton.LEFT and event.inaxes:
+            # Check if there are existing lines
+            if not self.vertical_lines:
+                new_line = plt.axvline(x=event.xdata, color='r', linestyle='--')
+                self.vertical_lines.append(new_line)
+                plt.draw()
+            else:
+                # Check if click is near any existing line
+                distances = [abs(line.get_xdata()[0] - event.xdata) for line in self.vertical_lines]
+                min_distance = min(distances)
+                if min_distance < len(self.frames) / 100:  # sensitivity for line selection
+                    self.selected_line = self.vertical_lines[np.argmin(distances)]
+                else:
+                    new_line = plt.axvline(x=event.xdata, color='r', linestyle='--')
+                    self.vertical_lines.append(new_line)
+                plt.draw()
+
+    def on_release(self, event):
+        self.selected_line = None
+
+    def on_motion(self, event):
+        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
+            return
+        if event.button is MouseButton.LEFT and self.selected_line:
+            self.selected_line.set_xdata([event.xdata] * 2)
+            plt.draw()
+
+    def get_x_indices(self):
+        x_indices = [line.get_xdata()[0] for line in self.vertical_lines]
+        return x_indices
+
+    def plot_data(self):
+        signal_list_max = [
+            self.smooth_curve(self.correlation),
+            self.smooth_curve(self.blurring),
+        ]
+
+        signal_list_extrema = [
+            self.smooth_curve(self.shortest_distance),
+            self.smooth_curve(self.vector_angle),
+            self.smooth_curve(self.vector_length),
+        ]
+
+        # s_max_w2 = self.combined_signal(signal_list_max, window_size=2, maxima_only=True)
+        s_max_w5 = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
+        # s_max_w10 = self.combined_signal(signal_list_max, window_size=10, maxima_only=True)
+        # s_extrema_w2 = self.combined_signal(signal_list_extrema, window_size=15, maxima_only=False)
+        s_extrema_w5 = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+        # s_extrema_w10 = self.combined_signal(signal_list_extrema, window_size=10, maxima_only=False)
+
+        # check mean difference between s_max and s_extrema curves, and scale smaller curve to match the larger one
+        # for combined signal
+        # mean_max_values = np.mean([s_max_w5, s_max_w10, s_max_w2])
+        # mean_extrema_values = np.mean([s_extrema_w5, s_extrema_w10, s_extrema_w2])
+
+        mean_max_values = np.mean(s_max_w5)
+        mean_extrema_values = np.mean(s_extrema_w5)
+
+        factor_diff = mean_max_values / mean_extrema_values
+
+        if factor_diff < 1:
+            # s_extrema_w2 = s_extrema_w2 * factor_diff
+            s_extrema_w5 = s_extrema_w5 * factor_diff
+            # s_extrema_w10 = s_extrema_w10 * factor_diff
+        else:
+            # s_max_w2 = s_max_w2 * factor_diff
+            s_max_w5 = s_max_w5 * factor_diff
+            # s_max_w10 = s_max_w10 * factor_diff
+
+        self.fig = self.main_window.gating_display.fig
+        self.fig.clear()
+        self.ax = self.fig.add_subplot()
+
+        # Plot your data
+        # plt.plot(s_max_w2, color='r')
+        self.ax.plot(self.x, s_max_w5, color='r')
+        # plt.plot(s_max_w10, color='r')
+        # plt.plot(s_extrema_w2, color='b')
+        self.ax.plot(self.x, s_extrema_w5, color='b')
+        # plt.plot(s_extrema_w10, color='b')
+        # plt.legend(['s_max_w2', 's_max_w5', 's_max_w10', 's_extrema_w2', 's_extrema_w5', 's_extrema_w10'])
+        self.ax.plot(self.x, signal_list_extrema[0], color='grey')
+        self.ax.plot(self.x, signal_list_extrema[1], color='grey')
+        self.ax.plot(self.x, signal_list_extrema[2], color='grey')
+        self.ax.set_xlabel('Frame')
+        self.ax.set_ylabel('Signal')
+        self.ax.legend(['s_max_w5', 's_extrema_w5', 'shortest_distance', 'vector_angle', 'vector_length'])
+
+        # Connect the event handlers
+        plt.connect('button_press_event', self.on_click)
+        plt.connect('motion_notify_event', self.on_motion)
+        plt.connect('button_release_event', self.on_release)
+
+        plt.tight_layout()
+        plt.draw()
+
+        self.phases = self.get_x_indices()
+        self.phases = [round(phase, 0) for phase in self.phases]
 
         return True
 
-    def lookup_table_weights_combinations(self):
-        combinations = []
+    def identify_systole_diastole(self):
+        # split self.phases by every second element
+        first_indices = self.phases[::2]
+        second_indices = self.phases[1::2]
 
-        # Determine the range based on the self.step_size size
-        num_values = int(1 / self.step_size)
+        first_elliptic_ratio = np.mean(self.report_data['frame'][first_indices])
 
-        # Loop through all possible values for the first element
-        for a in range(1, num_values + 1):
-            a_value = a * self.step_size
-            # Loop through all possible values for the second element
-            for b in range(1, num_values + 1 - a):
-                b_value = b * self.step_size
-                # Calculate the third element
-                c_value = 1 - a_value - b_value
-                # Add the combination to the list if it sums to 1
-                if c_value >= 0:
-                    combinations.append([round(a_value, 2), round(b_value, 2), round(c_value, 2)])
-
-        return combinations
-
-    def smooth(self, window_size):
-        self.lumen_area_smoothed = self.report_data['lumen_area'].rolling(window=window_size).mean()
-        self.elliptic_ratio_smoothed = self.report_data['elliptic_ratio'].rolling(window=window_size).mean()
-        self.vector_smoothed = self.report_data['vector'].rolling(window=window_size).mean()
-
-    def variance_of_local_extrema_weights(self, weights, comparison_function):
-        alpha, beta, gamma = weights
-        signal = alpha * self.lumen_area_smoothed + beta * self.elliptic_ratio_smoothed + gamma * self.vector_smoothed
-
-        local_extrema = argrelextrema(signal.values, comparison_function, order=5)
-        local_extrema = local_extrema[0].tolist()
-        local_extrema_indices = self.report_data.index[local_extrema].tolist()
-        local_extrema_differences = [
-            local_extrema_indices[i] - local_extrema_indices[i - 1] for i in range(1, len(local_extrema_indices))
-        ]
-        return local_extrema_differences, local_extrema_indices, signal
+        pass
 
     def propagate_gating(self):
         sys_mean_diff = round(np.mean(np.diff(self.systolic_indices)))
