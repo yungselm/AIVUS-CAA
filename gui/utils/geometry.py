@@ -100,6 +100,9 @@ class Spline(QGraphicsPathItem):
             self.path.setElementPositionAt(i, self.full_contour[0][i], self.full_contour[1][i])
         self.setPath(self.path)
 
+    def get_unscaled_contour(self, scaling_factor):
+        return self.full_contour[0] / scaling_factor, self.full_contour[1] / scaling_factor
+
 
 def get_qt_pen(color, thickness):
     if color == 'yellow':
