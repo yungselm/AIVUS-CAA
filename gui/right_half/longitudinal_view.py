@@ -45,7 +45,7 @@ class LongitudinalView(QGraphicsView):
         marker = Marker(frame, 0, frame, self.image_height)
         self.graphics_scene.addItem(marker)
 
-    def lview_contour(self, frame, contour, scaling_factor=1, update=False):
+    def lview_contour(self, frame, contour, update=False):
         index = None
         if self.points_on_marker[frame] is not None:  # remove previous points
             for point in self.points_on_marker[frame]:
@@ -53,14 +53,16 @@ class LongitudinalView(QGraphicsView):
 
         if contour is None:  # skip frames without contour (but still remove previous points)
             return
+        else:
+            contour_x, contour_y = contour
 
         if update or self.points_on_marker[frame] is None:  # need to find the two closest points to the marker
-            distances = contour.full_contour[0] / scaling_factor - self.image_height // 2
-            num_points_to_collect = len(contour.full_contour[0]) // 10
+            distances = contour_x - self.image_height // 2
+            num_points_to_collect = len(contour_x) // 10
             point_indices = np.argpartition(np.abs(distances), num_points_to_collect)[:num_points_to_collect]
             for i in range(len(point_indices)):
                 if (
-                    np.abs(contour.full_contour[1][point_indices[0]] - contour.full_contour[1][point_indices[i]])
+                    np.abs(contour_y[point_indices[0]] - contour_y[point_indices[i]])
                     > self.image_height / 10
                 ):  # ensure the two points are from different sides of the contour
                     index = i
@@ -69,13 +71,13 @@ class LongitudinalView(QGraphicsView):
                 return
             self.points_on_marker[frame] = (
                 Point(
-                    (frame, contour.full_contour[1][point_indices[0]] / scaling_factor),
+                    (frame, contour_y[point_indices[0]]),
                     line_thickness=self.lview_contour_size,
                     point_radius=self.lview_contour_size,
                     color='green',
                 ),
                 Point(
-                    (frame, contour.full_contour[1][point_indices[index]] / scaling_factor),
+                    (frame, contour_y[point_indices[index]]),
                     line_thickness=self.lview_contour_size,
                     point_radius=self.lview_contour_size,
                     color='green',

@@ -84,16 +84,13 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
         elliptic_ratio = [0] * main_window.metadata['num_frames']
         vector_length = [0] * main_window.metadata['num_frames']
         vector_angle = [0] * main_window.metadata['num_frames']
-    lumen_x = [[] for _ in range(main_window.metadata['num_frames'])]
-    lumen_y = [[] for _ in range(main_window.metadata['num_frames'])]
+    lumen_x = [contour[0] if contour is not None else None for contour in main_window.display.full_contours]
+    lumen_y = [contour[1] if contour is not None else None for contour in main_window.display.full_contours]
 
     for frame in contoured_frames:
         if lumen_area[frame] and elliptic_ratio[frame] != 0:  # values already computed for this frame -> skip
             continue
 
-        lumen_contour = main_window.display.full_contours[frame]
-        lumen_x[frame] = [point for point in lumen_contour.full_contour[0]]
-        lumen_y[frame] = [point for point in lumen_contour.full_contour[1]]
         polygon = Polygon([(x, y) for x, y in zip(lumen_x[frame], lumen_y[frame])])
         exterior_coords = polygon.exterior.coords
 
@@ -136,13 +133,6 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
         os.makedirs(csv_out_dir, exist_ok=True)
 
         for frame in contoured_frames:
-            if not lumen_x[frame]:
-                lumen_contour = Spline(
-                    [main_window.data['lumen'][0][frame], main_window.data['lumen'][1][frame]],
-                    n_points=main_window.config.display.n_points_contour,
-                )
-                lumen_x[frame] = [point for point in lumen_contour.full_contour[0]]
-                lumen_y[frame] = [point for point in lumen_contour.full_contour[1]]
             with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
                 writer = csv.writer(csv_file, delimiter='\t')
                 rows = zip(
@@ -159,29 +149,31 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
         progress.close()
 
     if plot:
-        first_third = int(len(contoured_frames) * 0.25)
-        second_third = int(len(contoured_frames) * 0.5)
-        third_third = int(len(contoured_frames) * 0.75)
-        indices_to_plot = [first_third, second_third, third_third]
+        index_1 = int(len(contoured_frames) * 0.2)
+        index_2 = int(len(contoured_frames) * 0.4)
+        index_3 = int(len(contoured_frames) * 0.6)
+        index_4 = int(len(contoured_frames) * 0.8)
+        indices_to_plot = [index_1, index_2, index_3, index_4]
         frames_to_plot = [contoured_frames[frame] for frame in indices_to_plot]
+        fig, axes = plt.subplots(2, 2, figsize=(12, 12))
 
-        for frame in frames_to_plot:
-            plt.figure(figsize=(6, 6))
-            plt.plot(
+        for index, frame in enumerate(frames_to_plot):
+            ax = axes[index // 2, index % 2]
+            ax.plot(
                 lumen_x[frame],
                 lumen_y[frame],
                 '-g',
                 linewidth=2,
                 label='Contour',
             )
-            plt.plot(centroid_x[frame], centroid_y[frame], 'ro', markersize=8, label='Centroid')
-            plt.plot(farthest_x[frame][0], farthest_y[frame][0], 'bo', markersize=8, label='Farthest Point 1')
-            plt.plot(farthest_x[frame][1], farthest_y[frame][1], 'bo', markersize=8, label='Farthest Point 2')
-            plt.plot(nearest_x[frame][0], nearest_y[frame][0], 'yo', markersize=8, label='Nearest Point 1')
-            plt.plot(nearest_x[frame][1], nearest_y[frame][1], 'yo', markersize=8, label='Nearest Point 2')
+            ax.plot(centroid_x[frame], centroid_y[frame], 'ro', markersize=8, label='Centroid')
+            ax.plot(farthest_x[frame][0], farthest_y[frame][0], 'bo', markersize=8, label='Farthest Point 1')
+            ax.plot(farthest_x[frame][1], farthest_y[frame][1], 'bo', markersize=8, label='Farthest Point 2')
+            ax.plot(nearest_x[frame][0], nearest_y[frame][0], 'yo', markersize=8, label='Nearest Point 1')
+            ax.plot(nearest_x[frame][1], nearest_y[frame][1], 'yo', markersize=8, label='Nearest Point 2')
 
             # Annotate with shortest and longest distances
-            plt.annotate(
+            ax.annotate(
                 f'Shortest Distance: {shortest_distance[frame]:.2f} mm',
                 xy=(centroid_x[frame], centroid_y[frame]),
                 xycoords='data',
@@ -190,7 +182,7 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
                 arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=.2'),
             )
 
-            plt.annotate(
+            ax.annotate(
                 f'Longest Distance: {longest_distance[frame]:.2f} mm',
                 xy=(centroid_x[frame], centroid_y[frame]),
                 xycoords='data',
@@ -199,7 +191,7 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
                 arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2'),
             )
 
-            plt.annotate(
+            ax.annotate(
                 f'Lumen Area: {lumen_area[frame]:.2f} mm\N{SUPERSCRIPT TWO}\nElliptic Ratio: {longest_distance[frame]/shortest_distance[frame]:.2f}',
                 xy=(centroid_x[frame], centroid_y[frame]),
                 xycoords='data',
@@ -208,12 +200,13 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
                 arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'),
             )
 
-            plt.title(f'Frame {frame + 1}')
-            plt.legend(loc='upper right')
-            plt.gca().invert_yaxis()
-            plt.grid()
-            plt.tight_layout()
-            plt.show()
+            ax.legend(loc='upper right')
+            ax.invert_yaxis()
+            ax.grid()
+            ax.set_title(f'Frame {frame + 1}')
+
+        fig.tight_layout()
+        fig.show()
 
     return report_data
 

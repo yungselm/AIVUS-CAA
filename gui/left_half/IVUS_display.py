@@ -68,7 +68,9 @@ class IVUSDisplay(QGraphicsView):
         self.main_window.data['lumen'] = lumen
         self.full_contours = [
             (
-                Spline([lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'green')
+                Spline(
+                    [lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'green'
+                ).get_unscaled_contour(scaling_factor=1)  # data is not yet scaled at read, hence scaling_factor=1
                 if lumen[0][frame]
                 else None
             )
@@ -142,8 +144,7 @@ class IVUSDisplay(QGraphicsView):
                 self.draw_contour(self.main_window.data['lumen'])
                 self.draw_measure()
                 if self.main_window.data['lumen'][0][self.frame] and self.current_contour.full_contour[0] is not None:
-                    lumen_x = [point / self.scaling_factor for point in self.current_contour.full_contour[0]]
-                    lumen_y = [point / self.scaling_factor for point in self.current_contour.full_contour[1]]
+                    lumen_x, lumen_y = self.current_contour.get_unscaled_contour(self.scaling_factor)
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
                     lumen_area, lumen_circumf, _, _ = compute_polygon_metrics(self.main_window, polygon, self.frame)
                     longest_distance, farthest_point_x, farthest_point_y = farthest_points(
@@ -230,6 +231,7 @@ class IVUSDisplay(QGraphicsView):
                 ]
                 [self.graphics_scene.addItem(point) for point in self.contour_points]
                 self.graphics_scene.addItem(self.current_contour)
+                self.full_contours[self.frame] = self.current_contour.get_unscaled_contour(self.scaling_factor)
             else:
                 logger.warning(f'Spline for frame {self.frame + 1} could not be interpolated')
 
@@ -301,7 +303,7 @@ class IVUSDisplay(QGraphicsView):
             self.main_window.setCursor(Qt.ArrowCursor)
             self.display_image(update_contours=True)
             self.main_window.longitudinal_view.lview_contour(
-                self.frame, self.current_contour, self.scaling_factor, update=True
+                self.frame, self.full_contours[self.frame], update=True
             )
 
     def draw_measure(self):
@@ -419,6 +421,6 @@ class IVUSDisplay(QGraphicsView):
                 ]
                 self.display_image(update_contours=True)
                 self.main_window.longitudinal_view.lview_contour(
-                    self.frame, self.current_contour, self.scaling_factor, update=True
+                    self.frame, self.full_contours[self.frame], update=True
                 )
                 self.active_point_index = None
