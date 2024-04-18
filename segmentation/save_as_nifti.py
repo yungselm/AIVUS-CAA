@@ -30,7 +30,7 @@ def save_as_nifti(main_window, mode=None):
         main_window.status_bar.showMessage('Saving frames as NIfTi files...')
         file_name = os.path.splitext(os.path.basename(main_window.file_name))[0]  # remove file extension
         os.makedirs(out_path, exist_ok=True)
-        mask = contours_to_mask(main_window.images[frames_to_save], frames_to_save, main_window.data['lumen'])
+        mask = contours_to_mask(main_window.images[frames_to_save], frames_to_save, main_window.display.full_contours)
 
         progress = QProgressDialog()
         progress.setWindowFlags(Qt.Dialog)
@@ -39,9 +39,6 @@ def save_as_nifti(main_window, mode=None):
         progress_max = len(frames_to_save) * main_window.config.save.save_2d + main_window.config.save.save_3d
         progress.setMaximum(progress_max)
         progress.resize(500, 100)
-        progress.setValue(0)
-        progress.setValue(1)
-        progress.setValue(0)  # trick to make progress bar appear
         progress.setWindowTitle('Saving frames as NIfTi files...')
         progress.show()
 
@@ -74,13 +71,13 @@ def save_as_nifti(main_window, mode=None):
         main_window.status_bar.showMessage(main_window.waiting_status)
 
 
-def contours_to_mask(images, contoured_frames, lumen):
+def contours_to_mask(images, contoured_frames, contours):
     """Convert IVUS contours to numpy mask"""
     image_shape = images.shape[1:3]
     mask = np.zeros_like(images)
     for i, frame in enumerate(contoured_frames):
         try:
-            lumen_polygon = [[x, y] for x, y in zip(lumen[1][frame], lumen[0][frame])]
+            lumen_polygon = [[x, y] for x, y in zip(contours[frame][1], contours[frame][0])]
             mask[i, :, :] += polygon2mask(image_shape, lumen_polygon).astype(np.uint8)
         except ValueError:  # frame has no lumen contours
             pass
