@@ -63,7 +63,7 @@ def write_contours(main_window):
     """Writes contours to a json/xml file"""
 
     if not main_window.image_displayed:
-        ErrorMessage(main_window, 'Cannot write contours before reading DICOM file')
+        ErrorMessage(main_window, 'Cannot write contours before reading input file')
         return
 
     if main_window.config.save.use_xml_files:

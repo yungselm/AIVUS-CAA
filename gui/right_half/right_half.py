@@ -1,6 +1,8 @@
+import bisect
+
 from loguru import logger
 from functools import partial
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton, QCheckBox
 
 from gui.right_half.gating_display import GatingDisplay
 from gui.right_half.longitudinal_view import LongitudinalView
@@ -13,9 +15,19 @@ class RightHalf:
         self.main_window = main_window
 
         right_upper_hbox = QHBoxLayout()
+        checkboxes = QHBoxLayout()
+        self.diastolic_frame_box = QCheckBox('Diastolic Frame')
+        self.diastolic_frame_box.setChecked(False)
+        self.diastolic_frame_box.stateChanged[int].connect(self.toggle_diastolic_frame)
+        self.systolic_frame_box = QCheckBox('Systolic Frame')
+        self.systolic_frame_box.setChecked(False)
+        self.systolic_frame_box.stateChanged[int].connect(self.toggle_systolic_frame)
+        checkboxes.addWidget(self.diastolic_frame_box)
+        checkboxes.addWidget(self.systolic_frame_box)
         main_window.gating_display = GatingDisplay(main_window)
         gating_display_vbox = QVBoxLayout()
-        gating_display_vbox.addWidget(main_window.gating_display.toolbar)
+        checkboxes.addWidget(main_window.gating_display.toolbar)
+        gating_display_vbox.addLayout(checkboxes)
         gating_display_vbox.addWidget(main_window.gating_display)
         right_upper_hbox.addLayout(gating_display_vbox)
         main_window.right_vbox.addLayout(right_upper_hbox, stretch=2)
@@ -56,6 +68,56 @@ class RightHalf:
         measures.addWidget(measure_button_2)
         right_lower_vbox.addLayout(measures)
         main_window.right_vbox.addLayout(right_lower_vbox)
+
+    def toggle_diastolic_frame(self, state_true):
+        if self.main_window.image_displayed:
+            frame = self.main_window.display_slider.value()
+            if state_true:
+                if frame not in self.main_window.gated_frames_dia:
+                    bisect.insort_left(self.main_window.gated_frames_dia, frame)
+                    self.main_window.data['phases'][frame] = 'D'
+                try:  # frame cannot be diastolic and systolic at the same time
+                    self.systolic_frame_box.setChecked(False)
+                except ValueError:
+                    pass
+            else:
+                try:
+                    self.main_window.gated_frames_dia.remove(frame)
+                    if (
+                        self.main_window.data['phases'][frame] == 'D'
+                    ):  # do not reset when function is called from toggle_systolic_frame
+                        self.main_window.data['phases'][frame] = '-'
+                except ValueError:
+                    pass
+            if self.main_window.use_diastolic_button.isChecked():
+                self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_dia)
+
+            self.main_window.display.update_display()
+
+    def toggle_systolic_frame(self, state_true):
+        if self.main_window.image_displayed:
+            frame = self.main_window.display_slider.value()
+            if state_true:
+                if frame not in self.main_window.gated_frames_sys:
+                    bisect.insort_left(self.main_window.gated_frames_sys, frame)
+                    self.main_window.data['phases'][frame] = 'S'
+                try:  # frame cannot be diastolic and systolic at the same time
+                    self.diastolic_frame_box.setChecked(False)
+                except ValueError:
+                    pass
+            else:
+                try:
+                    self.main_window.gated_frames_sys.remove(frame)
+                    if (
+                        self.main_window.data['phases'][frame] == 'S'
+                    ):  # do not reset when function is called from toggle_diastolic_frame
+                        self.main_window.data['phases'][frame] = '-'
+                except ValueError:
+                    pass
+            if not self.main_window.use_diastolic_button.isChecked():
+                self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_sys)
+
+            self.main_window.display.update_display()
 
     def use_diastolic(self, main_window):
         if main_window.image_displayed:

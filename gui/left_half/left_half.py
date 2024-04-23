@@ -13,7 +13,6 @@ from gui.utils.slider import Slider, Communicate
 class LeftHalf:
     def __init__(self, main_window):
         self.main_window = main_window
-        MAX_BOX_WIDTH = 130
 
         main_window.display = IVUSDisplay(main_window)
         main_window.display_frame_comms = Communicate()
@@ -21,23 +20,6 @@ class LeftHalf:
         main_window.left_vbox.addWidget(main_window.display)
 
         left_lower_grid = QGridLayout()
-        flag_checkboxes = QHBoxLayout()
-        self.diastolic_frame_box = QCheckBox('Diastolic Frame')
-        self.diastolic_frame_box.setMaximumWidth(MAX_BOX_WIDTH)
-        self.diastolic_frame_box.setChecked(False)
-        self.diastolic_frame_box.stateChanged[int].connect(self.toggle_diastolic_frame)
-        self.systolic_frame_box = QCheckBox('Systolic Frame')
-        self.systolic_frame_box.setMaximumWidth(MAX_BOX_WIDTH)
-        self.systolic_frame_box.setChecked(False)
-        self.systolic_frame_box.stateChanged[int].connect(self.toggle_systolic_frame)
-        self.plaque_frame_box = QCheckBox('Plaque')
-        self.plaque_frame_box.setMaximumWidth(MAX_BOX_WIDTH)
-        self.plaque_frame_box.setChecked(False)
-        self.plaque_frame_box.stateChanged[int].connect(self.toggle_plaque_frame)
-        flag_checkboxes.addWidget(self.diastolic_frame_box)
-        flag_checkboxes.addWidget(self.systolic_frame_box)
-        flag_checkboxes.addWidget(self.plaque_frame_box)
-        left_lower_grid.addLayout(flag_checkboxes, 0, 0)
         hide_checkboxes = QHBoxLayout()
         main_window.hide_contours_box = QCheckBox('&Hide Contours')
         main_window.hide_contours_box.setChecked(False)
@@ -47,7 +29,7 @@ class LeftHalf:
         main_window.hide_special_points_box.stateChanged[int].connect(self.toggle_hide_special_points)
         hide_checkboxes.addWidget(main_window.hide_contours_box)
         hide_checkboxes.addWidget(main_window.hide_special_points_box)
-        left_lower_grid.addLayout(hide_checkboxes, 1, 0)
+        left_lower_grid.addLayout(hide_checkboxes, 0, 0)
 
         self.play_button = QPushButton()
         self.play_icon = main_window.style().standardIcon(getattr(QStyle, 'SP_MediaPlay'))
@@ -97,13 +79,6 @@ class LeftHalf:
         self.main_window.display_frame_comms.updateBW.emit(value)
         self.main_window.display.update_display()
         self.frame_number_label.setText(f'Frame {value + 1}')
-        try:
-            if self.main_window.data['plaque_frames'][value] == '1':
-                self.plaque_frame_box.setChecked(True)
-            else:
-                self.plaque_frame_box.setChecked(False)
-        except IndexError:
-            pass
 
         try:
             if value in self.main_window.gated_frames_dia:
@@ -178,11 +153,3 @@ class LeftHalf:
                 self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_sys)
 
             self.main_window.display.update_display()
-
-    def toggle_plaque_frame(self, state_true):
-        if self.main_window.image_displayed:
-            frame = self.main_window.display_slider.value()
-            if state_true:
-                self.main_window.data['plaque_frames'][frame] = '1'
-            else:
-                self.main_window.data['plaque_frames'][frame] = '0'

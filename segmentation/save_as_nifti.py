@@ -51,11 +51,11 @@ def save_as_nifti(main_window, mode=None):
                 if main_window.data['lumen'][0][frame]:  # only save mask if contour exists
                     sitk.WriteImage(
                         sitk.GetImageFromArray(mask[i, :, :]),
-                        os.path.join(out_path, f'{file_name}_frame_{i}_seg.nii.gz'),
+                        os.path.join(out_path, f'{file_name}_frame_{frame}_seg.nii.gz'),
                     )
                 sitk.WriteImage(
                     sitk.GetImageFromArray(main_window.images[frame, :, :]),
-                    os.path.join(out_path, f'{file_name}_frame_{i}_img.nii.gz'),
+                    os.path.join(out_path, f'{file_name}_frame_{frame}_img.nii.gz'),
                 )
         if main_window.config.save.save_3d:
             if any(main_window.data['lumen'][0]):  # only save mask if any contour exists

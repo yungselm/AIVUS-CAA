@@ -3,7 +3,7 @@ from gui.popup_windows.message_boxes import ErrorMessage
 
 def new_contour(main_window):
     if not main_window.image_displayed:
-        ErrorMessage(main_window, 'Cannot create manual contour before reading DICOM file')
+        ErrorMessage(main_window, 'Cannot create manual contour before reading input file')
         return
 
     main_window.tmp_lumen_x = main_window.data['lumen'][0][main_window.display.frame]  # for Ctrl+Z
@@ -15,7 +15,7 @@ def new_contour(main_window):
 
 def new_measure(main_window, index: int):
     if not main_window.image_displayed:
-        ErrorMessage(main_window, 'Cannot create manual measure before reading DICOM file')
+        ErrorMessage(main_window, 'Cannot create manual measure before reading input file')
         return
 
     main_window.display.start_measure(index)

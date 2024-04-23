@@ -12,7 +12,6 @@ from shapely.geometry import Polygon
 from itertools import combinations
 
 from gui.popup_windows.message_boxes import ErrorMessage, SuccessMessage
-from gui.utils.geometry import Spline
 
 
 def report(main_window, suppress_messages=False):
@@ -20,7 +19,7 @@ def report(main_window, suppress_messages=False):
 
     if not main_window.image_displayed:
         if not suppress_messages:
-            ErrorMessage(main_window, 'Cannot write report before reading DICOM file')
+            ErrorMessage(main_window, 'Cannot write report before reading input file')
         return None
 
     contoured_frames = [
@@ -112,7 +111,9 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
                 return None
 
     report_data = pd.DataFrame()
-    report_data['frame'] = contoured_frames
+    report_data['frame'] = [
+        frame + 1 for frame in contoured_frames
+    ]  # want 1-based indexing for direct comparison with GUI
     report_data['position'] = [main_window.metadata['pullback_length'][frame] for frame in contoured_frames]
     report_data['phase'] = [main_window.data['phases'][frame] for frame in contoured_frames]
     report_data['lumen_area'] = [lumen_area[frame] for frame in contoured_frames]
