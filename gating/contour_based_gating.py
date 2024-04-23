@@ -27,7 +27,7 @@ class ContourBasedGating:
         self.main_window.status_bar.showMessage('Contour-based gating...')
         self.report_data = report(self.main_window, suppress_messages=True)  # compute all needed data
         if self.report_data is None:
-            ErrorMessage(self.main_window, 'Please ensure that a DICOM file was read and contours were drawn')
+            ErrorMessage(self.main_window, 'Please ensure that an input file was read and contours were drawn')
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
 
@@ -55,12 +55,19 @@ class ContourBasedGating:
                 lower_limit == 0 and upper_limit == self.main_window.images.shape[0]
             ):  # automatic detection of intramural part
                 mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
-
             self.report_data = self.report_data[
-                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='left')
+                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='both')
             ]
-            self.frames = self.main_window.images[lower_limit : upper_limit - 1]
-            self.x = range(lower_limit + 1, upper_limit)  # want actual frame numbers for GUI, not indices
+            if len(self.report_data) != upper_limit - lower_limit:
+                missing_frames = [
+                    str(frame)
+                    for frame in range(lower_limit + 1, upper_limit + 1)
+                    if frame not in self.report_data['frame'].values
+                ]
+                ErrorMessage(self.main_window, f'Please add contours to frames {", ".join(missing_frames)}')
+                return False
+            self.frames = self.main_window.images[lower_limit : upper_limit]
+            self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
             return True
         return False
 
@@ -165,6 +172,8 @@ class ContourBasedGating:
                     self.vertical_lines.append(new_line)
                 plt.draw()
 
+            self.main_window.display_slider.setValue(round(event.xdata - 1))  # slider is 0-based
+
     def on_release(self, event):
         self.selected_line = None
 
@@ -173,6 +182,7 @@ class ContourBasedGating:
             return
         if event.button is MouseButton.LEFT and self.selected_line:
             self.selected_line.set_xdata([event.xdata] * 2)
+            self.main_window.display_slider.setValue(round(event.xdata - 1))  # slider is 0-based
             plt.draw()
 
     def get_x_indices(self):
