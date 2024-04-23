@@ -26,10 +26,6 @@ def read_xml(main_window, path, frames=[]):
                 lumen_subpoints = []
                 if frame_number in frames:
                     try:
-                        plaque_frames.append(frame.find('Plaque').text)
-                    except AttributeError:  # old contour files may not have plaque attribute
-                        plaque_frames.append('0')
-                    try:
                         phase = frame.find('Phase').text
                         phase = '-' if phase is None else phase
                     except AttributeError:  # old contour files may not have phase attribute

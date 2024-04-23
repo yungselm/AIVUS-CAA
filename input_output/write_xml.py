@@ -9,8 +9,8 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
     """Write an xml file of contour data
 
     Args:
-        x: list, where alternating entries are lists of lumen/plaque x points
-        y: list, where alternating entries are lists of lumen/plaque y points
+        x: list, where alternating entries are lists of lumen x points
+        y: list, where alternating entries are lists of lumen y points
         dims: list, where entries are image height, width and number of images
         resolution: float, image resolution (mm)
         speed: float, speed of pullback mm/s
@@ -89,12 +89,7 @@ def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
         frame = et.SubElement(frame_state, 'Fm')
         frame_number = et.SubElement(frame, 'Num')
         frame_number.text = str(frame_index)
-        plaque = et.SubElement(frame, 'Plaque')
         phase = et.SubElement(frame, 'Phase')
-        try:
-            plaque.text = plaque_frames[frame_index]
-        except IndexError:  # old contour files may not have phases attr
-            plaque.text = '0'
         try:
             phase.text = phases[frame_index]
         except IndexError:  # old contour files may not have phases attr

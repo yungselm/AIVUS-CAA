@@ -49,7 +49,7 @@ This application is designed for IVUS images in DICOM or NIfTi format and offers
 - Inspect IVUS images frame-by-frame and display DICOM metadata
 - Manually **draw lumen contours** with automatic calculation of lumen area, circumference and elliptic ratio
 - **Automatic segmentation** of lumen for all frames (work in progress)
-- Manually tag diastolic/systolic frames and frames with plaque
+- Manually tag diastolic/systolic frames
 - Ability to measure up to two distances per frame which will be stored in the report
 - **Auto-save** of contours and tags enabled by default with user-definable interval
 - Generation of report file containing detailed metrics for each frame
