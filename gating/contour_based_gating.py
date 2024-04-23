@@ -22,6 +22,8 @@ class ContourBasedGating:
         self.phases = []
         self.systolic_indices = []
         self.diastolic_indices = []
+        self.default_line_color = 'grey'
+        self.selected_line_color = 'yellow'
 
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
@@ -156,26 +158,28 @@ class ContourBasedGating:
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
             return
         if event.button is MouseButton.LEFT and event.inaxes:
-            # Check if there are existing lines
-            if not self.vertical_lines:
-                new_line = plt.axvline(x=event.xdata, color='r', linestyle='--')
-                self.vertical_lines.append(new_line)
-                plt.draw()
-            else:
+            new_line = True
+            if self.selected_line:
+                self.selected_line.set_color(self.default_line_color)
+                self.selected_line = None
+            if self.vertical_lines:
                 # Check if click is near any existing line
                 distances = [abs(line.get_xdata()[0] - event.xdata) for line in self.vertical_lines]
                 min_distance = min(distances)
                 if min_distance < len(self.frames) / 100:  # sensitivity for line selection
                     self.selected_line = self.vertical_lines[np.argmin(distances)]
-                else:
-                    new_line = plt.axvline(x=event.xdata, color='r', linestyle='--')
-                    self.vertical_lines.append(new_line)
-                plt.draw()
+                    new_line = False
+            if new_line:
+                self.selected_line = plt.axvline(x=event.xdata, color=self.default_line_color, linestyle='--')
+                self.vertical_lines.append(self.selected_line)
+
+            self.selected_line.set_color(self.selected_line_color)
+            plt.draw()
 
             self.main_window.display_slider.setValue(round(event.xdata - 1))  # slider is 0-based
 
     def on_release(self, event):
-        self.selected_line = None
+        pass
 
     def on_motion(self, event):
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
