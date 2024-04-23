@@ -3,6 +3,7 @@ import os
 import pydicom as dcm
 import SimpleITK as sitk
 import numpy as np
+import matplotlib.pyplot as plt
 from loguru import logger
 from PyQt5.QtWidgets import QFileDialog
 
@@ -26,6 +27,8 @@ def read_image(main_window):
     )
 
     if file_name:
+        main_window.gating_display.fig.clear()
+        plt.draw()
         try:  # DICOM
             main_window.dicom = dcm.read_file(file_name, force=True)
             main_window.images = main_window.dicom.pixel_array
