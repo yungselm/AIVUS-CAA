@@ -68,7 +68,7 @@ class ContourBasedGating:
                 ]
                 ErrorMessage(self.main_window, f'Please add contours to frames {", ".join(missing_frames)}')
                 return False
-            self.frames = self.main_window.images[lower_limit : upper_limit]
+            self.frames = self.main_window.images[lower_limit:upper_limit]
             self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
             return True
         return False
@@ -159,7 +159,7 @@ class ContourBasedGating:
             return
         if event.button is MouseButton.LEFT and event.inaxes:
             new_line = True
-            if self.selected_line:
+            if self.selected_line is not None:
                 self.selected_line.set_color(self.default_line_color)
                 self.selected_line = None
             if self.vertical_lines:
@@ -176,7 +176,9 @@ class ContourBasedGating:
             self.selected_line.set_color(self.selected_line_color)
             plt.draw()
 
-            self.main_window.display_slider.setValue(round(event.xdata - 1))  # slider is 0-based
+            self.main_window.display_slider.set_value(
+                round(event.xdata - 1), reset_highlights=False
+            )  # slider is 0-based
 
     def on_release(self, event):
         pass
@@ -186,7 +188,9 @@ class ContourBasedGating:
             return
         if event.button is MouseButton.LEFT and self.selected_line:
             self.selected_line.set_xdata([event.xdata] * 2)
-            self.main_window.display_slider.setValue(round(event.xdata - 1))  # slider is 0-based
+            self.main_window.display_slider.set_value(
+                round(event.xdata - 1), reset_highlights=False
+            )  # slider is 0-based
             plt.draw()
 
     def get_x_indices(self):
@@ -262,6 +266,12 @@ class ContourBasedGating:
         self.phases = [round(phase, 0) for phase in self.phases]
 
         return True
+
+    def reset_highlights(self):
+        if self.selected_line is not None:
+            self.selected_line.set_color(self.default_line_color)
+            self.selected_line = None
+            plt.draw()
 
     def identify_systole_diastole(self):
         # split self.phases by every second element

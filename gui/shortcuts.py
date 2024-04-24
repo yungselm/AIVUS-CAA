@@ -136,16 +136,16 @@ def hide_special_points(main_window):
 def jiggle_frame(main_window):
     if main_window.image_displayed:
         current_frame = main_window.display_slider.value()
-        main_window.display_slider.setValue(current_frame + 1)
+        main_window.display_slider.set_value(current_frame + 1)
         QApplication.processEvents()
         time.sleep(0.1)
-        main_window.display_slider.setValue(current_frame)
+        main_window.display_slider.set_value(current_frame)
         QApplication.processEvents()
         time.sleep(0.1)
-        main_window.display_slider.setValue(current_frame - 1)
+        main_window.display_slider.set_value(current_frame - 1)
         QApplication.processEvents()
         time.sleep(0.1)
-        main_window.display_slider.setValue(current_frame)
+        main_window.display_slider.set_value(current_frame)
         QApplication.processEvents()
 
 

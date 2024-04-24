@@ -38,7 +38,7 @@ class LeftHalf:
         self.play_button.setMaximumWidth(30)
         self.play_button.clicked.connect(partial(self.play, main_window))
         self.paused = True
-        main_window.display_slider = Slider(Qt.Horizontal)
+        main_window.display_slider = Slider(main_window, Qt.Horizontal)
         main_window.display_slider.valueChanged[int].connect(self.change_value)
         slider_hbox = QHBoxLayout()
         slider_hbox.addWidget(self.play_button)
@@ -68,7 +68,7 @@ class LeftHalf:
 
         for frame in range(start_frame, main_window.metadata['num_frames']):
             if not self.paused:
-                main_window.display_slider.setValue(frame)
+                main_window.display_slider.set_value(frame)
                 QApplication.processEvents()
                 time.sleep(0.05)
                 self.frame_number_label.setText(f'Frame {frame + 1}')
