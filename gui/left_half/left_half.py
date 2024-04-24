@@ -80,17 +80,14 @@ class LeftHalf:
         self.main_window.display.update_display()
         self.frame_number_label.setText(f'Frame {value + 1}')
 
-        try:
-            if value in self.main_window.gated_frames_dia:
-                self.diastolic_frame_box.setChecked(True)
+        if value in self.main_window.gated_frames_dia:
+            self.main_window.diastolic_frame_box.setChecked(True)
+        else:
+            self.main_window.diastolic_frame_box.setChecked(False)
+            if value in self.main_window.gated_frames_sys:
+                self.main_window.systolic_frame_box.setChecked(True)
             else:
-                self.diastolic_frame_box.setChecked(False)
-                if value in self.main_window.gated_frames_sys:
-                    self.systolic_frame_box.setChecked(True)
-                else:
-                    self.systolic_frame_box.setChecked(False)
-        except AttributeError:
-            pass
+                self.main_window.systolic_frame_box.setChecked(False)
 
     def toggle_hide_contours(self, value):
         if self.main_window.image_displayed:
@@ -102,54 +99,4 @@ class LeftHalf:
     def toggle_hide_special_points(self, value):
         if self.main_window.image_displayed:
             self.main_window.hide_special_points = value
-            self.main_window.display.update_display()
-
-    def toggle_diastolic_frame(self, state_true):
-        if self.main_window.image_displayed:
-            frame = self.main_window.display_slider.value()
-            if state_true:
-                if frame not in self.main_window.gated_frames_dia:
-                    bisect.insort_left(self.main_window.gated_frames_dia, frame)
-                    self.main_window.data['phases'][frame] = 'D'
-                try:  # frame cannot be diastolic and systolic at the same time
-                    self.systolic_frame_box.setChecked(False)
-                except ValueError:
-                    pass
-            else:
-                try:
-                    self.main_window.gated_frames_dia.remove(frame)
-                    if (
-                        self.main_window.data['phases'][frame] == 'D'
-                    ):  # do not reset when function is called from toggle_systolic_frame
-                        self.main_window.data['phases'][frame] = '-'
-                except ValueError:
-                    pass
-            if self.main_window.use_diastolic_button.isChecked():
-                self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_dia)
-
-            self.main_window.display.update_display()
-
-    def toggle_systolic_frame(self, state_true):
-        if self.main_window.image_displayed:
-            frame = self.main_window.display_slider.value()
-            if state_true:
-                if frame not in self.main_window.gated_frames_sys:
-                    bisect.insort_left(self.main_window.gated_frames_sys, frame)
-                    self.main_window.data['phases'][frame] = 'S'
-                try:  # frame cannot be diastolic and systolic at the same time
-                    self.diastolic_frame_box.setChecked(False)
-                except ValueError:
-                    pass
-            else:
-                try:
-                    self.main_window.gated_frames_sys.remove(frame)
-                    if (
-                        self.main_window.data['phases'][frame] == 'S'
-                    ):  # do not reset when function is called from toggle_diastolic_frame
-                        self.main_window.data['phases'][frame] = '-'
-                except ValueError:
-                    pass
-            if not self.main_window.use_diastolic_button.isChecked():
-                self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_sys)
-
             self.main_window.display.update_display()

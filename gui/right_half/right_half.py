@@ -17,14 +17,14 @@ class RightHalf:
 
         right_upper_hbox = QHBoxLayout()
         checkboxes = QHBoxLayout()
-        self.diastolic_frame_box = QCheckBox('Diastolic Frame')
-        self.diastolic_frame_box.setChecked(False)
-        self.diastolic_frame_box.stateChanged[int].connect(self.toggle_diastolic_frame)
-        self.systolic_frame_box = QCheckBox('Systolic Frame')
-        self.systolic_frame_box.setChecked(False)
-        self.systolic_frame_box.stateChanged[int].connect(self.toggle_systolic_frame)
-        checkboxes.addWidget(self.diastolic_frame_box)
-        checkboxes.addWidget(self.systolic_frame_box)
+        self.main_window.diastolic_frame_box = QCheckBox('Diastolic Frame')
+        self.main_window.diastolic_frame_box.setChecked(False)
+        self.main_window.diastolic_frame_box.stateChanged[int].connect(self.toggle_diastolic_frame)
+        self.main_window.systolic_frame_box = QCheckBox('Systolic Frame')
+        self.main_window.systolic_frame_box.setChecked(False)
+        self.main_window.systolic_frame_box.stateChanged[int].connect(self.toggle_systolic_frame)
+        checkboxes.addWidget(self.main_window.diastolic_frame_box)
+        checkboxes.addWidget(self.main_window.systolic_frame_box)
         main_window.gating_display = GatingDisplay(main_window)
         gating_display_vbox = QVBoxLayout()
         checkboxes.addWidget(main_window.gating_display.toolbar)
@@ -77,10 +77,10 @@ class RightHalf:
                 if frame not in self.main_window.gated_frames_dia:
                     bisect.insort_left(self.main_window.gated_frames_dia, frame)
                     self.main_window.data['phases'][frame] = 'D'
-                    self.main_window.contour_based_gating.selected_line.set_color(self.main_window.diastole_color_plt)
+                    self.main_window.contour_based_gating.update_color(self.main_window.diastole_color_plt)
                     plt.draw()
                 try:  # frame cannot be diastolic and systolic at the same time
-                    self.systolic_frame_box.setChecked(False)
+                    self.main_window.systolic_frame_box.setChecked(False)
                 except ValueError:
                     pass
             else:
@@ -90,7 +90,7 @@ class RightHalf:
                         self.main_window.data['phases'][frame] == 'D'
                     ):  # do not reset when function is called from toggle_systolic_frame
                         self.main_window.data['phases'][frame] = '-'
-                        self.main_window.contour_based_gating.reset_color()
+                        self.main_window.contour_based_gating.update_color()
                 except ValueError:
                     pass
             if self.main_window.use_diastolic_button.isChecked():
@@ -105,10 +105,9 @@ class RightHalf:
                 if frame not in self.main_window.gated_frames_sys:
                     bisect.insort_left(self.main_window.gated_frames_sys, frame)
                     self.main_window.data['phases'][frame] = 'S'
-                    self.main_window.contour_based_gating.selected_line.set_color(self.main_window.systole_color_plt)
-                    plt.draw()
+                    self.main_window.contour_based_gating.update_color(self.main_window.systole_color_plt)
                 try:  # frame cannot be diastolic and systolic at the same time
-                    self.diastolic_frame_box.setChecked(False)
+                    self.main_window.diastolic_frame_box.setChecked(False)
                 except ValueError:
                     pass
             else:
@@ -118,7 +117,7 @@ class RightHalf:
                         self.main_window.data['phases'][frame] == 'S'
                     ):  # do not reset when function is called from toggle_diastolic_frame
                         self.main_window.data['phases'][frame] = '-'
-                        self.main_window.contour_based_gating.reset_color()
+                        self.main_window.contour_based_gating.update_color()
                 except ValueError:
                     pass
             if not self.main_window.use_diastolic_button.isChecked():

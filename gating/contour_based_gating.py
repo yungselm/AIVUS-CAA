@@ -269,9 +269,10 @@ class ContourBasedGating:
 
         return True
 
-    def reset_color(self):
+    def update_color(self, color=None):
+        color = color or self.default_line_color
         if self.selected_line is not None:
-            self.selected_line.set_color(self.default_line_color)
+            self.selected_line.set_color(color)
             plt.draw()
 
     def reset_highlights(self):
