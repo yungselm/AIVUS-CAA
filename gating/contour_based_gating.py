@@ -23,7 +23,7 @@ class ContourBasedGating:
         self.systolic_indices = []
         self.diastolic_indices = []
         self.default_line_color = 'grey'
-        self.selected_line_color = 'yellow'
+        self.default_linestyle = (0, (1, 3))
 
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
@@ -160,7 +160,7 @@ class ContourBasedGating:
         if event.button is MouseButton.LEFT and event.inaxes:
             new_line = True
             if self.selected_line is not None:
-                self.selected_line.set_color(self.default_line_color)
+                self.selected_line.set_linestyle(self.default_linestyle)
                 self.selected_line = None
             if self.vertical_lines:
                 # Check if click is near any existing line
@@ -170,10 +170,12 @@ class ContourBasedGating:
                     self.selected_line = self.vertical_lines[np.argmin(distances)]
                     new_line = False
             if new_line:
-                self.selected_line = plt.axvline(x=event.xdata, color=self.default_line_color, linestyle='--')
+                self.selected_line = plt.axvline(
+                    x=event.xdata, color=self.default_line_color, linestyle=self.default_linestyle
+                )
                 self.vertical_lines.append(self.selected_line)
 
-            self.selected_line.set_color(self.selected_line_color)
+            self.selected_line.set_linestyle('dashed')
             plt.draw()
 
             self.main_window.display_slider.set_value(
@@ -267,9 +269,14 @@ class ContourBasedGating:
 
         return True
 
-    def reset_highlights(self):
+    def reset_color(self):
         if self.selected_line is not None:
             self.selected_line.set_color(self.default_line_color)
+            plt.draw()
+
+    def reset_highlights(self):
+        if self.selected_line is not None:
+            self.selected_line.set_linestyle(self.default_linestyle)
             self.selected_line = None
             plt.draw()
 

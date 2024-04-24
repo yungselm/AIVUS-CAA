@@ -1,5 +1,6 @@
 import bisect
 
+import matplotlib.pyplot as plt
 from loguru import logger
 from functools import partial
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton, QCheckBox
@@ -76,6 +77,8 @@ class RightHalf:
                 if frame not in self.main_window.gated_frames_dia:
                     bisect.insort_left(self.main_window.gated_frames_dia, frame)
                     self.main_window.data['phases'][frame] = 'D'
+                    self.main_window.contour_based_gating.selected_line.set_color(self.main_window.diastole_color_plt)
+                    plt.draw()
                 try:  # frame cannot be diastolic and systolic at the same time
                     self.systolic_frame_box.setChecked(False)
                 except ValueError:
@@ -87,6 +90,7 @@ class RightHalf:
                         self.main_window.data['phases'][frame] == 'D'
                     ):  # do not reset when function is called from toggle_systolic_frame
                         self.main_window.data['phases'][frame] = '-'
+                        self.main_window.contour_based_gating.reset_color()
                 except ValueError:
                     pass
             if self.main_window.use_diastolic_button.isChecked():
@@ -101,6 +105,8 @@ class RightHalf:
                 if frame not in self.main_window.gated_frames_sys:
                     bisect.insort_left(self.main_window.gated_frames_sys, frame)
                     self.main_window.data['phases'][frame] = 'S'
+                    self.main_window.contour_based_gating.selected_line.set_color(self.main_window.systole_color_plt)
+                    plt.draw()
                 try:  # frame cannot be diastolic and systolic at the same time
                     self.diastolic_frame_box.setChecked(False)
                 except ValueError:
@@ -112,6 +118,7 @@ class RightHalf:
                         self.main_window.data['phases'][frame] == 'S'
                     ):  # do not reset when function is called from toggle_diastolic_frame
                         self.main_window.data['phases'][frame] = '-'
+                        self.main_window.contour_based_gating.reset_color()
                 except ValueError:
                     pass
             if not self.main_window.use_diastolic_button.isChecked():

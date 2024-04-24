@@ -41,7 +41,9 @@ class Master(QMainWindow):
         self.metadata = {}  # metadata used outside of read_image (not saved to JSON file)
         self.images = None
         self.diastole_color = (39, 69, 219)
+        self.diastole_color_plt = tuple(x / 255 for x in self.diastole_color)  # for matplotlib
         self.systole_color = (209, 55, 38)
+        self.systole_color_plt = tuple(x / 255 for x in self.systole_color)
         self.measure_colors = ['red', 'cyan']
         self.waiting_status = 'Waiting for user input...'
         self.init_gui()
