@@ -188,7 +188,7 @@ class ContourBasedGating:
         self.ax.plot(self.x, signal_list_extrema[2], color='grey', label='_hidden')
         self.ax.set_xlabel('Frame')
         self.ax.get_yaxis().set_visible(False)
-        legend = self.ax.legend()
+        legend = self.ax.legend(ncol=2, loc='upper right')
         legend.set_draggable(True)
 
         plt.connect('button_press_event', self.on_click)

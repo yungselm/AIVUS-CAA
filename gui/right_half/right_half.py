@@ -31,12 +31,12 @@ class RightHalf:
         gating_display_vbox.addLayout(checkboxes)
         gating_display_vbox.addWidget(main_window.gating_display)
         right_upper_hbox.addLayout(gating_display_vbox)
-        main_window.right_vbox.addLayout(right_upper_hbox, stretch=2)
+        main_window.right_vbox.addLayout(right_upper_hbox, stretch=main_window.config.display.gating_display_stretch)
 
         right_middle_hbox = QHBoxLayout()
         main_window.longitudinal_view = LongitudinalView(main_window)
         right_middle_hbox.addWidget(main_window.longitudinal_view)
-        main_window.right_vbox.addLayout(right_middle_hbox, stretch=3)
+        main_window.right_vbox.addLayout(right_middle_hbox, stretch=main_window.config.display.lview_display_stretch)
 
         right_lower_vbox = QVBoxLayout()
         self.main_window.use_diastolic_button = QPushButton('Diastolic Frames')
