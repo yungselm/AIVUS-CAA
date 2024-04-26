@@ -159,16 +159,17 @@ class ContourBasedGating:
             return
         if event.button is MouseButton.LEFT and event.inaxes:
             new_line = True
+            set_slider_to = event.xdata
             if self.selected_line is not None:
                 self.selected_line.set_linestyle(self.default_linestyle)
                 self.selected_line = None
             if self.vertical_lines:
                 # Check if click is near any existing line
                 distances = [abs(line.get_xdata()[0] - event.xdata) for line in self.vertical_lines]
-                min_distance = min(distances)
-                if min_distance < len(self.frames) / 100:  # sensitivity for line selection
+                if min(distances) < len(self.frames) / 100:  # sensitivity for line selection
                     self.selected_line = self.vertical_lines[np.argmin(distances)]
                     new_line = False
+                    set_slider_to = self.selected_line.get_xdata()[0]
             if new_line:
                 self.selected_line = plt.axvline(
                     x=event.xdata, color=self.default_line_color, linestyle=self.default_linestyle
@@ -179,7 +180,7 @@ class ContourBasedGating:
             plt.draw()
 
             self.main_window.display_slider.set_value(
-                round(event.xdata - 1), reset_highlights=False
+                round(set_slider_to - 1), reset_highlights=False
             )  # slider is 0-based
 
     def on_release(self, event):
@@ -261,13 +262,20 @@ class ContourBasedGating:
         plt.connect('motion_notify_event', self.on_motion)
         plt.connect('button_release_event', self.on_release)
 
+        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+
         plt.tight_layout()
         plt.draw()
 
-        self.phases = self.get_x_indices()
-        self.phases = [round(phase, 0) for phase in self.phases]
-
         return True
+
+    def draw_existing_lines(self, frames, color):
+        frames = [
+            frame for frame in frames if frame in (self.x - 1)
+        ]  # remove frames outside of user-defined range
+        for frame in frames:
+            self.vertical_lines.append(plt.axvline(x=frame + 1, color=color, linestyle=self.default_linestyle))
 
     def update_color(self, color=None):
         color = color or self.default_line_color
