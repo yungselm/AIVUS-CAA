@@ -43,8 +43,6 @@ class ContourBasedGating:
         self.crop_frames(x1=50, x2=450, y1=50, y2=450)
         self.prepare_data()
         self.plot_data()
-        # self.propagate_gating()
-        # self.update_main_window()
         # self.plot_results()
 
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
@@ -213,17 +211,8 @@ class ContourBasedGating:
             self.smooth_curve(self.vector_length),
         ]
 
-        # s_max_w2 = self.combined_signal(signal_list_max, window_size=2, maxima_only=True)
         s_max_w5 = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-        # s_max_w10 = self.combined_signal(signal_list_max, window_size=10, maxima_only=True)
-        # s_extrema_w2 = self.combined_signal(signal_list_extrema, window_size=15, maxima_only=False)
         s_extrema_w5 = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
-        # s_extrema_w10 = self.combined_signal(signal_list_extrema, window_size=10, maxima_only=False)
-
-        # check mean difference between s_max and s_extrema curves, and scale smaller curve to match the larger one
-        # for combined signal
-        # mean_max_values = np.mean([s_max_w5, s_max_w10, s_max_w2])
-        # mean_extrema_values = np.mean([s_extrema_w5, s_extrema_w10, s_extrema_w2])
 
         mean_max_values = np.mean(s_max_w5)
         mean_extrema_values = np.mean(s_extrema_w5)
@@ -231,34 +220,24 @@ class ContourBasedGating:
         factor_diff = mean_max_values / mean_extrema_values
 
         if factor_diff < 1:
-            # s_extrema_w2 = s_extrema_w2 * factor_diff
             s_extrema_w5 = s_extrema_w5 * factor_diff
-            # s_extrema_w10 = s_extrema_w10 * factor_diff
         else:
-            # s_max_w2 = s_max_w2 * factor_diff
             s_max_w5 = s_max_w5 * factor_diff
-            # s_max_w10 = s_max_w10 * factor_diff
 
         self.fig = self.main_window.gating_display.fig
         self.fig.clear()
         self.ax = self.fig.add_subplot()
 
-        # Plot your data
-        # plt.plot(s_max_w2, color='r')
         self.ax.plot(self.x, s_max_w5, color='r')
-        # plt.plot(s_max_w10, color='r')
-        # plt.plot(s_extrema_w2, color='b')
         self.ax.plot(self.x, s_extrema_w5, color='b')
-        # plt.plot(s_extrema_w10, color='b')
-        # plt.legend(['s_max_w2', 's_max_w5', 's_max_w10', 's_extrema_w2', 's_extrema_w5', 's_extrema_w10'])
         self.ax.plot(self.x, signal_list_extrema[0], color='grey')
         self.ax.plot(self.x, signal_list_extrema[1], color='grey')
         self.ax.plot(self.x, signal_list_extrema[2], color='grey')
         self.ax.set_xlabel('Frame')
-        self.ax.set_ylabel('Signal')
-        self.ax.legend(['s_max_w5', 's_extrema_w5', 'shortest_distance', 'vector_angle', 'vector_length'])
+        self.ax.get_yaxis().set_visible(False)
+        legend = self.ax.legend(['s_max_w5', 's_extrema_w5', 'shortest_distance', 'vector_angle', 'vector_length'])
+        legend.set_draggable(True)
 
-        # Connect the event handlers
         plt.connect('button_press_event', self.on_click)
         plt.connect('motion_notify_event', self.on_motion)
         plt.connect('button_release_event', self.on_release)
@@ -272,9 +251,7 @@ class ContourBasedGating:
         return True
 
     def draw_existing_lines(self, frames, color):
-        frames = [
-            frame for frame in frames if frame in (self.x - 1)
-        ]  # remove frames outside of user-defined range
+        frames = [frame for frame in frames if frame in (self.x - 1)]  # remove frames outside of user-defined range
         for frame in frames:
             self.vertical_lines.append(plt.axvline(x=frame + 1, color=color, linestyle=self.default_linestyle))
 
@@ -282,7 +259,7 @@ class ContourBasedGating:
         for line in self.vertical_lines:
             line.remove()
         self.vertical_lines = []
-        plt.draw()
+        plt.draw
 
     def update_color(self, color=None):
         color = color or self.default_line_color
@@ -295,45 +272,6 @@ class ContourBasedGating:
             self.selected_line.set_linestyle(self.default_linestyle)
             self.selected_line = None
             plt.draw()
-
-    def identify_systole_diastole(self):
-        # split self.phases by every second element
-        first_indices = self.phases[::2]
-        second_indices = self.phases[1::2]
-
-        first_elliptic_ratio = np.mean(self.report_data['frame'][first_indices])
-
-        pass
-
-    def propagate_gating(self):
-        sys_mean_diff = round(np.mean(np.diff(self.systolic_indices)))
-        self.systolic_indices_plot = self.systolic_indices.copy()
-        self.systolic_indices = (
-            np.arange(0, min(self.systolic_indices), sys_mean_diff, dtype=int).tolist()
-            + self.systolic_indices
-            + np.arange(
-                max(self.systolic_indices) + sys_mean_diff, self.main_window.images.shape[0], sys_mean_diff, dtype=int
-            ).tolist()
-        )
-        dia_mean_diff = round(np.mean(np.diff(self.diastolic_indices)))
-        self.diastolic_indices_plot = self.diastolic_indices.copy()
-        self.diastolic_indices = (
-            np.arange(0, min(self.diastolic_indices), dia_mean_diff, dtype=int).tolist()
-            + self.diastolic_indices
-            + np.arange(
-                max(self.diastolic_indices) + dia_mean_diff, self.main_window.images.shape[0], dia_mean_diff, dtype=int
-            ).tolist()
-        )
-
-    def update_main_window(self):
-        self.main_window.data['phases'] = ['-'] * len(self.main_window.data['phases'])  # reset phases
-        for frame in self.diastolic_indices:
-            self.main_window.data['phases'][frame] = 'D'
-        for frame in self.systolic_indices:
-            self.main_window.data['phases'][frame] = 'S'
-        self.main_window.gated_frames_sys = self.systolic_indices
-        self.main_window.gated_frames_dia = self.diastolic_indices
-        self.main_window.display_slider.set_gated_frames(self.diastolic_indices)
 
     def plot_results(self):
         # Plot frame on x-axis and elliptic ratio and lumen area on y-axis
