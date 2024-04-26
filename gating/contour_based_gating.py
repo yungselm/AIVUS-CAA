@@ -152,6 +152,57 @@ class ContourBasedGating:
     def smooth_curve(self, signal, window_size=5):
         return np.convolve(signal, np.ones(window_size) / window_size, mode='same')
 
+    def plot_data(self):
+        signal_list_max = [
+            self.smooth_curve(self.correlation),
+            self.smooth_curve(self.blurring),
+        ]
+
+        signal_list_extrema = [
+            self.smooth_curve(self.shortest_distance),
+            self.smooth_curve(self.vector_angle),
+            self.smooth_curve(self.vector_length),
+        ]
+
+        s_max_w5 = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
+        s_extrema_w5 = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+
+        mean_max_values = np.mean(s_max_w5)
+        mean_extrema_values = np.mean(s_extrema_w5)
+
+        factor_diff = mean_max_values / mean_extrema_values
+
+        if factor_diff < 1:
+            s_extrema_w5 = s_extrema_w5 * factor_diff
+        else:
+            s_max_w5 = s_max_w5 * factor_diff
+
+        self.fig = self.main_window.gating_display.fig
+        self.fig.clear()
+        self.ax = self.fig.add_subplot()
+
+        self.ax.plot(self.x, s_max_w5, color='green', label='Maxima')
+        self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Extrema')
+        self.ax.plot(self.x, signal_list_extrema[0], color='grey', label='_hidden')
+        self.ax.plot(self.x, signal_list_extrema[1], color='grey', label='_hidden')
+        self.ax.plot(self.x, signal_list_extrema[2], color='grey', label='_hidden')
+        self.ax.set_xlabel('Frame')
+        self.ax.get_yaxis().set_visible(False)
+        legend = self.ax.legend()
+        legend.set_draggable(True)
+
+        plt.connect('button_press_event', self.on_click)
+        plt.connect('motion_notify_event', self.on_motion)
+        plt.connect('button_release_event', self.on_release)
+
+        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+
+        plt.tight_layout()
+        plt.draw()
+
+        return True
+
     def on_click(self, event):
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
             return
@@ -195,84 +246,6 @@ class ContourBasedGating:
                 )  # slider is 0-based
                 plt.draw()
 
-    def get_x_indices(self):
-        x_indices = [line.get_xdata()[0] for line in self.vertical_lines]
-        return x_indices
-
-    def plot_data(self):
-        signal_list_max = [
-            self.smooth_curve(self.correlation),
-            self.smooth_curve(self.blurring),
-        ]
-
-        signal_list_extrema = [
-            self.smooth_curve(self.shortest_distance),
-            self.smooth_curve(self.vector_angle),
-            self.smooth_curve(self.vector_length),
-        ]
-
-        s_max_w5 = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-        s_extrema_w5 = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
-
-        mean_max_values = np.mean(s_max_w5)
-        mean_extrema_values = np.mean(s_extrema_w5)
-
-        factor_diff = mean_max_values / mean_extrema_values
-
-        if factor_diff < 1:
-            s_extrema_w5 = s_extrema_w5 * factor_diff
-        else:
-            s_max_w5 = s_max_w5 * factor_diff
-
-        self.fig = self.main_window.gating_display.fig
-        self.fig.clear()
-        self.ax = self.fig.add_subplot()
-
-        self.ax.plot(self.x, s_max_w5, color='r')
-        self.ax.plot(self.x, s_extrema_w5, color='b')
-        self.ax.plot(self.x, signal_list_extrema[0], color='grey')
-        self.ax.plot(self.x, signal_list_extrema[1], color='grey')
-        self.ax.plot(self.x, signal_list_extrema[2], color='grey')
-        self.ax.set_xlabel('Frame')
-        self.ax.get_yaxis().set_visible(False)
-        legend = self.ax.legend(['s_max_w5', 's_extrema_w5', 'shortest_distance', 'vector_angle', 'vector_length'])
-        legend.set_draggable(True)
-
-        plt.connect('button_press_event', self.on_click)
-        plt.connect('motion_notify_event', self.on_motion)
-        plt.connect('button_release_event', self.on_release)
-
-        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
-        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
-
-        plt.tight_layout()
-        plt.draw()
-
-        return True
-
-    def draw_existing_lines(self, frames, color):
-        frames = [frame for frame in frames if frame in (self.x - 1)]  # remove frames outside of user-defined range
-        for frame in frames:
-            self.vertical_lines.append(plt.axvline(x=frame + 1, color=color, linestyle=self.default_linestyle))
-
-    def remove_lines(self):
-        for line in self.vertical_lines:
-            line.remove()
-        self.vertical_lines = []
-        plt.draw
-
-    def update_color(self, color=None):
-        color = color or self.default_line_color
-        if self.selected_line is not None:
-            self.selected_line.set_color(color)
-            plt.draw()
-
-    def reset_highlights(self):
-        if self.selected_line is not None:
-            self.selected_line.set_linestyle(self.default_linestyle)
-            self.selected_line = None
-            plt.draw()
-
     def plot_results(self):
         # Plot frame on x-axis and elliptic ratio and lumen area on y-axis
         _, ax = plt.subplots()
@@ -297,3 +270,26 @@ class ContourBasedGating:
         ax.scatter(frames_diastole, signal_diastole, color='blue', marker='o', label='D')
 
         plt.show()
+
+    def draw_existing_lines(self, frames, color):
+        frames = [frame for frame in frames if frame in (self.x - 1)]  # remove frames outside of user-defined range
+        for frame in frames:
+            self.vertical_lines.append(plt.axvline(x=frame + 1, color=color, linestyle=self.default_linestyle))
+
+    def remove_lines(self):
+        for line in self.vertical_lines:
+            line.remove()
+        self.vertical_lines = []
+        plt.draw
+
+    def update_color(self, color=None):
+        color = color or self.default_line_color
+        if self.selected_line is not None:
+            self.selected_line.set_color(color)
+            plt.draw()
+
+    def reset_highlights(self):
+        if self.selected_line is not None:
+            self.selected_line.set_linestyle(self.default_linestyle)
+            self.selected_line = None
+            plt.draw()
