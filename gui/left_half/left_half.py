@@ -3,7 +3,17 @@ import bisect
 
 from loguru import logger
 from functools import partial
-from PyQt5.QtWidgets import QPushButton, QStyle, QApplication, QLabel, QCheckBox, QHBoxLayout, QGridLayout
+from PyQt5.QtWidgets import (
+    QPushButton,
+    QStyle,
+    QApplication,
+    QLabel,
+    QWidget,
+    QCheckBox,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+)
 from PyQt5.QtCore import Qt
 
 from gui.left_half.IVUS_display import IVUSDisplay
@@ -13,11 +23,12 @@ from gui.utils.slider import Slider, Communicate
 class LeftHalf:
     def __init__(self, main_window):
         self.main_window = main_window
-
+        self.left_widget = QWidget()
+        left_vbox = QVBoxLayout()
         main_window.display = IVUSDisplay(main_window)
         main_window.display_frame_comms = Communicate()
         main_window.display_frame_comms.updateBW[int].connect(main_window.display.set_frame)
-        main_window.left_vbox.addWidget(main_window.display)
+        left_vbox.addWidget(main_window.display)
 
         left_lower_grid = QGridLayout()
         hide_checkboxes = QHBoxLayout()
@@ -51,7 +62,11 @@ class LeftHalf:
         frame_num_hbox = QHBoxLayout()
         frame_num_hbox.addWidget(self.frame_number_label)
         left_lower_grid.addLayout(frame_num_hbox, 1, 1)
-        main_window.left_vbox.addLayout(left_lower_grid)
+        left_vbox.addLayout(left_lower_grid)
+        self.left_widget.setLayout(left_vbox)
+
+    def __call__(self):
+        return self.left_widget
 
     def play(self, main_window):
         """Plays all frames until end of pullback starting from currently selected frame"""

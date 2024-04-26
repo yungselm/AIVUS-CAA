@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from loguru import logger
 from functools import partial
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QSplitter, QPushButton, QCheckBox
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QSplitter, QPushButton, QCheckBox, QWidget
 
 from gui.right_half.gating_display import GatingDisplay
 from gui.right_half.longitudinal_view import LongitudinalView
@@ -15,7 +15,8 @@ from segmentation.segment import segment
 class RightHalf:
     def __init__(self, main_window):
         self.main_window = main_window
-
+        self.right_widget = QWidget()
+        right_vbox = QVBoxLayout()
         checkboxes = QHBoxLayout()
         self.main_window.diastolic_frame_box = QCheckBox('Diastolic Frame')
         self.main_window.diastolic_frame_box.setChecked(False)
@@ -27,7 +28,7 @@ class RightHalf:
         checkboxes.addWidget(self.main_window.systolic_frame_box)
         main_window.gating_display = GatingDisplay(main_window)
         checkboxes.addWidget(main_window.gating_display.toolbar)
-        main_window.right_vbox.addLayout(checkboxes)
+        right_vbox.addLayout(checkboxes)
         splitter = QSplitter(Qt.Vertical)
         splitter.addWidget(main_window.gating_display)
         main_window.longitudinal_view = LongitudinalView(main_window)
@@ -36,7 +37,7 @@ class RightHalf:
         splitter.setSizes([gating_display_size, gating_display_size])
         splitter.setStretchFactor(0, main_window.config.display.gating_display_stretch)
         splitter.setStretchFactor(1, main_window.config.display.lview_display_stretch)
-        main_window.right_vbox.addWidget(splitter)
+        right_vbox.addWidget(splitter)
 
         right_lower_vbox = QVBoxLayout()
         self.main_window.use_diastolic_button = QPushButton('Diastolic Frames')
@@ -68,7 +69,11 @@ class RightHalf:
         measures.addWidget(measure_button_1)
         measures.addWidget(measure_button_2)
         right_lower_vbox.addLayout(measures)
-        main_window.right_vbox.addLayout(right_lower_vbox)
+        right_vbox.addLayout(right_lower_vbox)
+        self.right_widget.setLayout(right_vbox)
+
+    def __call__(self):
+        return self.right_widget
 
 
 def toggle_diastolic_frame(main_window, state_true):

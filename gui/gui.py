@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
     QMenuBar,
-    QHBoxLayout,
+    QSplitter,
     QVBoxLayout,
     QTableWidget,
     QStatusBar,
@@ -20,6 +20,7 @@ from segmentation.predict import Predict
 
 class Master(QMainWindow):
     """Main Window Class"""
+
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -50,8 +51,6 @@ class Master(QMainWindow):
         init_shortcuts(self)
 
     def init_gui(self):
-        SPACING = 5
-
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
         init_menu(self)
@@ -61,20 +60,12 @@ class Master(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage(self.waiting_status)
 
-        central_widget = QWidget()
-        main_window_hbox = QHBoxLayout()
-        self.left_vbox = QVBoxLayout()
-        self.left_vbox.setContentsMargins(0, 0, SPACING, SPACING)
-        LeftHalf(self)
-        main_window_hbox.addLayout(self.left_vbox)
-        self.right_vbox = QVBoxLayout()
-        self.right_vbox.setContentsMargins(SPACING, 0, 0, SPACING)
-        RightHalf(self)
-        main_window_hbox.addLayout(self.right_vbox)
-        central_widget.setLayout(main_window_hbox)
+        main_window_splitter = QSplitter()
+        main_window_splitter.addWidget(LeftHalf(self)())
+        main_window_splitter.addWidget(RightHalf(self)())
 
         self.setWindowTitle('AAOCA Segmentation Tool')
-        self.setCentralWidget(central_widget)
+        self.setCentralWidget(main_window_splitter)
         self.showMaximized()
 
         timer = QTimer(self)
