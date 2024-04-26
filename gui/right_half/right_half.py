@@ -19,10 +19,10 @@ class RightHalf:
         checkboxes = QHBoxLayout()
         self.main_window.diastolic_frame_box = QCheckBox('Diastolic Frame')
         self.main_window.diastolic_frame_box.setChecked(False)
-        self.main_window.diastolic_frame_box.stateChanged[int].connect(self.toggle_diastolic_frame)
+        self.main_window.diastolic_frame_box.stateChanged[int].connect(partial(toggle_diastolic_frame, main_window))
         self.main_window.systolic_frame_box = QCheckBox('Systolic Frame')
         self.main_window.systolic_frame_box.setChecked(False)
-        self.main_window.systolic_frame_box.stateChanged[int].connect(self.toggle_systolic_frame)
+        self.main_window.systolic_frame_box.stateChanged[int].connect(partial(toggle_systolic_frame, main_window))
         checkboxes.addWidget(self.main_window.diastolic_frame_box)
         checkboxes.addWidget(self.main_window.systolic_frame_box)
         main_window.gating_display = GatingDisplay(main_window)
@@ -43,7 +43,7 @@ class RightHalf:
         self.main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{self.main_window.diastole_color}')
         self.main_window.use_diastolic_button.setCheckable(True)
         self.main_window.use_diastolic_button.setChecked(True)
-        self.main_window.use_diastolic_button.clicked.connect(partial(self.use_diastolic, main_window))
+        self.main_window.use_diastolic_button.clicked.connect(partial(use_diastolic, main_window))
         self.main_window.use_diastolic_button.setToolTip('Press button to switch between diastolic and systolic frames')
         segment_button = QPushButton('Automatic Segmentation')
         segment_button.setToolTip('Run deep learning based segmentation of lumen')
@@ -70,70 +70,70 @@ class RightHalf:
         right_lower_vbox.addLayout(measures)
         main_window.right_vbox.addLayout(right_lower_vbox)
 
-    def toggle_diastolic_frame(self, state_true):
-        if self.main_window.image_displayed:
-            frame = self.main_window.display_slider.value()
-            if state_true:
-                if frame not in self.main_window.gated_frames_dia:
-                    bisect.insort_left(self.main_window.gated_frames_dia, frame)
-                    self.main_window.data['phases'][frame] = 'D'
-                    self.main_window.contour_based_gating.update_color(self.main_window.diastole_color_plt)
-                    plt.draw()
-                try:  # frame cannot be diastolic and systolic at the same time
-                    self.main_window.systolic_frame_box.setChecked(False)
-                except ValueError:
-                    pass
-            else:
-                try:
-                    self.main_window.gated_frames_dia.remove(frame)
-                    if (
-                        self.main_window.data['phases'][frame] == 'D'
-                    ):  # do not reset when function is called from toggle_systolic_frame
-                        self.main_window.data['phases'][frame] = '-'
-                        self.main_window.contour_based_gating.update_color()
-                except ValueError:
-                    pass
-            if self.main_window.use_diastolic_button.isChecked():
-                self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_dia)
+def toggle_diastolic_frame(main_window, state_true):
+    if main_window.image_displayed:
+        frame = main_window.display_slider.value()
+        if state_true:
+            if frame not in main_window.gated_frames_dia:
+                bisect.insort_left(main_window.gated_frames_dia, frame)
+                main_window.data['phases'][frame] = 'D'
+                main_window.contour_based_gating.update_color(main_window.diastole_color_plt)
+                plt.draw()
+            try:  # frame cannot be diastolic and systolic at the same time
+                main_window.systolic_frame_box.setChecked(False)
+            except ValueError:
+                pass
+        else:
+            try:
+                main_window.gated_frames_dia.remove(frame)
+                if (
+                    main_window.data['phases'][frame] == 'D'
+                ):  # do not reset when function is called from toggle_systolic_frame
+                    main_window.data['phases'][frame] = '-'
+                    main_window.contour_based_gating.update_color()
+            except ValueError:
+                pass
+        if main_window.use_diastolic_button.isChecked():
+            main_window.display_slider.set_gated_frames(main_window.gated_frames_dia)
 
-            self.main_window.display.update_display()
+        main_window.display.update_display()
 
-    def toggle_systolic_frame(self, state_true):
-        if self.main_window.image_displayed:
-            frame = self.main_window.display_slider.value()
-            if state_true:
-                if frame not in self.main_window.gated_frames_sys:
-                    bisect.insort_left(self.main_window.gated_frames_sys, frame)
-                    self.main_window.data['phases'][frame] = 'S'
-                    self.main_window.contour_based_gating.update_color(self.main_window.systole_color_plt)
-                try:  # frame cannot be diastolic and systolic at the same time
-                    self.main_window.diastolic_frame_box.setChecked(False)
-                except ValueError:
-                    pass
-            else:
-                try:
-                    self.main_window.gated_frames_sys.remove(frame)
-                    if (
-                        self.main_window.data['phases'][frame] == 'S'
-                    ):  # do not reset when function is called from toggle_diastolic_frame
-                        self.main_window.data['phases'][frame] = '-'
-                        self.main_window.contour_based_gating.update_color()
-                except ValueError:
-                    pass
-            if not self.main_window.use_diastolic_button.isChecked():
-                self.main_window.display_slider.set_gated_frames(self.main_window.gated_frames_sys)
+def toggle_systolic_frame(main_window, state_true):
+    if main_window.image_displayed:
+        frame = main_window.display_slider.value()
+        if state_true:
+            if frame not in main_window.gated_frames_sys:
+                bisect.insort_left(main_window.gated_frames_sys, frame)
+                main_window.data['phases'][frame] = 'S'
+                main_window.contour_based_gating.update_color(main_window.systole_color_plt)
+            try:  # frame cannot be diastolic and systolic at the same time
+                main_window.diastolic_frame_box.setChecked(False)
+            except ValueError:
+                pass
+        else:
+            try:
+                main_window.gated_frames_sys.remove(frame)
+                if (
+                    main_window.data['phases'][frame] == 'S'
+                ):  # do not reset when function is called from toggle_diastolic_frame
+                    main_window.data['phases'][frame] = '-'
+                    main_window.contour_based_gating.update_color()
+            except ValueError:
+                pass
+        if not main_window.use_diastolic_button.isChecked():
+            main_window.display_slider.set_gated_frames(main_window.gated_frames_sys)
 
-            self.main_window.display.update_display()
+        main_window.display.update_display()
 
-    def use_diastolic(self, main_window):
-        if main_window.image_displayed:
-            if main_window.use_diastolic_button.isChecked():
-                main_window.use_diastolic_button.setText('Diastolic Frames')
-                main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.diastole_color}')
-                main_window.gated_frames = main_window.gated_frames_dia
-            else:
-                main_window.use_diastolic_button.setText('Systolic Frames')
-                main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.systole_color}')
-                main_window.gated_frames = main_window.gated_frames_sys
+def use_diastolic(main_window):
+    if main_window.image_displayed:
+        if main_window.use_diastolic_button.isChecked():
+            main_window.use_diastolic_button.setText('Diastolic Frames')
+            main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.diastole_color}')
+            main_window.gated_frames = main_window.gated_frames_dia
+        else:
+            main_window.use_diastolic_button.setText('Systolic Frames')
+            main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.systole_color}')
+            main_window.gated_frames = main_window.gated_frames_sys
 
-            main_window.display_slider.set_gated_frames(main_window.gated_frames)
+        main_window.display_slider.set_gated_frames(main_window.gated_frames)

@@ -190,11 +190,12 @@ class ContourBasedGating:
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
             return
         if event.button is MouseButton.LEFT and self.selected_line:
-            self.selected_line.set_xdata([event.xdata] * 2)
-            self.main_window.display_slider.set_value(
-                round(event.xdata - 1), reset_highlights=False
-            )  # slider is 0-based
-            plt.draw()
+            self.selected_line.set_xdata(event.xdata)
+            if event.xdata is not None:
+                self.main_window.display_slider.set_value(
+                    round(event.xdata - 1), reset_highlights=False
+                )  # slider is 0-based
+                plt.draw()
 
     def get_x_indices(self):
         x_indices = [line.get_xdata()[0] for line in self.vertical_lines]
@@ -276,6 +277,12 @@ class ContourBasedGating:
         ]  # remove frames outside of user-defined range
         for frame in frames:
             self.vertical_lines.append(plt.axvline(x=frame + 1, color=color, linestyle=self.default_linestyle))
+
+    def remove_lines(self):
+        for line in self.vertical_lines:
+            line.remove()
+        self.vertical_lines = []
+        plt.draw()
 
     def update_color(self, color=None):
         color = color or self.default_line_color
