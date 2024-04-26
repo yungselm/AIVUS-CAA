@@ -3,7 +3,8 @@ import bisect
 import matplotlib.pyplot as plt
 from loguru import logger
 from functools import partial
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton, QCheckBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QSplitter, QPushButton, QCheckBox
 
 from gui.right_half.gating_display import GatingDisplay
 from gui.right_half.longitudinal_view import LongitudinalView
@@ -15,7 +16,6 @@ class RightHalf:
     def __init__(self, main_window):
         self.main_window = main_window
 
-        right_upper_hbox = QHBoxLayout()
         checkboxes = QHBoxLayout()
         self.main_window.diastolic_frame_box = QCheckBox('Diastolic Frame')
         self.main_window.diastolic_frame_box.setChecked(False)
@@ -26,17 +26,17 @@ class RightHalf:
         checkboxes.addWidget(self.main_window.diastolic_frame_box)
         checkboxes.addWidget(self.main_window.systolic_frame_box)
         main_window.gating_display = GatingDisplay(main_window)
-        gating_display_vbox = QVBoxLayout()
         checkboxes.addWidget(main_window.gating_display.toolbar)
-        gating_display_vbox.addLayout(checkboxes)
-        gating_display_vbox.addWidget(main_window.gating_display)
-        right_upper_hbox.addLayout(gating_display_vbox)
-        main_window.right_vbox.addLayout(right_upper_hbox, stretch=main_window.config.display.gating_display_stretch)
-
-        right_middle_hbox = QHBoxLayout()
+        main_window.right_vbox.addLayout(checkboxes)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(main_window.gating_display)
         main_window.longitudinal_view = LongitudinalView(main_window)
-        right_middle_hbox.addWidget(main_window.longitudinal_view)
-        main_window.right_vbox.addLayout(right_middle_hbox, stretch=main_window.config.display.lview_display_stretch)
+        splitter.addWidget(main_window.longitudinal_view)
+        gating_display_size = main_window.gating_display.sizeHint().height()
+        splitter.setSizes([gating_display_size, gating_display_size])
+        splitter.setStretchFactor(0, main_window.config.display.gating_display_stretch)
+        splitter.setStretchFactor(1, main_window.config.display.lview_display_stretch)
+        main_window.right_vbox.addWidget(splitter)
 
         right_lower_vbox = QVBoxLayout()
         self.main_window.use_diastolic_button = QPushButton('Diastolic Frames')
@@ -70,6 +70,7 @@ class RightHalf:
         right_lower_vbox.addLayout(measures)
         main_window.right_vbox.addLayout(right_lower_vbox)
 
+
 def toggle_diastolic_frame(main_window, state_true):
     if main_window.image_displayed:
         frame = main_window.display_slider.value()
@@ -98,6 +99,7 @@ def toggle_diastolic_frame(main_window, state_true):
 
         main_window.display.update_display()
 
+
 def toggle_systolic_frame(main_window, state_true):
     if main_window.image_displayed:
         frame = main_window.display_slider.value()
@@ -124,6 +126,7 @@ def toggle_systolic_frame(main_window, state_true):
             main_window.display_slider.set_gated_frames(main_window.gated_frames_sys)
 
         main_window.display.update_display()
+
 
 def use_diastolic(main_window):
     if main_window.image_displayed:

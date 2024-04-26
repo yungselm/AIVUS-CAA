@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from loguru import logger
-from PyQt5.QtWidgets import QProgressDialog
-from PyQt5.QtCore import Qt
 from scipy.signal import argrelextrema
 
 from gui.popup_windows.message_boxes import ErrorMessage
