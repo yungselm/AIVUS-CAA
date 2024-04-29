@@ -1,8 +1,8 @@
 import math
+import cv2
 
 import numpy as np
 from loguru import logger
-import cv2
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsTextItem
 from PyQt5.QtCore import Qt, QLineF, QPointF
 from PyQt5.QtGui import QPixmap, QImage, QColor, QFont, QPen

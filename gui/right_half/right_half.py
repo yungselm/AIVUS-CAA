@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QSplitter, QPushButton, QC
 
 from gui.right_half.gating_display import GatingDisplay
 from gui.right_half.longitudinal_view import LongitudinalView
+from gui.popup_windows.small_display import SmallDisplay
 from gui.utils.contours_gui import new_measure
 from segmentation.segment import segment
 
@@ -21,11 +22,15 @@ class RightHalf:
         self.main_window.diastolic_frame_box = QCheckBox('Diastolic Frame')
         self.main_window.diastolic_frame_box.setChecked(False)
         self.main_window.diastolic_frame_box.stateChanged[int].connect(partial(toggle_diastolic_frame, main_window))
+        checkboxes.addWidget(self.main_window.diastolic_frame_box)
         self.main_window.systolic_frame_box = QCheckBox('Systolic Frame')
         self.main_window.systolic_frame_box.setChecked(False)
         self.main_window.systolic_frame_box.stateChanged[int].connect(partial(toggle_systolic_frame, main_window))
-        checkboxes.addWidget(self.main_window.diastolic_frame_box)
         checkboxes.addWidget(self.main_window.systolic_frame_box)
+        small_display_button = QPushButton('Compare Frames')
+        small_display_button.setToolTip('Open a small display to compare two frames')
+        small_display_button.clicked.connect(partial(open_small_display, main_window))
+        checkboxes.addWidget(small_display_button)
         main_window.gating_display = GatingDisplay(main_window)
         checkboxes.addWidget(main_window.gating_display.toolbar)
         right_vbox.addLayout(checkboxes)
@@ -75,6 +80,10 @@ class RightHalf:
     def __call__(self):
         return self.right_widget
 
+def open_small_display(main_window):
+    if main_window.image_displayed:
+        main_window.small_display = SmallDisplay(main_window)
+        main_window.small_display.show()
 
 def toggle_diastolic_frame(main_window, state_true, drag=False):
     if main_window.image_displayed:
