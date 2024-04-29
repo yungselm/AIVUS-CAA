@@ -76,7 +76,7 @@ class RightHalf:
         return self.right_widget
 
 
-def toggle_diastolic_frame(main_window, state_true):
+def toggle_diastolic_frame(main_window, state_true, drag=False):
     if main_window.image_displayed:
         frame = main_window.display_slider.value()
         if state_true:
@@ -96,7 +96,8 @@ def toggle_diastolic_frame(main_window, state_true):
                     main_window.data['phases'][frame] == 'D'
                 ):  # do not reset when function is called from toggle_systolic_frame
                     main_window.data['phases'][frame] = '-'
-                    main_window.contour_based_gating.update_color()
+                    if not drag:
+                        main_window.contour_based_gating.update_color()
             except ValueError:
                 pass
         if main_window.use_diastolic_button.isChecked():
@@ -105,7 +106,7 @@ def toggle_diastolic_frame(main_window, state_true):
         main_window.display.update_display()
 
 
-def toggle_systolic_frame(main_window, state_true):
+def toggle_systolic_frame(main_window, state_true, drag=False):
     if main_window.image_displayed:
         frame = main_window.display_slider.value()
         if state_true:
@@ -124,7 +125,8 @@ def toggle_systolic_frame(main_window, state_true):
                     main_window.data['phases'][frame] == 'S'
                 ):  # do not reset when function is called from toggle_diastolic_frame
                     main_window.data['phases'][frame] = '-'
-                    main_window.contour_based_gating.update_color()
+                    if not drag:
+                        main_window.contour_based_gating.update_color()
             except ValueError:
                 pass
         if not main_window.use_diastolic_button.isChecked():

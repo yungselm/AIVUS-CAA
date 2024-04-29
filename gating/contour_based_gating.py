@@ -6,6 +6,7 @@ from scipy.signal import argrelextrema
 
 from gui.popup_windows.message_boxes import ErrorMessage
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
+from gui.right_half.right_half import toggle_diastolic_frame, toggle_systolic_frame
 from report.report import report
 
 
@@ -17,6 +18,7 @@ class ContourBasedGating:
         self.blurring = None
         self.vertical_lines = []
         self.selected_line = None
+        self.tmp_phase = None
         self.phases = []
         self.systolic_indices = []
         self.diastolic_indices = []
@@ -230,8 +232,20 @@ class ContourBasedGating:
                 round(set_slider_to - 1), reset_highlights=False
             )  # slider is 0-based
 
+            if self.main_window.diastolic_frame_box.isChecked():
+                self.tmp_phase = 'D'
+                toggle_diastolic_frame(self.main_window, False, drag=True)
+            elif self.main_window.systolic_frame_box.isChecked():
+                self.tmp_phase = 'S'
+                toggle_systolic_frame(self.main_window, False, drag=True)
+
     def on_release(self, event):
-        pass
+        if self.tmp_phase == 'D':
+            self.main_window.diastolic_frame_box.setChecked(True)
+        elif self.tmp_phase == 'S':
+            self.main_window.systolic_frame_box.setChecked(True)
+        
+        self.tmp_phase = None
 
     def on_motion(self, event):
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
