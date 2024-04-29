@@ -15,11 +15,11 @@ class Communicate(QObject):
 class Slider(QSlider):
     """Slider for changing the currently displayed image."""
 
-    def __init__(self, orientation):
+    def __init__(self, main_window, orientation):
         super().__init__()
+        self.main_window = main_window
         self.setOrientation(orientation)
         self.setRange(0, 0)
-        self.setValue(0)
         self.setFocusPolicy(Qt.StrongFocus)
         size_policy = QSizePolicy()
         size_policy.setHorizontalPolicy(QSizePolicy.Fixed)
@@ -29,15 +29,20 @@ class Slider(QSlider):
         self.setMaximumSize(QSize(1000, 25))
         self.gated_frames = []
 
+    def set_value(self, value, reset_highlights=True):
+        self.setValue(value)
+        if reset_highlights:
+            self.main_window.contour_based_gating.reset_highlights()
+
     def next_frame(self):
         try:
-            self.setValue(self.value() + 1)
+            self.set_value(self.value() + 1)
         except IndexError:
             pass
 
     def last_frame(self):
         try:
-            self.setValue(self.value() - 1)
+            self.set_value(self.value() - 1)
         except IndexError:
             pass
 
@@ -47,7 +52,7 @@ class Slider(QSlider):
             if self.value() >= self.gated_frames[current_gated_frame]:
                 current_gated_frame = current_gated_frame + 1
             try:
-                self.setValue(self.gated_frames[current_gated_frame])
+                self.set_value(self.gated_frames[current_gated_frame])
             except IndexError:
                 pass
         else:
@@ -60,7 +65,7 @@ class Slider(QSlider):
                 current_gated_frame = current_gated_frame - 1
             if current_gated_frame < 0:
                 current_gated_frame = 0
-            self.setValue(self.gated_frames[current_gated_frame])
+            self.set_value(self.gated_frames[current_gated_frame])
         else:
             self.last_frame()
 

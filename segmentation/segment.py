@@ -11,7 +11,7 @@ def segment(main_window):
     """Automatic segmentation of IVUS images"""
     main_window.status_bar.showMessage('Segmenting frames...')
     if not main_window.image_displayed:
-        ErrorMessage(main_window, 'Cannot perform automatic segmentation before reading DICOM file')
+        ErrorMessage(main_window, 'Cannot perform automatic segmentation before reading input file')
         main_window.status_bar.showMessage(main_window.waiting_status)
         return
 

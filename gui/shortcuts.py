@@ -55,6 +55,8 @@ def init_menu(main_window):
     manual_contour.setShortcut('E')
     edit_menu.addAction('Remove Contours', partial(remove_contours, main_window))
     edit_menu.addSeparator()
+    edit_menu.addAction('Reset Phases', partial(reset_phases, main_window))
+    edit_menu.addSeparator()
     measure_1 = edit_menu.addAction('Measurement 1', partial(new_measure, main_window, index=0))
     measure_1.setShortcut('1')
     measure_2 = edit_menu.addAction('Measurement 2', partial(new_measure, main_window, index=1))
@@ -105,6 +107,17 @@ def remove_contours(main_window):
             main_window.display.update_display()
             main_window.status_bar.showMessage(main_window.waiting_status)
 
+def reset_phases(main_window):
+    if main_window.image_displayed:
+        main_window.data['phases'] = ['-'] * main_window.metadata['num_frames']
+        main_window.gated_frames = []
+        main_window.gated_frames_dia = []
+        main_window.gated_frames_sys = []
+        main_window.diastolic_frame_box.setChecked(False)
+        main_window.systolic_frame_box.setChecked(False)
+        main_window.contour_based_gating.remove_lines()
+        main_window.display.update_display()
+
 
 def show_metadata(main_window):
     if main_window.image_displayed:
@@ -136,16 +149,16 @@ def hide_special_points(main_window):
 def jiggle_frame(main_window):
     if main_window.image_displayed:
         current_frame = main_window.display_slider.value()
-        main_window.display_slider.setValue(current_frame + 1)
+        main_window.display_slider.set_value(current_frame + 1)
         QApplication.processEvents()
         time.sleep(0.1)
-        main_window.display_slider.setValue(current_frame)
+        main_window.display_slider.set_value(current_frame)
         QApplication.processEvents()
         time.sleep(0.1)
-        main_window.display_slider.setValue(current_frame - 1)
+        main_window.display_slider.set_value(current_frame - 1)
         QApplication.processEvents()
         time.sleep(0.1)
-        main_window.display_slider.setValue(current_frame)
+        main_window.display_slider.set_value(current_frame)
         QApplication.processEvents()
 
 

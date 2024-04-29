@@ -2,12 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from loguru import logger
-from PyQt5.QtWidgets import QProgressDialog
-from PyQt5.QtCore import Qt
 from scipy.signal import argrelextrema
 
 from gui.popup_windows.message_boxes import ErrorMessage
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
+from gui.right_half.right_half import toggle_diastolic_frame, toggle_systolic_frame
 from report.report import report
 
 
@@ -19,15 +18,18 @@ class ContourBasedGating:
         self.blurring = None
         self.vertical_lines = []
         self.selected_line = None
+        self.tmp_phase = None
         self.phases = []
         self.systolic_indices = []
         self.diastolic_indices = []
+        self.default_line_color = 'grey'
+        self.default_linestyle = (0, (1, 3))
 
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
         self.report_data = report(self.main_window, suppress_messages=True)  # compute all needed data
         if self.report_data is None:
-            ErrorMessage(self.main_window, 'Please ensure that a DICOM file was read and contours were drawn')
+            ErrorMessage(self.main_window, 'Please ensure that an input file was read and contours were drawn')
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
 
@@ -41,8 +43,6 @@ class ContourBasedGating:
         self.crop_frames(x1=50, x2=450, y1=50, y2=450)
         self.prepare_data()
         self.plot_data()
-        # self.propagate_gating()
-        # self.update_main_window()
         # self.plot_results()
 
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
@@ -55,12 +55,19 @@ class ContourBasedGating:
                 lower_limit == 0 and upper_limit == self.main_window.images.shape[0]
             ):  # automatic detection of intramural part
                 mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
-
             self.report_data = self.report_data[
-                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='left')
+                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='both')
             ]
-            self.frames = self.main_window.images[lower_limit : upper_limit - 1]
-            self.x = range(lower_limit + 1, upper_limit)  # want actual frame numbers for GUI, not indices
+            if len(self.report_data) != upper_limit - lower_limit:
+                missing_frames = [
+                    str(frame)
+                    for frame in range(lower_limit + 1, upper_limit + 1)
+                    if frame not in self.report_data['frame'].values
+                ]
+                ErrorMessage(self.main_window, f'Please add contours to frames {", ".join(missing_frames)}')
+                return False
+            self.frames = self.main_window.images[lower_limit:upper_limit]
+            self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
             return True
         return False
 
@@ -145,40 +152,6 @@ class ContourBasedGating:
     def smooth_curve(self, signal, window_size=5):
         return np.convolve(signal, np.ones(window_size) / window_size, mode='same')
 
-    def on_click(self, event):
-        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
-            return
-        if event.button is MouseButton.LEFT and event.inaxes:
-            # Check if there are existing lines
-            if not self.vertical_lines:
-                new_line = plt.axvline(x=event.xdata, color='r', linestyle='--')
-                self.vertical_lines.append(new_line)
-                plt.draw()
-            else:
-                # Check if click is near any existing line
-                distances = [abs(line.get_xdata()[0] - event.xdata) for line in self.vertical_lines]
-                min_distance = min(distances)
-                if min_distance < len(self.frames) / 100:  # sensitivity for line selection
-                    self.selected_line = self.vertical_lines[np.argmin(distances)]
-                else:
-                    new_line = plt.axvline(x=event.xdata, color='r', linestyle='--')
-                    self.vertical_lines.append(new_line)
-                plt.draw()
-
-    def on_release(self, event):
-        self.selected_line = None
-
-    def on_motion(self, event):
-        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
-            return
-        if event.button is MouseButton.LEFT and self.selected_line:
-            self.selected_line.set_xdata([event.xdata] * 2)
-            plt.draw()
-
-    def get_x_indices(self):
-        x_indices = [line.get_xdata()[0] for line in self.vertical_lines]
-        return x_indices
-
     def plot_data(self):
         signal_list_max = [
             self.smooth_curve(self.correlation),
@@ -191,17 +164,8 @@ class ContourBasedGating:
             self.smooth_curve(self.vector_length),
         ]
 
-        # s_max_w2 = self.combined_signal(signal_list_max, window_size=2, maxima_only=True)
         s_max_w5 = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-        # s_max_w10 = self.combined_signal(signal_list_max, window_size=10, maxima_only=True)
-        # s_extrema_w2 = self.combined_signal(signal_list_extrema, window_size=15, maxima_only=False)
         s_extrema_w5 = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
-        # s_extrema_w10 = self.combined_signal(signal_list_extrema, window_size=10, maxima_only=False)
-
-        # check mean difference between s_max and s_extrema curves, and scale smaller curve to match the larger one
-        # for combined signal
-        # mean_max_values = np.mean([s_max_w5, s_max_w10, s_max_w2])
-        # mean_extrema_values = np.mean([s_extrema_w5, s_extrema_w10, s_extrema_w2])
 
         mean_max_values = np.mean(s_max_w5)
         mean_extrema_values = np.mean(s_extrema_w5)
@@ -209,84 +173,90 @@ class ContourBasedGating:
         factor_diff = mean_max_values / mean_extrema_values
 
         if factor_diff < 1:
-            # s_extrema_w2 = s_extrema_w2 * factor_diff
             s_extrema_w5 = s_extrema_w5 * factor_diff
-            # s_extrema_w10 = s_extrema_w10 * factor_diff
         else:
-            # s_max_w2 = s_max_w2 * factor_diff
             s_max_w5 = s_max_w5 * factor_diff
-            # s_max_w10 = s_max_w10 * factor_diff
 
         self.fig = self.main_window.gating_display.fig
         self.fig.clear()
         self.ax = self.fig.add_subplot()
 
-        # Plot your data
-        # plt.plot(s_max_w2, color='r')
-        self.ax.plot(self.x, s_max_w5, color='r')
-        # plt.plot(s_max_w10, color='r')
-        # plt.plot(s_extrema_w2, color='b')
-        self.ax.plot(self.x, s_extrema_w5, color='b')
-        # plt.plot(s_extrema_w10, color='b')
-        # plt.legend(['s_max_w2', 's_max_w5', 's_max_w10', 's_extrema_w2', 's_extrema_w5', 's_extrema_w10'])
-        self.ax.plot(self.x, signal_list_extrema[0], color='grey')
-        self.ax.plot(self.x, signal_list_extrema[1], color='grey')
-        self.ax.plot(self.x, signal_list_extrema[2], color='grey')
+        self.ax.plot(self.x, s_max_w5, color='green', label='Maxima')
+        self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Extrema')
+        self.ax.plot(self.x, signal_list_extrema[0], color='grey', label='_hidden')
+        self.ax.plot(self.x, signal_list_extrema[1], color='grey', label='_hidden')
+        self.ax.plot(self.x, signal_list_extrema[2], color='grey', label='_hidden')
         self.ax.set_xlabel('Frame')
-        self.ax.set_ylabel('Signal')
-        self.ax.legend(['s_max_w5', 's_extrema_w5', 'shortest_distance', 'vector_angle', 'vector_length'])
+        self.ax.get_yaxis().set_visible(False)
+        legend = self.ax.legend(ncol=2, loc='upper right')
+        legend.set_draggable(True)
 
-        # Connect the event handlers
         plt.connect('button_press_event', self.on_click)
         plt.connect('motion_notify_event', self.on_motion)
         plt.connect('button_release_event', self.on_release)
 
+        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+
         plt.tight_layout()
         plt.draw()
 
-        self.phases = self.get_x_indices()
-        self.phases = [round(phase, 0) for phase in self.phases]
-
         return True
 
-    def identify_systole_diastole(self):
-        # split self.phases by every second element
-        first_indices = self.phases[::2]
-        second_indices = self.phases[1::2]
+    def on_click(self, event):
+        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
+            return
+        if event.button is MouseButton.LEFT and event.inaxes:
+            new_line = True
+            set_slider_to = event.xdata
+            if self.selected_line is not None:
+                self.selected_line.set_linestyle(self.default_linestyle)
+                self.selected_line = None
+            if self.vertical_lines:
+                # Check if click is near any existing line
+                distances = [abs(line.get_xdata()[0] - event.xdata) for line in self.vertical_lines]
+                if min(distances) < len(self.frames) / 100:  # sensitivity for line selection
+                    self.selected_line = self.vertical_lines[np.argmin(distances)]
+                    new_line = False
+                    set_slider_to = self.selected_line.get_xdata()[0]
+            if new_line:
+                self.selected_line = plt.axvline(
+                    x=event.xdata, color=self.default_line_color, linestyle=self.default_linestyle
+                )
+                self.vertical_lines.append(self.selected_line)
 
-        first_elliptic_ratio = np.mean(self.report_data['frame'][first_indices])
+            self.selected_line.set_linestyle('dashed')
+            plt.draw()
 
-        pass
+            self.main_window.display_slider.set_value(
+                round(set_slider_to - 1), reset_highlights=False
+            )  # slider is 0-based
 
-    def propagate_gating(self):
-        sys_mean_diff = round(np.mean(np.diff(self.systolic_indices)))
-        self.systolic_indices_plot = self.systolic_indices.copy()
-        self.systolic_indices = (
-            np.arange(0, min(self.systolic_indices), sys_mean_diff, dtype=int).tolist()
-            + self.systolic_indices
-            + np.arange(
-                max(self.systolic_indices) + sys_mean_diff, self.main_window.images.shape[0], sys_mean_diff, dtype=int
-            ).tolist()
-        )
-        dia_mean_diff = round(np.mean(np.diff(self.diastolic_indices)))
-        self.diastolic_indices_plot = self.diastolic_indices.copy()
-        self.diastolic_indices = (
-            np.arange(0, min(self.diastolic_indices), dia_mean_diff, dtype=int).tolist()
-            + self.diastolic_indices
-            + np.arange(
-                max(self.diastolic_indices) + dia_mean_diff, self.main_window.images.shape[0], dia_mean_diff, dtype=int
-            ).tolist()
-        )
+            if self.main_window.diastolic_frame_box.isChecked():
+                self.tmp_phase = 'D'
+                toggle_diastolic_frame(self.main_window, False, drag=True)
+            elif self.main_window.systolic_frame_box.isChecked():
+                self.tmp_phase = 'S'
+                toggle_systolic_frame(self.main_window, False, drag=True)
 
-    def update_main_window(self):
-        self.main_window.data['phases'] = ['-'] * len(self.main_window.data['phases'])  # reset phases
-        for frame in self.diastolic_indices:
-            self.main_window.data['phases'][frame] = 'D'
-        for frame in self.systolic_indices:
-            self.main_window.data['phases'][frame] = 'S'
-        self.main_window.gated_frames_sys = self.systolic_indices
-        self.main_window.gated_frames_dia = self.diastolic_indices
-        self.main_window.display_slider.set_gated_frames(self.diastolic_indices)
+    def on_release(self, event):
+        if self.tmp_phase == 'D':
+            self.main_window.diastolic_frame_box.setChecked(True)
+        elif self.tmp_phase == 'S':
+            self.main_window.systolic_frame_box.setChecked(True)
+        
+        self.tmp_phase = None
+
+    def on_motion(self, event):
+        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
+            return
+        if event.button is MouseButton.LEFT and self.selected_line:
+            self.selected_line.set_xdata(event.xdata)
+            if event.xdata is not None:
+                self.main_window.display_slider.set_value(
+                    round(event.xdata - 1), reset_highlights=False
+                )  # slider is 0-based
+                plt.draw()
 
     def plot_results(self):
         # Plot frame on x-axis and elliptic ratio and lumen area on y-axis
@@ -312,3 +282,26 @@ class ContourBasedGating:
         ax.scatter(frames_diastole, signal_diastole, color='blue', marker='o', label='D')
 
         plt.show()
+
+    def draw_existing_lines(self, frames, color):
+        frames = [frame for frame in frames if frame in (self.x - 1)]  # remove frames outside of user-defined range
+        for frame in frames:
+            self.vertical_lines.append(plt.axvline(x=frame + 1, color=color, linestyle=self.default_linestyle))
+
+    def remove_lines(self):
+        for line in self.vertical_lines:
+            line.remove()
+        self.vertical_lines = []
+        plt.draw
+
+    def update_color(self, color=None):
+        color = color or self.default_line_color
+        if self.selected_line is not None:
+            self.selected_line.set_color(color)
+            plt.draw()
+
+    def reset_highlights(self):
+        if self.selected_line is not None:
+            self.selected_line.set_linestyle(self.default_linestyle)
+            self.selected_line = None
+            plt.draw()
