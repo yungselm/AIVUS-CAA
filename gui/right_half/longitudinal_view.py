@@ -91,8 +91,11 @@ class LongitudinalView(QGraphicsView):
 
     def show_lview_contours(self):
         for point in self.points_on_marker:
-            self.graphics_scene.addItem(point[0])
-            self.graphics_scene.addItem(point[1])
+            try:
+                self.graphics_scene.addItem(point[0])
+                self.graphics_scene.addItem(point[1])
+            except TypeError:
+                pass
 
     def remove_contours(self, lower_limit, upper_limit):
         for frame in range(lower_limit, upper_limit):
