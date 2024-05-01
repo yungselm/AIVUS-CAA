@@ -80,10 +80,22 @@ class RightHalf:
     def __call__(self):
         return self.right_widget
 
+
 def open_small_display(main_window):
     if main_window.image_displayed:
         main_window.small_display = SmallDisplay(main_window)
+        main_window.small_display.move(
+            main_window.x() + main_window.width() // 2, main_window.y() + main_window.height() // 2
+        )
+        main_window.small_display.set_frame(main_window.metadata['num_frames'] - 1)
         main_window.small_display.show()
+        main_window.small_display.view.horizontalScrollBar().setValue(
+            int(main_window.small_display.view.horizontalScrollBar().maximum() / 2)
+        )
+        main_window.small_display.view.verticalScrollBar().setValue(
+            int(main_window.small_display.view.verticalScrollBar().maximum() / 2)
+        )
+
 
 def toggle_diastolic_frame(main_window, state_true, drag=False):
     if main_window.image_displayed:
