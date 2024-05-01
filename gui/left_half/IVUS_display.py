@@ -61,7 +61,7 @@ class IVUSDisplay(QGraphicsView):
         self.image_width = images.shape[1]
         self.scaling_factor = self.image_size / images.shape[1]
         if (
-            lumen[0] and max([len(lumen[0][frame]) for frame in range(num_frames)]) > self.n_interactive_points
+            lumen[0] and max([len(lumen[0][frame]) for frame in range(num_frames)]) > self.n_interactive_points * 1.2
         ):  # contours with higher number of knotpoints loaded -> save downsampled version
             lumen = downsample(lumen, self.n_interactive_points)
 
