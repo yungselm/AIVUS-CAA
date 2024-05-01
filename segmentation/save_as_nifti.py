@@ -79,7 +79,7 @@ def contours_to_mask(images, contoured_frames, contours):
         try:
             lumen_polygon = [[x, y] for x, y in zip(contours[frame][1], contours[frame][0])]
             mask[i, :, :] += polygon2mask(image_shape, lumen_polygon).astype(np.uint8)
-        except ValueError:  # frame has no lumen contours
+        except (TypeError, ValueError):  # frame has no lumen contours
             pass
     mask = np.clip(mask, a_min=0, a_max=1)  # enforce correct value range
 
