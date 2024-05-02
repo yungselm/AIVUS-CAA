@@ -31,6 +31,7 @@ class SmallDisplay(QMainWindow):
 
         self.scene = QGraphicsScene()
         self.view = QGraphicsView(self.scene)
+        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setCentralWidget(self.view)
         self.pixmap = QGraphicsPixmapItem()
         self.scene.addItem(self.pixmap)
