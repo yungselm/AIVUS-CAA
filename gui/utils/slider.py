@@ -31,6 +31,12 @@ class Slider(QSlider):
 
     def set_value(self, value, reset_highlights=True):
         self.setValue(value)
+        try:
+            next_gated = self.next_gated_frame(set=False)
+            self.main_window.small_display.set_frame(next_gated)
+        except AttributeError:
+            pass
+
         if reset_highlights:
             self.main_window.contour_based_gating.reset_highlights()
 
@@ -46,28 +52,40 @@ class Slider(QSlider):
         except IndexError:
             pass
 
-    def next_gated_frame(self):
+    def next_gated_frame(self, set=True):
         if self.gated_frames:
             current_gated_frame = self.find_frame(self.value())
             if self.value() >= self.gated_frames[current_gated_frame]:
                 current_gated_frame = current_gated_frame + 1
             try:
-                self.set_value(self.gated_frames[current_gated_frame])
+                if set:
+                    self.set_value(self.gated_frames[current_gated_frame])
+                else:
+                    return self.gated_frames[current_gated_frame]
             except IndexError:
-                pass
+                return None
         else:
-            self.next_frame()
+            if set:
+                self.next_frame()
+            else:
+                return None
 
-    def last_gated_frame(self):
+    def last_gated_frame(self, set=True):
         if self.gated_frames:
             current_gated_frame = self.find_frame(self.value())
             if self.value() <= self.gated_frames[current_gated_frame]:
                 current_gated_frame = current_gated_frame - 1
             if current_gated_frame < 0:
                 current_gated_frame = 0
-            self.set_value(self.gated_frames[current_gated_frame])
+            if set:
+                self.set_value(self.gated_frames[current_gated_frame])
+            else:
+                return self.gated_frames[current_gated_frame]
         else:
-            self.last_frame()
+            if set:
+                self.last_frame()
+            else:
+                return None
 
     def find_frame(self, current_frame):
         """Find the closest gated frame"""

@@ -1,10 +1,8 @@
 from loguru import logger
 from PyQt5.QtWidgets import (
     QMainWindow,
-    QWidget,
     QMenuBar,
     QSplitter,
-    QVBoxLayout,
     QTableWidget,
     QStatusBar,
 )

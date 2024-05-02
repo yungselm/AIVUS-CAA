@@ -257,6 +257,11 @@ class ContourBasedGating:
                     round(event.xdata - 1), reset_highlights=False
                 )  # slider is 0-based
                 plt.draw()
+            else:
+                self.vertical_lines.remove(self.selected_line)
+                self.selected_line = None
+                self.tmp_phase = None
+                plt.draw()
 
     def plot_results(self):
         # Plot frame on x-axis and elliptic ratio and lumen area on y-axis
