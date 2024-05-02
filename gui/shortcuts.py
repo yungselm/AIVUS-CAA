@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, QUrl
 
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
 from gui.popup_windows.message_boxes import ErrorMessage
+from gui.popup_windows.video_player import VideoPlayer
 from gui.utils.contours_gui import new_contour, new_measure
 from input_output.metadata import MetadataWindow
 from input_output.read_image import read_image
@@ -107,6 +108,7 @@ def remove_contours(main_window):
             main_window.display.update_display()
             main_window.status_bar.showMessage(main_window.waiting_status)
 
+
 def reset_phases(main_window):
     if main_window.image_displayed:
         main_window.data['phases'] = ['-'] * main_window.metadata['num_frames']
@@ -131,7 +133,10 @@ def open_url(main_window, description=None):
     elif description == 'keyboard_shortcuts':
         url = 'https://github.com/cardionaut/AAOCASeg?tab=readme-ov-file#keyboard-shortcuts'
     else:
-        url = 'https://www.youtube.com/watch?v=xvFZjo5PgG0'
+        video_player = VideoPlayer(main_window)
+        video_player.play('media/about.mp4')
+        video_player.move(main_window.x() + main_window.width() // 2, main_window.y() + main_window.height() // 2)
+        return
     if not QDesktopServices.openUrl(QUrl(url)):
         ErrorMessage(main_window, 'Could not open the browser. Please visit\n' + url)
 
