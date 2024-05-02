@@ -23,7 +23,7 @@ def read_image(main_window):
     options = QFileDialog.Options()
     options = QFileDialog.DontUseNativeDialog
     file_name, _ = QFileDialog.getOpenFileName(
-        main_window, 'QFileDialog.getOpenFileName()', '', 'All files (*)', options=options
+        main_window, 'QFileDialog.getOpenFileName()', '..', 'All files (*)', options=options
     )
 
     if file_name:
