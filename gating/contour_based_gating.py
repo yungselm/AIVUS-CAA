@@ -46,6 +46,29 @@ class ContourBasedGating:
         # self.plot_results()
 
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
+    
+    def connect_consecutive_frames(self, missing: list) -> str:
+        nums = sorted(set(missing))
+        connected = []
+        i = 0
+        while i < len(nums):
+            j = i
+            while j < len(nums) - 1 and nums[j + 1] - nums[j] == 1:
+                j += 1
+            if i == j:
+                connected.append([nums[i]])
+            else:
+                connected.append(nums[i : j + 1])
+            i = j + 1
+        connected = [
+            (
+                f'{sublist[0]}-{sublist[-1]}'
+                if len(sublist) > 2
+                else ", ".join(map(str, sublist))
+            )
+            for sublist in connected
+        ]
+        return ", ".join(connected)
 
     def define_intramural_part(self):
         dialog = FrameRangeDialog(self.main_window)
@@ -60,11 +83,12 @@ class ContourBasedGating:
             ]
             if len(self.report_data) != upper_limit - lower_limit:
                 missing_frames = [
-                    str(frame)
+                    frame
                     for frame in range(lower_limit + 1, upper_limit + 1)
                     if frame not in self.report_data['frame'].values
                 ]
-                ErrorMessage(self.main_window, f'Please add contours to frames {", ".join(missing_frames)}')
+                str_missing = self.connect_consecutive_frames(missing_frames)
+                ErrorMessage(self.main_window, f'Please add contours to frames {str_missing}')
                 return False
             self.frames = self.main_window.images[lower_limit:upper_limit]
             self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
