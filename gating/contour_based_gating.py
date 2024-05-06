@@ -252,22 +252,28 @@ class ContourBasedGating:
             self.selected_line.set_linestyle('dashed')
             plt.draw()
 
+            set_slider_to = round(set_slider_to - 1)  # slider is 0-based
             self.main_window.display_slider.set_value(
-                round(set_slider_to - 1), reset_highlights=False
-            )  # slider is 0-based
+                set_slider_to, reset_highlights=False
+            )
 
-            if self.main_window.diastolic_frame_box.isChecked():
+            if set_slider_to in self.main_window.gated_frames_dia:
                 self.tmp_phase = 'D'
                 toggle_diastolic_frame(self.main_window, False, drag=True)
-            elif self.main_window.systolic_frame_box.isChecked():
+            elif set_slider_to in self.main_window.gated_frames_sys:
                 self.tmp_phase = 'S'
                 toggle_systolic_frame(self.main_window, False, drag=True)
 
     def on_release(self, event):
-        if self.tmp_phase == 'D':
-            self.main_window.diastolic_frame_box.setChecked(True)
-        elif self.tmp_phase == 'S':
-            self.main_window.systolic_frame_box.setChecked(True)
+        if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
+            return
+        if event.button is MouseButton.LEFT and event.inaxes:
+            if self.tmp_phase == 'D':
+                self.main_window.diastolic_frame_box.setChecked(True)
+                toggle_diastolic_frame(self.main_window, True, drag=True)
+            elif self.tmp_phase == 'S':
+                self.main_window.systolic_frame_box.setChecked(True)
+                toggle_systolic_frame(self.main_window, True, drag=True)
         
         self.tmp_phase = None
 
