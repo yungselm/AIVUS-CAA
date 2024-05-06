@@ -101,6 +101,8 @@ def toggle_diastolic_frame(main_window, state_true, drag=False):
     if main_window.image_displayed:
         frame = main_window.display_slider.value()
         if state_true:
+            main_window.use_diastolic_button.setChecked(True)
+            use_diastolic(main_window)
             if frame not in main_window.gated_frames_dia:
                 bisect.insort_left(main_window.gated_frames_dia, frame)
                 main_window.data['phases'][frame] = 'D'
@@ -121,8 +123,6 @@ def toggle_diastolic_frame(main_window, state_true, drag=False):
                         main_window.contour_based_gating.update_color()
             except ValueError:
                 pass
-        if main_window.use_diastolic_button.isChecked():
-            main_window.display_slider.set_gated_frames(main_window.gated_frames_dia)
 
         main_window.display.update_display()
 
@@ -131,6 +131,8 @@ def toggle_systolic_frame(main_window, state_true, drag=False):
     if main_window.image_displayed:
         frame = main_window.display_slider.value()
         if state_true:
+            main_window.use_diastolic_button.setChecked(False)
+            use_diastolic(main_window)
             if frame not in main_window.gated_frames_sys:
                 bisect.insort_left(main_window.gated_frames_sys, frame)
                 main_window.data['phases'][frame] = 'S'
@@ -150,8 +152,6 @@ def toggle_systolic_frame(main_window, state_true, drag=False):
                         main_window.contour_based_gating.update_color()
             except ValueError:
                 pass
-        if not main_window.use_diastolic_button.isChecked():
-            main_window.display_slider.set_gated_frames(main_window.gated_frames_sys)
 
         main_window.display.update_display()
 
@@ -167,4 +167,8 @@ def use_diastolic(main_window):
             main_window.use_diastolic_button.setStyleSheet(f'background-color: rgb{main_window.systole_color}')
             main_window.gated_frames = main_window.gated_frames_sys
 
-        main_window.display_slider.set_gated_frames(main_window.gated_frames)
+        try:
+            next_gated = main_window.display_slider.next_gated_frame(set=False)
+            main_window.small_display.set_frame(next_gated)  # update small display
+        except AttributeError:
+            pass

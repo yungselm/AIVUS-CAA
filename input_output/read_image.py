@@ -63,7 +63,7 @@ def read_image(main_window):
                     for frame in range(main_window.metadata['num_frames'])
                     if main_window.data['phases'][frame] == 'S'
                 ]
-                main_window.display_slider.set_gated_frames(main_window.gated_frames_dia)
+                main_window.gated_frames = main_window.gated_frames_dia
             except KeyError:  # old contour files may not have phases attribute
                 pass
         else:  # initialise empty containers

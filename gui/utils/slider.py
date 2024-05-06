@@ -27,13 +27,16 @@ class Slider(QSlider):
         self.setSizePolicy(size_policy)
         self.setMinimumSize(QSize(200, 25))
         self.setMaximumSize(QSize(1000, 25))
-        self.gated_frames = []
 
     def set_value(self, value, reset_highlights=True):
         self.setValue(value)
-        try:
+        try:  # small display
             next_gated = self.next_gated_frame(set=False)
             self.main_window.small_display.set_frame(next_gated)
+        except AttributeError:
+            pass
+        try:  # gating display
+            self.main_window.gating_display.set_frame(value)
         except AttributeError:
             pass
 
@@ -53,15 +56,15 @@ class Slider(QSlider):
             pass
 
     def next_gated_frame(self, set=True):
-        if self.gated_frames:
+        if self.main_window.gated_frames:
             current_gated_frame = self.find_frame(self.value())
-            if self.value() >= self.gated_frames[current_gated_frame]:
+            if self.value() >= self.main_window.gated_frames[current_gated_frame]:
                 current_gated_frame = current_gated_frame + 1
             try:
                 if set:
-                    self.set_value(self.gated_frames[current_gated_frame])
+                    self.set_value(self.main_window.gated_frames[current_gated_frame])
                 else:
-                    return self.gated_frames[current_gated_frame]
+                    return self.main_window.gated_frames[current_gated_frame]
             except IndexError:
                 return None
         else:
@@ -71,16 +74,16 @@ class Slider(QSlider):
                 return None
 
     def last_gated_frame(self, set=True):
-        if self.gated_frames:
+        if self.main_window.gated_frames:
             current_gated_frame = self.find_frame(self.value())
-            if self.value() <= self.gated_frames[current_gated_frame]:
+            if self.value() <= self.main_window.gated_frames[current_gated_frame]:
                 current_gated_frame = current_gated_frame - 1
             if current_gated_frame < 0:
                 current_gated_frame = 0
             if set:
-                self.set_value(self.gated_frames[current_gated_frame])
+                self.set_value(self.main_window.gated_frames[current_gated_frame])
             else:
-                return self.gated_frames[current_gated_frame]
+                return self.main_window.gated_frames[current_gated_frame]
         else:
             if set:
                 self.last_frame()
@@ -89,11 +92,7 @@ class Slider(QSlider):
 
     def find_frame(self, current_frame):
         """Find the closest gated frame"""
-        gated_frames = np.asarray(self.gated_frames)
+        gated_frames = np.asarray(self.main_window.gated_frames)
         closest_gated_frame = np.argmin(np.abs(gated_frames - current_frame))
 
         return closest_gated_frame
-
-    def set_gated_frames(self, gated_frames):
-        """Stores the gated frames."""
-        self.gated_frames = gated_frames
