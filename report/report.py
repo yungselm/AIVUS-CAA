@@ -14,7 +14,7 @@ from itertools import combinations
 from gui.popup_windows.message_boxes import ErrorMessage, SuccessMessage
 
 
-def report(main_window, suppress_messages=False):
+def report(main_window, lower_limit=None, upper_limit=None, suppress_messages=False):
     """Writes a report file containing lumen area, etc."""
 
     if not main_window.image_displayed:
@@ -22,8 +22,12 @@ def report(main_window, suppress_messages=False):
             ErrorMessage(main_window, 'Cannot write report before reading input file')
         return None
 
+    if lower_limit is not None and upper_limit is not None:
+        frame_range = range(lower_limit, upper_limit)
+    else:
+        frame_range = range(main_window.metadata['num_frames'])
     contoured_frames = [
-        frame for frame in range(main_window.metadata['num_frames']) if main_window.data['lumen'][0][frame]
+        frame for frame in frame_range if main_window.data['lumen'][0][frame]
     ]
     if not contoured_frames:
         if not suppress_messages:

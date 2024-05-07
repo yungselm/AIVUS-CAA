@@ -73,7 +73,9 @@ class SmallDisplay(QMainWindow):
                 ]
                 [self.scene.addItem(point) for point in self.contour_points]
                 self.scene.addItem(current_contour)
-            polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
+            polygon = Polygon(
+                [(x, y) for x, y in zip(current_contour.full_contour[0], current_contour.full_contour[1])]
+            )
             _, farthest_x, farthest_y = farthest_points(self.main_window, polygon.exterior.coords, frame)
             _, closest_x, closest_y = closest_points(self.main_window, polygon, frame)
             self.scene.addLine(
@@ -91,6 +93,5 @@ class SmallDisplay(QMainWindow):
                 QPen(Qt.yellow, self.point_thickness * 2),
             )
 
-        
         current_phase = 'Diastolic' if self.main_window.use_diastolic_button.isChecked() else 'Systolic'
         self.setWindowTitle(f"Next {current_phase} Frame {frame + 1}")

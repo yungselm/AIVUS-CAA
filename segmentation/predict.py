@@ -4,8 +4,6 @@ from loguru import logger
 from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
 
-from gui.popup_windows.message_boxes import SuccessMessage
-
 
 class Predict:
     def __init__(self, main_window) -> None:
@@ -43,7 +41,7 @@ class Predict:
             progress.setMinimumDuration(1000)
             progress.resize(500, 100)
             progress.setWindowTitle('Automatic segmentation')
-            progress.setLabelText(f'Please wait, segmenting frames {self.lower_limit} to {self.upper_limit}...')
+            progress.setLabelText(f'Please wait, segmenting frames {self.lower_limit + 1} to {self.upper_limit + 1}...')
             progress.show()
 
             for frame in range(self.lower_limit, self.upper_limit, self.batch_size):
@@ -57,9 +55,8 @@ class Predict:
             progress.close()
         else:
             prediction = model.predict(
-                self.images[self.lower_limit : self.upper_limit, :, :], batch_size=self.batch_size, verbose=0
+                self.images[self.lower_limit : self.upper_limit, :, :], batch_size=self.batch_size, verbose=1
             )
             mask[self.lower_limit : self.upper_limit, :, :] = np.array(prediction)[0, :, :, :, 0]
-            SuccessMessage(self.main_window, 'Automatic segmentation')
 
         return mask
