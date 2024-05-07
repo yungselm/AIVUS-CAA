@@ -3,7 +3,7 @@ import matplotlib.path as mplPath
 from loguru import logger
 from skimage import measure
 
-from gui.popup_windows.message_boxes import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage, SuccessMessage
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
 
 
@@ -21,7 +21,7 @@ def segment(main_window):
         lower_limit, upper_limit = segment_dialog.getInputs()
         masks = main_window.predictor(main_window.images, lower_limit, upper_limit)
         if masks is not None:
-            main_window.data['lumen'] = mask_to_contours(masks, main_window.config.display.n_interactive_points)
+            main_window.data['lumen'] = mask_to_contours(main_window, masks, lower_limit, upper_limit)
             main_window.data['lumen_area'] = [0] * main_window.metadata[
                 'num_frames'
             ]  # ensure all metrics are recalculated for the report
@@ -29,33 +29,35 @@ def segment(main_window):
             main_window.display.set_data(main_window.data['lumen'], main_window.images)
             main_window.hide_contours_box.setChecked(False)
 
+    SuccessMessage(main_window, 'Automatic segmentation')
     main_window.status_bar.showMessage(main_window.waiting_status)
 
 
-def mask_to_contours(masks, num_points):
+def mask_to_contours(main_window, masks, lower_limit, upper_limit):
     """Convert numpy mask to IVUS contours"""
-    lumen_pred = get_contours(masks, image_shape=masks.shape[1:3])
-    lumen_pred = downsample(lumen_pred, num_points)
+    lumen_pred = get_contours(main_window, masks, lower_limit, upper_limit)
 
     return lumen_pred
 
 
-def get_contours(preds, image_shape):
+def get_contours(main_window, masks, lower_limit, upper_limit):
     """Extracts contours from masked images. Returns x and y coordinates"""
-    lumen_pred = [[], []]
+    lumen = main_window.data['lumen']
+    num_points = main_window.config.display.n_interactive_points
+    image_shape = masks.shape[1:3]
     counter = 0
-    for frame in range(preds.shape[0]):
-        if np.sum(preds[frame, :, :]) > 0:
+    for frame in range(lower_limit, upper_limit):
+        if np.sum(masks[frame, :, :]) > 0:
             counter += 1
-            lumen = label_contours(preds[frame, :, :])
-            keep_lumen_x, keep_lumen_y = keep_largest_contour(lumen, image_shape)
-            lumen_pred[0].append(keep_lumen_x)
-            lumen_pred[1].append(keep_lumen_y)
+            contours_frame = label_contours(masks[frame, :, :])
+            keep_lumen_x, keep_lumen_y = downsample(keep_largest_contour(contours_frame, image_shape), num_points)
+            lumen[0][frame] = keep_lumen_x
+            lumen[1][frame] = keep_lumen_y
         else:
-            lumen_pred[0].append([])
-            lumen_pred[1].append([])
+            lumen[0][frame] = []
+            lumen[1][frame] = []
     logger.info(f'Found contours in {counter} frames')
-    return lumen_pred
+    return lumen
 
 
 def label_contours(image):
@@ -74,9 +76,9 @@ def keep_largest_contour(contours, image_shape):
     for contour in contours:
         if keep_valid_contour(contour, image_shape):
             if len(contour[0]) > max_length:
-                keep_contour = [list(contour[1, :]), list(contour[0, :])]
+                keep_contour = [[list(contour[1, :])], [list(contour[0, :])]]  # to match format expected by downsample
                 max_length = len(contour[0])
-
+    
     return keep_contour
 
 
@@ -93,7 +95,7 @@ def downsample(contours, num_points):
     downsampled = [[] for _ in range(num_frames)], [[] for _ in range(num_frames)]
 
     for frame in range(num_frames):
-        if contours[0][frame]:
+        if len(contours[0][frame]) > num_points * 1.2:
             points_to_sample = range(0, len(contours[0][frame]), len(contours[0][frame]) // num_points)
             for axis in range(2):
                 downsampled[axis][frame] = [contours[axis][frame][point] for point in points_to_sample]
