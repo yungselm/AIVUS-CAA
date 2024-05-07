@@ -27,12 +27,6 @@ class ContourBasedGating:
 
     def __call__(self):
         self.main_window.status_bar.showMessage('Contour-based gating...')
-        self.report_data = report(self.main_window, suppress_messages=True)  # compute all needed data
-        if self.report_data is None:
-            ErrorMessage(self.main_window, 'Please ensure that an input file was read and contours were drawn')
-            self.main_window.status_bar.showMessage(self.main_window.waiting_status)
-            return
-
         dialog_success = self.define_intramural_part()
         if not dialog_success:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
@@ -46,7 +40,39 @@ class ContourBasedGating:
         # self.plot_results()
 
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
-    
+
+    def define_intramural_part(self):
+        dialog = FrameRangeDialog(self.main_window)
+        if dialog.exec_():
+            lower_limit, upper_limit = dialog.getInputs()
+            self.report_data = report(
+                self.main_window, lower_limit, upper_limit, suppress_messages=True
+            )  # compute all needed data
+            logger.debug(self.report_data)
+            if self.report_data is None:
+                ErrorMessage(self.main_window, 'Please ensure that an input file was read and contours were drawn')
+                self.main_window.status_bar.showMessage(self.main_window.waiting_status)
+                return False
+
+            if (
+                lower_limit == 0 and upper_limit == self.main_window.images.shape[0]
+            ):  # automatic detection of intramural part
+                mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
+
+            if len(self.report_data) != upper_limit - lower_limit:
+                missing_frames = [
+                    frame
+                    for frame in range(lower_limit + 1, upper_limit + 1)
+                    if frame not in self.report_data['frame'].values
+                ]
+                str_missing = self.connect_consecutive_frames(missing_frames)
+                ErrorMessage(self.main_window, f'Please add contours to frames {str_missing}')
+                return False
+            self.frames = self.main_window.images[lower_limit:upper_limit]
+            self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
+            return True
+        return False
+
     def connect_consecutive_frames(self, missing: list) -> str:
         nums = sorted(set(missing))
         connected = []
@@ -61,39 +87,10 @@ class ContourBasedGating:
                 connected.append(nums[i : j + 1])
             i = j + 1
         connected = [
-            (
-                f'{sublist[0]}-{sublist[-1]}'
-                if len(sublist) > 2
-                else ", ".join(map(str, sublist))
-            )
+            (f'{sublist[0]}-{sublist[-1]}' if len(sublist) > 2 else ", ".join(map(str, sublist)))
             for sublist in connected
         ]
         return ", ".join(connected)
-
-    def define_intramural_part(self):
-        dialog = FrameRangeDialog(self.main_window)
-        if dialog.exec_():
-            lower_limit, upper_limit = dialog.getInputs()
-            if (
-                lower_limit == 0 and upper_limit == self.main_window.images.shape[0]
-            ):  # automatic detection of intramural part
-                mean_elliptic_ratio = self.report_data['elliptic_ratio'].rolling(window=5, closed='both').mean()
-            self.report_data = self.report_data[
-                self.report_data['frame'].between(lower_limit + 1, upper_limit, inclusive='both')
-            ]
-            if len(self.report_data) != upper_limit - lower_limit:
-                missing_frames = [
-                    frame
-                    for frame in range(lower_limit + 1, upper_limit + 1)
-                    if frame not in self.report_data['frame'].values
-                ]
-                str_missing = self.connect_consecutive_frames(missing_frames)
-                ErrorMessage(self.main_window, f'Please add contours to frames {str_missing}')
-                return False
-            self.frames = self.main_window.images[lower_limit:upper_limit]
-            self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
-            return True
-        return False
 
     def crop_frames(self, x1=50, x2=450, y1=50, y2=450):
         """Crops frames to a specific region."""
