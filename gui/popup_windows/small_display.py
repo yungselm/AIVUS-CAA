@@ -1,3 +1,4 @@
+from loguru import logger
 from PyQt5.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsLineItem
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage, QPen
@@ -17,7 +18,8 @@ class SmallDisplay(QMainWindow):
         self.point_thickness = main_window.config.display.point_thickness
         self.point_radius = main_window.config.display.point_radius
         self.scaling_factor = self.image_size / self.main_window.images[0].shape[0]
-        self.window_size = int(self.image_size / 1.5)
+        self.window_to_image_ratio = 1.5
+        self.window_size = int(self.image_size / self.window_to_image_ratio)
         self.resize(self.window_size, self.window_size)
         self.setWindowFlags(
             Qt.Window
@@ -73,25 +75,26 @@ class SmallDisplay(QMainWindow):
                 ]
                 [self.scene.addItem(point) for point in self.contour_points]
                 self.scene.addItem(current_contour)
-            polygon = Polygon(
-                [(x, y) for x, y in zip(current_contour.full_contour[0], current_contour.full_contour[1])]
-            )
-            _, farthest_x, farthest_y = farthest_points(self.main_window, polygon.exterior.coords, frame)
-            _, closest_x, closest_y = closest_points(self.main_window, polygon, frame)
-            self.scene.addLine(
-                farthest_x[0],
-                farthest_y[0],
-                farthest_x[1],
-                farthest_y[1],
-                QPen(Qt.yellow, self.point_thickness * 2),
-            )
-            self.scene.addLine(
-                closest_x[0],
-                closest_y[0],
-                closest_x[1],
-                closest_y[1],
-                QPen(Qt.yellow, self.point_thickness * 2),
-            )
+                polygon = Polygon(
+                    [(x, y) for x, y in zip(current_contour.full_contour[0], current_contour.full_contour[1])]
+                )
+                self.view.centerOn(polygon.centroid.x, polygon.centroid.y)
+                _, farthest_x, farthest_y = farthest_points(self.main_window, polygon.exterior.coords, frame)
+                _, closest_x, closest_y = closest_points(self.main_window, polygon, frame)
+                self.scene.addLine(
+                    farthest_x[0],
+                    farthest_y[0],
+                    farthest_x[1],
+                    farthest_y[1],
+                    QPen(Qt.yellow, self.point_thickness * 2),
+                )
+                self.scene.addLine(
+                    closest_x[0],
+                    closest_y[0],
+                    closest_x[1],
+                    closest_y[1],
+                    QPen(Qt.yellow, self.point_thickness * 2),
+                )
 
         current_phase = 'Diastolic' if self.main_window.use_diastolic_button.isChecked() else 'Systolic'
         self.setWindowTitle(f"Next {current_phase} Frame {frame + 1}")
