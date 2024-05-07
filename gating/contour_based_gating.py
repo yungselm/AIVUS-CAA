@@ -48,7 +48,6 @@ class ContourBasedGating:
             self.report_data = report(
                 self.main_window, lower_limit, upper_limit, suppress_messages=True
             )  # compute all needed data
-            logger.debug(self.report_data)
             if self.report_data is None:
                 ErrorMessage(self.main_window, 'Please ensure that an input file was read and contours were drawn')
                 self.main_window.status_bar.showMessage(self.main_window.waiting_status)
