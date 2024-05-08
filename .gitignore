@@ -166,3 +166,5 @@ lightning_logs/
 test_windowingslider.py
 
 poetry.lock
+
+IVUS_models/
