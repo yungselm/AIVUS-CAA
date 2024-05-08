@@ -19,6 +19,7 @@ class ContourBasedGating:
         self.vertical_lines = []
         self.selected_line = None
         self.tmp_phase = None
+        self.frame_marker = None
         self.phases = []
         self.systolic_indices = []
         self.diastolic_indices = []
@@ -249,9 +250,7 @@ class ContourBasedGating:
             plt.draw()
 
             set_slider_to = round(set_slider_to - 1)  # slider is 0-based
-            self.main_window.display_slider.set_value(
-                set_slider_to, reset_highlights=False
-            )
+            self.main_window.display_slider.set_value(set_slider_to, reset_highlights=False)
 
             if set_slider_to in self.main_window.gated_frames_dia:
                 self.tmp_phase = 'D'
@@ -270,7 +269,7 @@ class ContourBasedGating:
             elif self.tmp_phase == 'S':
                 self.main_window.systolic_frame_box.setChecked(True)
                 toggle_systolic_frame(self.main_window, True, drag=True)
-        
+
         self.tmp_phase = None
 
     def on_motion(self, event):
@@ -288,6 +287,13 @@ class ContourBasedGating:
                 self.selected_line = None
                 self.tmp_phase = None
                 plt.draw()
+
+    def set_frame(self, frame):
+        plt.autoscale(False)
+        if self.frame_marker:
+            self.frame_marker[0].remove()
+        self.frame_marker = self.ax.plot(frame + 1, self.ax.get_ylim()[0], 'yo', clip_on=False)
+        plt.draw()
 
     def plot_results(self):
         # Plot frame on x-axis and elliptic ratio and lumen area on y-axis

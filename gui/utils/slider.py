@@ -36,12 +36,12 @@ class Slider(QSlider):
         except AttributeError:
             pass
         try:  # gating display
-            self.main_window.gating_display.set_frame(value)
+            if reset_highlights:
+                self.main_window.contour_based_gating.reset_highlights()
+            self.main_window.contour_based_gating.set_frame(value)
         except AttributeError:
             pass
 
-        if reset_highlights:
-            self.main_window.contour_based_gating.reset_highlights()
 
     def next_frame(self):
         try:
