@@ -1,4 +1,5 @@
 import os
+import glob
 import hydra
 import json
 
@@ -17,7 +18,9 @@ from segmentation.segment import mask_to_contours
 @hydra.main(version_base=None, config_path='..', config_name='config')
 def segment_files(config: DictConfig) -> None:
     input_dir = config.segmentation.input_dir
-    files = os.listdir(input_dir)
+    files = glob.glob(input_dir + '/NARCO_*/Run*/*', recursive=True)
+    files = [file for file in files if '_' not in os.path.basename(file)]  # exclude subdirs (all have _ in name)
+    logger.info(f'Found {len(files)} files to segment')
     predictor = Predict(main_window=None, config=config)
 
     for file in tqdm(files, desc='Segmenting files', unit='files', leave=False):
