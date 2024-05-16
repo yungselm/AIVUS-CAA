@@ -33,17 +33,17 @@ def segment(main_window):
     main_window.status_bar.showMessage(main_window.waiting_status)
 
 
-def mask_to_contours(main_window, masks, lower_limit, upper_limit):
-    """Convert numpy mask to IVUS contours"""
-    lumen_pred = get_contours(main_window, masks, lower_limit, upper_limit)
-
-    return lumen_pred
-
-
-def get_contours(main_window, masks, lower_limit, upper_limit):
+def mask_to_contours(main_window, masks, lower_limit, upper_limit, config=None):
     """Extracts contours from masked images. Returns x and y coordinates"""
-    lumen = main_window.data['lumen']
-    num_points = main_window.config.display.n_interactive_points
+    if main_window is None:
+        lumen = (
+                [[] for _ in range(upper_limit - lower_limit)],
+                [[] for _ in range(upper_limit - lower_limit)],
+            )
+    else:
+        lumen = main_window.data['lumen']
+        config = main_window.config
+    num_points = config.display.n_interactive_points
     image_shape = masks.shape[1:3]
     counter = 0
     for frame in range(lower_limit, upper_limit):
@@ -78,7 +78,7 @@ def keep_largest_contour(contours, image_shape):
             if len(contour[0]) > max_length:
                 keep_contour = [[list(contour[1, :])], [list(contour[0, :])]]  # to match format expected by downsample
                 max_length = len(contour[0])
-    
+
     return keep_contour
 
 
