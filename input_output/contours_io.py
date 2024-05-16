@@ -86,7 +86,6 @@ def write_contours(main_window):
             main_window.images.shape,
             main_window.metadata['resolution'],
             main_window.ivusPullbackRate,
-            main_window.data['plaque_frames'],
             main_window.data['phases'],
             main_window.file_name,
         )

@@ -5,7 +5,7 @@ import datetime
 from version import version_file_str
 
 
-def write_xml(x, y, dims, resolution, speed, plaque_frames, phases, out_path):
+def write_xml(x, y, dims, resolution, speed, phases, out_path):
     """Write an xml file of contour data
 
     Args:

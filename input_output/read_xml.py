@@ -7,7 +7,6 @@ def read_xml(main_window, path, frames=[]):
     root.attrib
     lumen_points = []
     frame_list = []
-    plaque_frames = []
     phases = []
     lumen = {}
 
@@ -45,7 +44,6 @@ def read_xml(main_window, path, frames=[]):
                     lumen[frame_number] = lumen_subpoints
 
     main_window.data['lumen'] = split_x_y(lumen_points)
-    main_window.data['plaque_frames'] = plaque_frames
     main_window.data['phases'] = phases
     main_window.metadata['resolution'] = res_x
 
