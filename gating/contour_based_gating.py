@@ -18,6 +18,7 @@ class ContourBasedGating:
         self.blurring = None
         self.vertical_lines = []
         self.selected_line = None
+        self.current_phase = None
         self.tmp_phase = None
         self.frame_marker = None
         self.phases = []
@@ -229,6 +230,8 @@ class ContourBasedGating:
             return
         if event.button is MouseButton.LEFT and event.inaxes:
             new_line = True
+            set_dia = False
+            set_sys = False
             set_slider_to = event.xdata
             if self.selected_line is not None:
                 self.selected_line.set_linestyle(self.default_linestyle)
@@ -241,8 +244,16 @@ class ContourBasedGating:
                     new_line = False
                     set_slider_to = self.selected_line.get_xdata()[0]
             if new_line:
+                if self.current_phase == 'D':
+                    color = self.main_window.diastole_color_plt
+                    set_dia = True
+                elif self.current_phase == 'S':
+                    color = self.main_window.systole_color_plt
+                    set_sys = True
+                else:
+                    color = self.default_line_color
                 self.selected_line = plt.axvline(
-                    x=event.xdata, color=self.default_line_color, linestyle=self.default_linestyle
+                    x=event.xdata, color=color, linestyle=self.default_linestyle
                 )
                 self.vertical_lines.append(self.selected_line)
 
@@ -252,10 +263,10 @@ class ContourBasedGating:
             set_slider_to = round(set_slider_to - 1)  # slider is 0-based
             self.main_window.display_slider.set_value(set_slider_to, reset_highlights=False)
 
-            if set_slider_to in self.main_window.gated_frames_dia:
+            if set_slider_to in self.main_window.gated_frames_dia or set_dia:
                 self.tmp_phase = 'D'
                 toggle_diastolic_frame(self.main_window, False, drag=True)
-            elif set_slider_to in self.main_window.gated_frames_sys:
+            elif set_slider_to in self.main_window.gated_frames_sys or set_sys:
                 self.tmp_phase = 'S'
                 toggle_systolic_frame(self.main_window, False, drag=True)
 

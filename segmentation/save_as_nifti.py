@@ -16,11 +16,17 @@ def save_as_nifti(main_window, mode=None):
         ErrorMessage(main_window, 'Cannot save as NIfTi before reading input file')
         return
 
-    out_path = f'{main_window.config.save.nifti_dir}_{mode}_frames'
+    out_path = os.path.join(main_window.config.save.nifti_dir, f'{mode}_frames')
     if mode == 'contoured':
         frames_to_save = [
             frame for frame in range(main_window.metadata['num_frames']) if main_window.data['lumen'][0][frame]
-        ]  # find frames with contours (no need to save the others)
+        ]
+    elif mode == 'gated':
+        frames_to_save = [
+            frame
+            for frame in range(main_window.metadata['num_frames'])
+            if main_window.data['lumen'][0][frame] and main_window.data['phases'][frame] in ['D', 'S']
+        ]
     elif mode == 'all':
         frames_to_save = range(main_window.metadata['num_frames'])
     else:
