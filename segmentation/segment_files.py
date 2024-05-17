@@ -39,7 +39,10 @@ def segment_files(config: DictConfig) -> None:
         logger.info(f'Segmenting file {file}')
         lower_limit = 0
         upper_limit = image.shape[0]
-        masks = predictor(image, lower_limit, upper_limit)
+        try:
+            masks = predictor(image, lower_limit, upper_limit)
+        except:
+            continue
         contours = mask_to_contours(None, masks, lower_limit, upper_limit, config=config)
 
         data = {}
