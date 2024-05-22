@@ -384,10 +384,10 @@ class IVUSDisplay(QGraphicsView):
                 elif spline:  # clicked on contour
                     path_index = self.current_contour.on_path(pos)
                     self.main_window.setCursor(Qt.BlankCursor)
-                    self.active_point_index = len(self.contour_points) + 1
                     self.active_point = Point((pos.x(), pos.y()), self.point_thickness, self.point_radius, 'green')
                     self.graphics_scene.addItem(self.active_point)
-                    self.current_contour.update(pos, self.active_point_index, path_index)
+                    self.active_point.update_color()
+                    self.active_point_index = self.current_contour.update(pos, self.active_point_index, path_index)
 
         elif event.buttons() == Qt.MouseButton.RightButton:
             self.mouse_x = event.x()

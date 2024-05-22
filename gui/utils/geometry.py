@@ -115,6 +115,8 @@ class Spline(QGraphicsPathItem):
             self.path.setElementPositionAt(i, self.full_contour[0][i], self.full_contour[1][i])
         self.setPath(self.path)
 
+        return index
+
     def on_path(self, pos):
         x, y = pos.x(), pos.y()
         distances = np.sqrt((self.full_contour[0] - x) ** 2 + (self.full_contour[1] - y) ** 2)
