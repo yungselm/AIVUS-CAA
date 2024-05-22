@@ -65,7 +65,9 @@ class IVUSDisplay(QGraphicsView):
             (
                 Spline(
                     [lumen[0][frame], lumen[1][frame]], self.n_points_contour, self.contour_thickness, 'green'
-                ).get_unscaled_contour(scaling_factor=1)  # data is not yet scaled at read, hence scaling_factor=1
+                ).get_unscaled_contour(
+                    scaling_factor=1
+                )  # data is not yet scaled at read, hence scaling_factor=1
                 if lumen[0][frame]
                 else None
             )
@@ -297,9 +299,7 @@ class IVUSDisplay(QGraphicsView):
             self.draw = False
             self.main_window.setCursor(Qt.ArrowCursor)
             self.display_image(update_contours=True)
-            self.main_window.longitudinal_view.lview_contour(
-                self.frame, self.full_contours[self.frame], update=True
-            )
+            self.main_window.longitudinal_view.lview_contour(self.frame, self.full_contours[self.frame], update=True)
 
     def draw_measure(self):
         for index in range(2):
@@ -372,14 +372,22 @@ class IVUSDisplay(QGraphicsView):
             else:
                 # identify which point has been clicked
                 items = self.items(event.pos())
-                for item in items:
-                    if item in self.contour_points:
-                        self.main_window.setCursor(Qt.BlankCursor)  # remove cursor for precise contour changes
-                        # Convert mouse position to item position
-                        # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
-                        self.active_point_index = self.contour_points.index(item)
-                        item.update_color()
-                        self.active_point = item
+                point = [item for item in items if isinstance(item, Point)]
+                spline = [item for item in items if isinstance(item, Spline)]
+                if point and point[0] in self.contour_points:
+                    self.main_window.setCursor(Qt.BlankCursor)  # remove cursor for precise contour changes
+                    # Convert mouse position to item position
+                    # https://stackoverflow.com/questions/53627056/how-to-get-cursor-click-position-in-qgraphicsitem-coordinate-system
+                    self.active_point_index = self.contour_points.index(point[0])
+                    point[0].update_color()
+                    self.active_point = point[0]
+                elif spline:  # clicked on contour
+                    path_index = self.current_contour.on_path(pos)
+                    self.main_window.setCursor(Qt.BlankCursor)
+                    self.active_point_index = len(self.contour_points) + 1
+                    self.active_point = Point((pos.x(), pos.y()), self.point_thickness, self.point_radius, 'green')
+                    self.graphics_scene.addItem(self.active_point)
+                    self.current_contour.update(pos, self.active_point_index, path_index)
 
         elif event.buttons() == Qt.MouseButton.RightButton:
             self.mouse_x = event.x()

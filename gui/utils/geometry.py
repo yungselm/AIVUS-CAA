@@ -1,3 +1,5 @@
+import bisect
+
 import numpy as np
 from loguru import logger
 from scipy.interpolate import splprep, splev
@@ -35,9 +37,7 @@ class Point(QGraphicsEllipseItem):
     def update_pos(self, pos):
         """Updates the Point position"""
 
-        self.setRect(
-            pos.x(), pos.y(), self.point_radius, self.point_radius
-        )
+        self.setRect(pos.x(), pos.y(), self.point_radius, self.point_radius)
         return self.rect()
 
 
@@ -82,36 +82,54 @@ class Spline(QGraphicsPathItem):
 
         return (x_new, y_new)
 
-    def update(self, pos, idx):
+    def update(self, pos, index, path_index=None):
         """Updates the stored spline everytime it is moved
         Args:
             pos: new points coordinates
-            idx: index on spline of updated point
+            index: knot point index
+            path_index: index of point on path
         """
-
-        if idx == len(self.knot_points[0]) + 1:
-            self.knot_points[0].append(pos.x())
-            self.knot_points[1].append(pos.y())
+        if path_index is not None:
+            path_indices = np.zeros(len(self.knot_points[0]))
+            distances = np.zeros(self.n_points)
+            for i in range(len(self.knot_points[0])):
+                knot_x, knot_y = self.knot_points[0][i], self.knot_points[1][i]
+                for j in range(self.n_points):
+                    distances[j] = np.sqrt(
+                        (knot_x - self.full_contour[0][j]) ** 2 + (knot_y - self.full_contour[1][j]) ** 2
+                    )
+                path_indices[i] = np.argmin(distances)  # index of closest point on path
+            path_indices[0] = 0  # first and last points are the same but need sorted list for bisect
+            index = bisect.bisect_left(path_indices, path_index)
+            self.knot_points[0].insert(index, pos.x())
+            self.knot_points[1].insert(index, pos.y())
         else:
-            self.knot_points[0][idx] = pos.x()
-            self.knot_points[1][idx] = pos.y()
+            if index >= len(self.knot_points[0]):
+                self.knot_points[0].append(pos.x())
+                self.knot_points[1].append(pos.y())
+            else:
+                self.knot_points[0][index] = pos.x()
+                self.knot_points[1][index] = pos.y()
         self.full_contour = self.interpolate(self.knot_points)
         for i in range(0, len(self.full_contour[0])):
             self.path.setElementPositionAt(i, self.full_contour[0][i], self.full_contour[1][i])
         self.setPath(self.path)
+
+    def on_path(self, pos):
+        x, y = pos.x(), pos.y()
+        distances = np.sqrt((self.full_contour[0] - x) ** 2 + (self.full_contour[1] - y) ** 2)
+        if np.min(distances) < 10:
+            return np.argmin(distances)
+        return None
 
     def get_unscaled_contour(self, scaling_factor):
         return self.full_contour[0] / scaling_factor, self.full_contour[1] / scaling_factor
 
 
 def get_qt_pen(color, thickness):
-    if color == 'yellow':
-        return QPen(Qt.yellow, thickness)
-    elif color == 'red':
-        return QPen(Qt.red, thickness)
-    elif color == 'green':
-        return QPen(Qt.green, thickness)
-    elif color == 'cyan':
-        return QPen(Qt.cyan, thickness)
-    else:
-        return QPen(Qt.blue, thickness)
+    try:
+        color = getattr(Qt, color)
+    except (AttributeError, TypeError):
+        color = Qt.blue
+
+    return QPen(color, thickness)
