@@ -44,6 +44,7 @@ class Master(QMainWindow):
         self.systole_color = (209, 55, 38)
         self.systole_color_plt = tuple(x / 255 for x in self.systole_color)
         self.measure_colors = ['red', 'cyan']
+        self.reference_color = 'yellow'
         self.waiting_status = 'Waiting for user input...'
         self.init_gui()
         init_shortcuts(self)

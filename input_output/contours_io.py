@@ -24,7 +24,8 @@ def read_contours(main_window, file_name=None):
             main_window.data = json.load(in_file)
         if 'measures' not in main_window.data:  # added in version 0.4.5
             main_window.data['measures'] = [[None, None] for _ in range(main_window.metadata['num_frames'])]
-            main_window.data['measure_lengths'] = [[np.nan, np.nan] for _ in range(main_window.metadata['num_frames'])]
+        if 'reference' not in main_window.data:  # added in version 0.7.3
+            main_window.data['reference'] = [None] * main_window.metadata['num_frames']
         success = True
 
     elif xml_files:

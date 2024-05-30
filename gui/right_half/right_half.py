@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QSplitter, QPushButton, QC
 from gui.right_half.gating_display import GatingDisplay
 from gui.right_half.longitudinal_view import LongitudinalView
 from gui.popup_windows.small_display import SmallDisplay
-from gui.utils.contours_gui import new_measure
+from gui.utils.contours_gui import new_measure, new_reference
 from segmentation.segment import segment
 
 
@@ -66,6 +66,10 @@ class RightHalf:
         measure_button_2.setToolTip('Measure distance between two points')
         measure_button_2.clicked.connect(partial(new_measure, main_window, index=1))
         measure_button_2.setStyleSheet(f'border-color: {main_window.measure_colors[1]}')
+        reference_button = QPushButton('Reference Point')
+        reference_button.setToolTip('Set reference point for 3D model registration')
+        reference_button.clicked.connect(partial(new_reference, main_window))
+        reference_button.setStyleSheet(f'border-color: {main_window.reference_color}')
         command_buttons = QHBoxLayout()
         command_buttons.addWidget(segment_button)
         command_buttons.addWidget(gating_button)
@@ -73,6 +77,7 @@ class RightHalf:
         measures = QHBoxLayout()
         measures.addWidget(measure_button_1)
         measures.addWidget(measure_button_2)
+        measures.addWidget(reference_button)
         right_lower_vbox.addLayout(measures)
         right_vbox.addLayout(right_lower_vbox)
         self.right_widget.setLayout(right_vbox)

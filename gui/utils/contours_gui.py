@@ -20,3 +20,10 @@ def new_measure(main_window, index: int):
 
     main_window.display.start_measure(index)
     main_window.hide_contours_box.setChecked(False)
+
+def new_reference(main_window):
+    if not main_window.image_displayed:
+        ErrorMessage(main_window, 'Cannot create manual reference before reading input file')
+        return
+
+    main_window.display.start_reference()

@@ -34,7 +34,7 @@ class IVUSDisplay(QGraphicsView):
         self.points_to_draw = []
         self.contour_points = []
         self.frame = 0
-        self.draw = False
+        self.contour_mode = False
         self.contour_drawn = False
         self.current_contour = None  # entire contour (not only knotpoints), needed for elliptic ratio
         self.new_spline = None
@@ -42,6 +42,7 @@ class IVUSDisplay(QGraphicsView):
         self.active_point_index = None
         self.measure_index = None
         self.measure_colors = self.main_window.measure_colors
+        self.reference_mode = False
 
         # Store initial window level and window width (full width, middle level)
         self.initial_window_level = 128  # window level is the center which determines the brightness of the image
@@ -140,6 +141,7 @@ class IVUSDisplay(QGraphicsView):
             if update_contours:
                 self.draw_contour(self.main_window.data['lumen'])
                 self.draw_measure()
+                self.draw_reference()
                 if self.main_window.data['lumen'][0][self.frame] and self.current_contour.full_contour[0] is not None:
                     lumen_x, lumen_y = self.current_contour.get_unscaled_contour(self.scaling_factor)
                     polygon = Polygon([(x, y) for x, y in zip(lumen_x, lumen_y)])
@@ -232,7 +234,7 @@ class IVUSDisplay(QGraphicsView):
             else:
                 logger.warning(f'Spline for frame {self.frame + 1} could not be interpolated')
 
-    def add_manual_contour(self, point):
+    def add_contour(self, point):
         """Creates an interactive contour manually point by point"""
 
         if self.points_to_draw:
@@ -243,7 +245,7 @@ class IVUSDisplay(QGraphicsView):
 
         if start_point[0] is None:  # occurs when Point has been deleted during draw (e.g. by RMB click)
             self.points_to_draw = []
-            self.draw = False
+            self.contour_mode = False
             self.main_window.setCursor(Qt.ArrowCursor)
             self.display_image(update_contours=True)
         else:
@@ -288,7 +290,7 @@ class IVUSDisplay(QGraphicsView):
     def start_contour(self):
         self.measure_index = None
         self.main_window.setCursor(Qt.CrossCursor)
-        self.draw = True
+        self.contour_mode = True
         self.points_to_draw = []
         self.main_window.data['lumen'][0][self.frame] = []
         self.main_window.data['lumen'][1][self.frame] = []
@@ -296,7 +298,7 @@ class IVUSDisplay(QGraphicsView):
 
     def stop_contour(self):
         if self.main_window.image_displayed:
-            self.draw = False
+            self.contour_mode = False
             self.main_window.setCursor(Qt.ArrowCursor)
             self.display_image(update_contours=True)
             self.main_window.longitudinal_view.lview_contour(self.frame, self.full_contours[self.frame], update=True)
@@ -345,11 +347,31 @@ class IVUSDisplay(QGraphicsView):
                 self.main_window.setCursor(Qt.ArrowCursor)
 
     def start_measure(self, index: int):
-        if self.draw:
+        if self.contour_mode:
             self.stop_contour()
         self.main_window.data['measures'][self.frame][index] = None  # reset this measure
         self.main_window.setCursor(Qt.CrossCursor)
         self.measure_index = index
+        self.display_image(update_contours=True)
+
+    def draw_reference(self):
+        if self.main_window.data['reference'][self.frame] is not None:
+            reference_point = self.main_window.data['reference'][self.frame]
+            reference = Point(
+                (reference_point[0], reference_point[1]),
+                self.point_thickness,
+                self.point_radius,
+                self.main_window.reference_color,
+            )
+            self.graphics_scene.addItem(reference)
+            text = QGraphicsTextItem('Reference')
+            text.setPos(reference_point[0], reference_point[1])
+            self.graphics_scene.addItem(text)
+
+    def start_reference(self):
+        self.reference_mode = True
+        self.main_window.setCursor(Qt.CrossCursor)
+        self.main_window.data['reference'][self.frame] = None
         self.display_image(update_contours=True)
 
     def update_display(self):
@@ -365,10 +387,15 @@ class IVUSDisplay(QGraphicsView):
     def mousePressEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton:
             pos = self.mapToScene(event.pos())
-            if self.draw:
-                self.add_manual_contour(pos)
+            if self.contour_mode:
+                self.add_contour(pos)
             elif self.measure_index is not None:  # drawing measure
                 self.add_measure(pos)
+            elif self.reference_mode:
+                self.main_window.data['reference'][self.frame] = [pos.x(), pos.y()]
+                self.reference_mode = False
+                self.main_window.setCursor(Qt.ArrowCursor)
+                self.display_image(update_contours=True)
             else:
                 # identify which point has been clicked
                 items = self.items(event.pos())

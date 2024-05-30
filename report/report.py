@@ -26,9 +26,7 @@ def report(main_window, lower_limit=None, upper_limit=None, suppress_messages=Fa
         frame_range = range(lower_limit, upper_limit)
     else:
         frame_range = range(main_window.metadata['num_frames'])
-    contoured_frames = [
-        frame for frame in frame_range if main_window.data['lumen'][0][frame]
-    ]
+    contoured_frames = [frame for frame in frame_range if main_window.data['lumen'][0][frame]]
     if not contoured_frames:
         if not suppress_messages:
             ErrorMessage(main_window, 'Cannot write report before drawing contours')
@@ -63,7 +61,7 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
         progress.setWindowFlags(Qt.Dialog)
         progress.setModal(True)
         progress.setMinimum(0)
-        progress.setMaximum(len(contoured_frames) * (1 + save_as_csv))
+        progress.setMaximum(len(contoured_frames))
         progress.resize(500, 100)
         progress.setValue(0)
         progress.setWindowTitle('Writing report...')
@@ -134,22 +132,8 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
     main_window.data['vector_angle'] = vector_angle
 
     if save_as_csv:  # write centered contours to .csv files
-        csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
-        os.makedirs(csv_out_dir, exist_ok=True)
-
-        for frame in contoured_frames:
-            with open(os.path.join(csv_out_dir, f'{frame}_contours.csv'), 'w', newline='') as csv_file:
-                writer = csv.writer(csv_file, delimiter='\t')
-                rows = zip(
-                    [(x - centroid_x[frame]) * main_window.metadata['resolution'] for x in lumen_x[frame]],
-                    [(y - centroid_y[frame]) * main_window.metadata['resolution'] for y in lumen_y[frame]],
-                )  # csv can only write rows, not columns directly
-                for row in rows:
-                    writer.writerow(row)
-            if not suppress_messages:
-                progress.setValue(len(contoured_frames) + frame)
-                if progress.wasCanceled():
-                    return report_data
+        save_csv_files(main_window, lumen_x, lumen_y, name='diastolic', frames=main_window.gated_frames_dia)
+        save_csv_files(main_window, lumen_x, lumen_y, name='systolic', frames=main_window.gated_frames_sys)
     if not suppress_messages:
         progress.close()
 
@@ -316,3 +300,35 @@ def closest_points(main_window, polygon, frame):
     main_window.data['nearest_point'][1][frame] = closest_point_y
 
     return shortest_distance, closest_point_x, closest_point_y
+
+def save_csv_files(main_window, lumen_x, lumen_y, name, frames):
+    csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
+    os.makedirs(csv_out_dir, exist_ok=True)
+    with open(os.path.join(csv_out_dir, f'{name}_contours.csv'), 'w', newline='') as contours_file:
+        contours_writer = csv.writer(contours_file, delimiter='\t')
+        with open(os.path.join(csv_out_dir, f'{name}_reference_points.csv'), 'w', newline='') as reference_file:
+            reference_writer = csv.writer(reference_file, delimiter='\t')
+            distance_offset = main_window.metadata['pullback_length'][frames[0]]
+            for frame in frames:
+                if lumen_x[frame] is None:  # no contour drawn for this frame
+                    continue
+                rows = zip(
+                    [x * main_window.metadata['resolution'] for x in lumen_x[frame]],
+                    [y * main_window.metadata['resolution'] for y in lumen_y[frame]],
+                )  # csv can only write rows, not columns directly
+                for row in rows:
+                    row = (
+                        [frame + 1]
+                        + list(row)
+                        + [main_window.metadata['pullback_length'][frame] - distance_offset]
+                    )
+                    contours_writer.writerow(row)
+                if main_window.data['reference'][frame] is not None:
+                    reference_writer.writerow(
+                        [
+                            frame + 1,
+                            main_window.data['reference'][frame][0] * main_window.metadata['resolution'],
+                            main_window.data['reference'][frame][1] * main_window.metadata['resolution'],
+                            main_window.metadata['pullback_length'][frame] - distance_offset,
+                        ]
+                    )
