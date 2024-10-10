@@ -203,8 +203,8 @@ class ContourBasedGating:
         self.fig.clear()
         self.ax = self.fig.add_subplot()
 
-        self.ax.plot(self.x, s_max_w5, color='green', label='Maxima')
-        self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Extrema')
+        self.ax.plot(self.x, s_max_w5, color='green', label='Image based gating')
+        self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Contour based gating')
         self.ax.plot(self.x, signal_list_extrema[0], color='grey', label='_hidden')
         self.ax.plot(self.x, signal_list_extrema[1], color='grey', label='_hidden')
         self.ax.plot(self.x, signal_list_extrema[2], color='grey', label='_hidden')
