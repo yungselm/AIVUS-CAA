@@ -107,7 +107,8 @@ class ContourBasedGating:
         print("Data prepared successfully")
 
     def normalize_data(self, data):
-        return (data - np.min(data)) / np.sum(data - np.min(data))
+        shifted = data - np.min(data)
+        return shifted / np.max(shifted) if np.max(shifted) != 0 else shifted
 
     def calculate_correlation(self):
         """Calculates correlation coefficients between consecutive frames."""
@@ -147,10 +148,12 @@ class ContourBasedGating:
         for signal in signal_list:
             smoothed_signal = self.smooth_curve(signal, window_size=window_size)
             smoothed_signals.append(smoothed_signal)
+        
+        ligned_signals = self.align_signals(smoothed_signals)
 
         # find extrema indices for all curves
         extrema_indices = []
-        for signal in smoothed_signals:
+        for signal in ligned_signals:
             if maxima_only:
                 extrema_indices.append(self.identify_extrema(signal)[1])
             else:
@@ -173,6 +176,16 @@ class ContourBasedGating:
 
     def smooth_curve(self, signal, window_size=5):
         return np.convolve(signal, np.ones(window_size) / window_size, mode='same')
+   
+    def align_signals(self, signals):
+        reference = signals[0]
+        aligned_signals = [reference]
+        for signal in signals[1:]:
+            correlation = np.correlate(reference, signal, mode='full')
+            shift = correlation.argmax() - (len(signal) - 1)
+            aligned_signal = np.roll(signal, shift)
+            aligned_signals.append(aligned_signal)
+        return aligned_signals
 
     def plot_data(self):
         signal_list_max = [

@@ -102,7 +102,21 @@ def parse_dicom(main_window):
     else:
         model = 'Unknown'
 
-    main_window.metadata_table.setRowCount(8)
+    if main_window.dicom.get('IVUSPullbackStartFrameNumber'):
+        pullback_start_frame = main_window.dicom.IVUSPullbackStartFrameNumber
+    else:
+        pullback_start_frame, _ = QInputDialog.getText(
+            main_window,
+            'Pullback Start Frame',
+            'No IVUSPullbackStartFrameNumber found, please enter the start frame number',
+            QLineEdit.Normal,
+            '0',
+        )
+        pullback_start_frame = int(pullback_start_frame)
+
+    main_window.metadata['pullback_start_frame'] = pullback_start_frame
+
+    main_window.metadata_table.setRowCount(9)
     main_window.metadata_table.setColumnCount(2)
     main_window.metadata_table.setItem(0, 0, QTableWidgetItem('Patient Name'))
     main_window.metadata_table.setItem(0, 1, QTableWidgetItem(patient_name))
@@ -120,6 +134,8 @@ def parse_dicom(main_window):
     main_window.metadata_table.setItem(6, 1, QTableWidgetItem(manufacturer))
     main_window.metadata_table.setItem(7, 0, QTableWidgetItem('Model'))
     main_window.metadata_table.setItem(7, 1, QTableWidgetItem((model)))
+    main_window.metadata_table.setItem(8, 0, QTableWidgetItem('Pullback Start Frame'))
+    main_window.metadata_table.setItem(8, 1, QTableWidgetItem(str(main_window.metadata['pullback_start_frame'])))
 
     main_window.metadata_table.horizontalHeader().hide()
     main_window.metadata_table.verticalHeader().hide()
