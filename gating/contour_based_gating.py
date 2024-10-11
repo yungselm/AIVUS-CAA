@@ -119,7 +119,7 @@ class ContourBasedGating:
         return correlations
 
     def calculate_blurring_fft(self):
-        """Calculates blurring using Fast Fourier Transform. Take average of the 90% highest frequencies."""
+        """Calculates blurring using Fast Fourier Transform. Take average of the 10% highest frequencies."""
         blurring_scores = []
         for frame in self.frames:
             fft_data = np.fft.fft2(frame)
