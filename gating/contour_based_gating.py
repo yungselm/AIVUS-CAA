@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from loguru import logger
-from scipy.signal import argrelextrema
+from scipy.signal import argrelextrema, find_peaks, butter, filtfilt
 
 from gui.popup_windows.message_boxes import ErrorMessage
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
@@ -11,9 +11,14 @@ from report.report import report
 
 
 class ContourBasedGating:
-    def __init__(self, main_window):
+    def __init__(self, main_window, lowcut=0.6667, highcut=3.0, fs=30.0, order=4):
         self.main_window = main_window
         self.intramural_threshold = main_window.config.gating.intramural_threshold
+        # Filter parameters
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.fs = fs
+        self.order = order
         self.correlation = None
         self.blurring = None
         self.vertical_lines = []
@@ -99,16 +104,24 @@ class ContourBasedGating:
 
     def prepare_data(self):
         """Prepares data for plotting."""
-        self.correlation = self.normalize_data(self.calculate_correlation())
-        self.blurring = self.normalize_data(self.calculate_blurring_fft())
-        self.shortest_distance = self.normalize_data(self.shortest_distance)
-        self.vector_angle = self.normalize_data(self.vector_angle)
-        self.vector_length = self.normalize_data(self.vector_length)
-        print("Data prepared successfully")
+        # Normalize signals
+        self.correlation_nor = self.normalize_data(self.calculate_correlation())
+        self.blurring_nor = self.normalize_data(self.calculate_blurring_fft())
+        self.shortest_distance_nor = self.normalize_data(self.shortest_distance)
+        self.vector_angle_nor = self.normalize_data(self.vector_angle)
+        self.vector_length_nor = self.normalize_data(self.vector_length)
+
+        # Apply bandpass filter to each normalized signal
+        self.correlation = self.bandpass_filter(self.correlation_nor)
+        self.blurring = self.bandpass_filter(self.blurring_nor)
+        self.shortest_distance = self.bandpass_filter(self.shortest_distance_nor)
+        self.vector_angle = self.bandpass_filter(self.vector_angle_nor)
+        self.vector_length = self.bandpass_filter(self.vector_length_nor)
+
+        print("Data prepared and bandpass filtered successfully")
 
     def normalize_data(self, data):
-        shifted = data - np.min(data)
-        return shifted / np.max(shifted) if np.max(shifted) != 0 else shifted
+        return (data - np.min(data)) / np.sum(data - np.min(data))
 
     def calculate_correlation(self):
         """Calculates correlation coefficients between consecutive frames."""
@@ -132,15 +145,27 @@ class ContourBasedGating:
             blurring_scores.append(blurring_score)
         return blurring_scores
 
-    def identify_extrema(self, signal):
-        maxima_indices = argrelextrema(signal, np.greater)[0]
-        minima_indices = argrelextrema(signal, np.less)[0]
+    def bandpass_filter(self, signal):
+        """
+        Applies a Butterworth bandpass filter to the input signal using instance parameters.
 
-        # Combine maxima and minima indices into one array
-        extrema_indices = np.concatenate((maxima_indices, minima_indices))
-        extrema_indices = np.sort(extrema_indices)
+        Parameters:
+        - signal (array-like): The input signal to filter.
 
-        return extrema_indices, maxima_indices
+        Returns:
+        - filtered_signal (numpy.ndarray): The bandpass filtered signal.
+        """
+        nyquist = 0.5 * self.fs
+        low = self.lowcut / nyquist
+        high = self.highcut / nyquist
+
+        # Design Butterworth bandpass filter
+        b, a = butter(self.order, [low, high], btype='band')
+
+        # Apply filter using filtfilt for zero phase distortion
+        filtered_signal = filtfilt(b, a, signal)
+
+        return filtered_signal
 
     def combined_signal(self, signal_list, window_size=5, maxima_only=False):
         # smooth_curve for all signals
@@ -148,18 +173,16 @@ class ContourBasedGating:
         for signal in signal_list:
             smoothed_signal = self.smooth_curve(signal, window_size=window_size)
             smoothed_signals.append(smoothed_signal)
-        
-        ligned_signals = self.align_signals(smoothed_signals)
 
         # find extrema indices for all curves
         extrema_indices = []
-        for signal in ligned_signals:
+        for signal in smoothed_signals:
             if maxima_only:
                 extrema_indices.append(self.identify_extrema(signal)[1])
             else:
                 extrema_indices.append(self.identify_extrema(signal)[0])
 
-        # find variability in extrema indices
+        # find variability in extrema indices, based on assumption that heartrate is regular
         variability = []
         for extrema in extrema_indices:
             variability.append(np.std(np.diff(extrema)))
@@ -171,36 +194,61 @@ class ContourBasedGating:
         combined_signal = np.zeros(len(signal_list[0]))
         for i, signal in enumerate(signal_list):
             combined_signal += weights[i] * signal
+        
+        # if name of signal list is signal_list_max then create a combined signal with the _nor otherwise signal_list_extrema
+        combined_signal_nor = np.zeros(len(signal_list[0]))
 
-        return combined_signal
+        if maxima_only == True:
+            signal_list_max = [
+                self.correlation_nor,
+                self.blurring_nor,
+            ]
+            for i, signal in enumerate(signal_list_max):
+                combined_signal_nor += weights[i] * signal
+        else:  # for extrema
+            signal_list_extrema = [
+                self.shortest_distance_nor,
+                self.vector_angle_nor,
+                self.vector_length_nor,
+            ]
+            for i, signal in enumerate(signal_list_extrema):
+                combined_signal_nor += weights[i] * signal
 
+        return combined_signal, combined_signal_nor
+
+    def identify_extrema(self, signal):
+        # Remove NaN and infinite values from the signal
+        signal = np.nan_to_num(signal, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Dynamically calculate prominence based on the signal's characteristics
+        min_height = np.percentile(signal, 50)  # Only pick peaks above the 90th percentile
+
+        # Find maxima and minima using find_peaks with dynamic prominence
+        maxima_indices, _ = find_peaks(signal, distance=12, height=min_height)
+        minima_indices, _ = find_peaks(-signal, distance=12, height=min_height)
+
+        # Combine maxima and minima indices into one array and sort them
+        extrema_indices = np.concatenate((maxima_indices, minima_indices))
+        extrema_indices = np.sort(extrema_indices)
+
+        return extrema_indices, maxima_indices
+    
     def smooth_curve(self, signal, window_size=5):
         return np.convolve(signal, np.ones(window_size) / window_size, mode='same')
-   
-    def align_signals(self, signals):
-        reference = signals[0]
-        aligned_signals = [reference]
-        for signal in signals[1:]:
-            correlation = np.correlate(reference, signal, mode='full')
-            shift = correlation.argmax() - (len(signal) - 1)
-            aligned_signal = np.roll(signal, shift)
-            aligned_signals.append(aligned_signal)
-        return aligned_signals
 
     def plot_data(self):
         signal_list_max = [
-            self.smooth_curve(self.correlation),
-            self.smooth_curve(self.blurring),
+            self.correlation,
+            self.blurring,
         ]
 
         signal_list_extrema = [
-            self.smooth_curve(self.shortest_distance),
-            self.smooth_curve(self.vector_angle),
-            self.smooth_curve(self.vector_length),
+            self.shortest_distance,
+            self.vector_angle,
+            self.vector_length,
         ]
-
-        s_max_w5 = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-        s_extrema_w5 = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+        s_max_w5, s_max_w5_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
+        s_extrema_w5, s_extrema_w5_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
 
         mean_max_values = np.mean(s_max_w5)
         mean_extrema_values = np.mean(s_extrema_w5)
@@ -209,8 +257,32 @@ class ContourBasedGating:
 
         if factor_diff < 1:
             s_extrema_w5 = s_extrema_w5 * factor_diff
+            s_extrema_w5_nor = s_extrema_w5_nor * factor_diff
         else:
             s_max_w5 = s_max_w5 * factor_diff
+            s_max_w5_nor = s_max_w5_nor * factor_diff
+
+        # Adjust the scaling in steps of 100 frames
+        step_size = 100
+        for i in range(0, len(s_extrema_w5), step_size):
+            end_idx = min(i + step_size, len(s_extrema_w5))
+            range_extrema = np.max(s_extrema_w5[i:end_idx]) - np.min(s_extrema_w5[i:end_idx])
+            range_max = np.max(s_max_w5[i:end_idx]) - np.min(s_max_w5[i:end_idx])
+            # Scale smaller range to larger range within the step
+            if range_extrema < range_max:
+                s_extrema_w5[i:end_idx] = s_extrema_w5[i:end_idx] * (range_max / range_extrema)
+            else:
+                s_max_w5[i:end_idx] = s_max_w5[i:end_idx] * (range_extrema / range_max)
+        
+        for i in range(0, len(s_extrema_w5_nor), step_size):
+            end_idx = min(i + step_size, len(s_extrema_w5_nor))
+            range_extrema = np.max(s_extrema_w5_nor[i:end_idx]) - np.min(s_extrema_w5_nor[i:end_idx])
+            range_max = np.max(s_max_w5_nor[i:end_idx]) - np.min(s_max_w5_nor[i:end_idx])
+            # Scale smaller range to larger range within the step
+            if range_extrema < range_max:
+                s_extrema_w5_nor[i:end_idx] = s_extrema_w5_nor[i:end_idx] * (range_max / range_extrema)
+            else:
+                s_max_w5_nor[i:end_idx] = s_max_w5_nor[i:end_idx] * (range_extrema / range_max)
 
         self.fig = self.main_window.gating_display.fig
         self.fig.clear()
@@ -218,9 +290,11 @@ class ContourBasedGating:
 
         self.ax.plot(self.x, s_max_w5, color='green', label='Image based gating')
         self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Contour based gating')
-        self.ax.plot(self.x, signal_list_extrema[0], color='grey', label='_hidden')
-        self.ax.plot(self.x, signal_list_extrema[1], color='grey', label='_hidden')
-        self.ax.plot(self.x, signal_list_extrema[2], color='grey', label='_hidden')
+        self.ax.plot(self.x, self.smooth_curve(s_max_w5_nor) - .01, color='green', linestyle='dashed', label='Image based gating (unfiltered)')
+        self.ax.plot(self.x, self.smooth_curve(s_extrema_w5_nor) - .01, color='yellow', linestyle='dashed', label='Contour based gating (unfiltered)')
+        # self.ax.plot(self.x, signal_list_extrema[0] - 0.001, color='grey', label='_hidden')
+        # self.ax.plot(self.x, signal_list_extrema[1] - 0.001, color='grey', label='_hidden')
+        # self.ax.plot(self.x, signal_list_extrema[2] - 0.001, color='grey', label='_hidden')
         self.ax.set_xlabel('Frame')
         self.ax.get_yaxis().set_visible(False)
         legend = self.ax.legend(ncol=2, loc='upper right')
