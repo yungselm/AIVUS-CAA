@@ -17,6 +17,8 @@ from segmentation.save_as_nifti import save_as_nifti
 from segmentation.segment import segment
 from report.report import report
 
+from gui.popup_windows.results_plot import ResultsPlot
+
 
 def init_shortcuts(main_window):
     # General
@@ -24,6 +26,7 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('Escape'), main_window, partial(stop_all, main_window))
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
+    QShortcut(QKeySequence('Ctrl+P'), main_window, partial(plot_results, main_window))
     # Traverse frames
     QShortcut(QKeySequence('W'), main_window, main_window.display_slider.next_gated_frame)
     QShortcut(QKeySequence(Qt.Key_Up), main_window, main_window.display_slider.next_gated_frame)
@@ -211,3 +214,9 @@ def toggle_color(main_window):
     if main_window.image_displayed:
         main_window.colormap_enabled = not main_window.colormap_enabled
         main_window.display.display_image(update_image=True)
+
+def plot_results(main_window):
+    logger.info('Plot results called')
+    if main_window.image_displayed:
+        results_plot = ResultsPlot(main_window)
+        results_plot.show()
