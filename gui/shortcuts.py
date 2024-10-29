@@ -147,8 +147,14 @@ def switch_phases(main_window):
                     main_window.gated_frames_dia.append(frame)
                     main_window.diastolic_frame_box.setChecked(True)
                     main_window.systolic_frame_box.setChecked(False)
+
             main_window.gated_frames = main_window.gated_frames_dia + main_window.gated_frames_sys
             main_window.status_bar.showMessage(main_window.waiting_status)
+            
+            # Call draw_existing_lines on the ContourBasedGating instance
+            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_dia, main_window.diastole_color_plt)
+            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_sys, main_window.systole_color_plt)
+            
             main_window.display.update_display()
     logger.info('Switch phases called')
 
