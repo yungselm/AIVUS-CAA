@@ -405,7 +405,7 @@ class ContourBasedGating:
     
     def automatic_gating(self, maxima_signal, extrema_signal, threshold=5):
         # Identify local maxima and minima
-        maxima_indices = self.identify_extrema(maxima_signal)[1]
+        maxima_indices = self.identify_extrema(maxima_signal)[0]
         extrema_indices = list(self.identify_extrema(extrema_signal)[0])  # Convert to list to allow removals
 
         gated_indices = []
@@ -433,7 +433,12 @@ class ContourBasedGating:
         else:
             self.main_window.gated_frames_dia = second_half
             self.main_window.gated_frames_sys = first_half
-
+            
+        for frame in self.main_window.gated_frames_dia:
+            self.main_window.data['phases'][frame] = 'D'
+        for frame in self.main_window.gated_frames_sys:
+            self.main_window.data['phases'][frame] = 'S'
+        
     def on_click(self, event):
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
             return
@@ -514,31 +519,6 @@ class ContourBasedGating:
             self.frame_marker[0].remove()
         self.frame_marker = self.ax.plot(frame + 1, self.ax.get_ylim()[0], 'yo', clip_on=False)
         plt.draw()
-
-    def plot_results(self):
-        # Plot frame on x-axis and elliptic ratio and lumen area on y-axis
-        _, ax = plt.subplots()
-        ax.plot(self.report_data['frame'], self.elliptic_ratio_smoothed, label='Elliptic Ratio')
-        ax.plot(self.report_data['frame'], self.lumen_area_smoothed, label='Lumen area (mm²)')
-        ax.plot(self.report_data['frame'], self.vector_smoothed, label='Vector')
-        ax.plot(self.report_data['frame'], self.signal_systole, label='Signal Systole')
-        ax.plot(self.report_data['frame'], self.signal_diastole, label='Signal Diastole')
-        ax.set_xlabel('Frame')
-        ax.set_ylabel('Elliptic Ratio, Lumen area (mm²), and Signal')
-        ax.set_title('Elliptic Ratio, Lumen area (mm²), and Signal by Frame')
-        ax.legend()
-
-        # find frames corresponding to row in self.systolic_indices and self.diastolic_indices
-        frames_systole = self.report_data.loc[self.systolic_indices_plot, 'frame'].tolist()
-        frames_diastole = self.report_data.loc[self.diastolic_indices_plot, 'frame'].tolist()
-        signal_systole = [self.signal_systole[frame] for frame in self.systolic_indices_plot]
-        signal_diastole = [self.signal_diastole[frame] for frame in self.diastolic_indices_plot]
-
-        # Scatter plot for 'S' (local maxima) and 'D' (local minima)
-        ax.scatter(frames_systole, signal_systole, color='red', marker='o', label='S')
-        ax.scatter(frames_diastole, signal_diastole, color='blue', marker='o', label='D')
-
-        plt.show()
 
     def draw_existing_lines(self, frames, color):
         frames = [frame for frame in frames if frame in (self.x - 1)]  # remove frames outside of user-defined range
