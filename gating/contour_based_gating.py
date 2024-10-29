@@ -166,6 +166,22 @@ class ContourBasedGating:
         filtered_signal = filtfilt(b, a, signal)
 
         return filtered_signal
+    
+    # def test_plot(self, raw_signals, smoothed_signals, extrema_indices):
+    #     # function that plots signals not smoothed, signals smoothed and extrema
+    #     fig, ax = plt.subplots(2, 1, figsize=(10, 10))
+    #     for i, signal in enumerate(raw_signals):
+    #         ax[0].plot(signal, label=f'Raw signal {i + 1}')
+    #     for i, signal in enumerate(smoothed_signals):
+    #         ax[1].plot(signal, label=f'Smoothed signal {i + 1}')
+    #     for i, extrema in enumerate(extrema_indices):
+    #         ax[1].plot(extrema, smoothed_signals[i][extrema], 'x', label=f'Extrema {i + 1}')
+    #     ax[0].set_title('Raw signals')
+    #     ax[1].set_title('Smoothed signals')
+    #     ax[0].legend()
+    #     ax[1].legend()
+    #     # save plot in testing folder
+    #     plt.savefig('testing/combined_signal.png')
 
     def combined_signal(self, signal_list, window_size=5, maxima_only=False):
         # smooth_curve for all signals
@@ -181,6 +197,8 @@ class ContourBasedGating:
                 extrema_indices.append(self.identify_extrema(signal)[1])
             else:
                 extrema_indices.append(self.identify_extrema(signal)[0])
+
+        # self.test_plot(signal_list, smoothed_signals, extrema_indices)
 
         # find variability in extrema indices, based on assumption that heartrate is regular
         variability = []
@@ -304,13 +322,117 @@ class ContourBasedGating:
         plt.connect('motion_notify_event', self.on_motion)
         plt.connect('button_release_event', self.on_release)
 
-        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
-        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+        # Draw lines
+        if not self.main_window.gated_frames_dia and not self.main_window.gated_frames_sys:
+            self.automatic_gating(s_max_w5, s_extrema_w5)
+            self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+            self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+        else:
+            self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+            self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
 
         plt.tight_layout()
         plt.draw()
 
         return True
+
+    # def plot_data(self):
+    #     signal_list_max = [self.correlation, self.blurring]
+    #     signal_list_extrema = [self.shortest_distance, self.vector_angle, self.vector_length]
+
+    #     # Calculate combined signals with window size 5
+    #     s_max_w5, s_max_w5_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
+    #     s_extrema_w5, s_extrema_w5_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+
+    #     # Adjust scaling between max and extrema signals
+    #     mean_max_values = np.mean(s_max_w5)
+    #     mean_extrema_values = np.mean(s_extrema_w5)
+    #     factor_diff = mean_max_values / mean_extrema_values
+    #     mean_max_values_nor = np.mean(s_max_w5_nor)
+    #     mean_extrema_values_nor = np.mean(s_extrema_w5_nor)
+    #     factor_diff_nor = mean_max_values_nor / mean_extrema_values_nor
+
+    #     if factor_diff < 1:
+    #         s_extrema_w5 *= factor_diff
+    #         s_extrema_w5_nor *= factor_diff_nor
+    #     else:
+    #         s_max_w5 *= factor_diff
+    #         s_max_w5_nor *= factor_diff_nor
+
+    #     # Step scaling adjustment for smoothing
+    #     step_size = 100
+    #     for i in range(0, len(s_extrema_w5), step_size):
+    #         end_idx = min(i + step_size, len(s_extrema_w5))
+    #         range_extrema = np.max(s_extrema_w5[i:end_idx]) - np.min(s_extrema_w5[i:end_idx])
+    #         range_max = np.max(s_max_w5[i:end_idx]) - np.min(s_max_w5[i:end_idx])
+    #         scale_factor = range_max / range_extrema if range_extrema < range_max else range_extrema / range_max
+    #         s_extrema_w5[i:end_idx] *= scale_factor
+    #         s_max_w5[i:end_idx] *= scale_factor
+
+    #     # Plot the signals
+    #     self.fig = self.main_window.gating_display.fig
+    #     self.fig.clear()
+    #     self.ax = self.fig.add_subplot()
+
+    #     self.ax.plot(self.x, s_max_w5, color='green', label='Image based gating')
+    #     self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Contour based gating')
+    #     self.ax.plot(self.x, s_max_w5_nor, color='green', linestyle='dashed', label='Image based gating (unfiltered)')
+    #     self.ax.plot(self.x, s_extrema_w5_nor, color='yellow', linestyle='dashed', label='Contour based gating (unfiltered)')
+
+    #     # Additional setup for plot
+    #     self.ax.set_xlabel('Frame')
+    #     self.ax.get_yaxis().set_visible(False)
+    #     legend = self.ax.legend(ncol=2, loc='upper right')
+    #     legend.set_draggable(True)
+
+    #     plt.connect('button_press_event', self.on_click)
+    #     plt.connect('motion_notify_event', self.on_motion)
+    #     plt.connect('button_release_event', self.on_release)
+        
+    #     # Draw lines
+    #     if not self.main_window.gated_frames_dia and not self.main_window.gated_frames_sys:
+    #         self.automatic_gating(s_max_w5, s_extrema_w5)
+    #         self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+    #         self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+    #     else:
+    #         self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+    #         self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+
+    #     plt.tight_layout()
+    #     plt.draw()
+
+    #     return True
+    
+    def automatic_gating(self, maxima_signal, extrema_signal, threshold=5):
+        # Identify local maxima and minima
+        maxima_indices = self.identify_extrema(maxima_signal)[1]
+        extrema_indices = list(self.identify_extrema(extrema_signal)[0])  # Convert to list to allow removals
+
+        gated_indices = []
+
+        # Check for all indices in maxima and extrema if they are not more than 5 frames apart
+        for maxima in maxima_indices:
+            close_extrema = [extrema for extrema in extrema_indices if abs(maxima - extrema) <= threshold]
+            
+            if close_extrema:
+                # Select the first valid extrema that is within the threshold distance
+                closest_extrema = close_extrema[0]
+                gated_indices.append(round((maxima + closest_extrema) / 2))
+                extrema_indices.remove(closest_extrema)  # Remove to avoid duplicate gating
+
+        # Split by every second frame, diastole frames are where lumen_area is greater in sum than the other half
+        first_half = gated_indices[::2]
+        second_half = gated_indices[1::2]
+
+        sum_first_half = sum([self.report_data.loc[self.report_data['frame'] == frame, 'lumen_area'].values[0] for frame in first_half])
+        sum_second_half = sum([self.report_data.loc[self.report_data['frame'] == frame, 'lumen_area'].values[0] for frame in second_half])
+
+        if sum_first_half > sum_second_half:
+            self.main_window.gated_frames_dia = first_half
+            self.main_window.gated_frames_sys = second_half
+        else:
+            self.main_window.gated_frames_dia = second_half
+            self.main_window.gated_frames_sys = first_half
 
     def on_click(self, event):
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
