@@ -16,6 +16,7 @@ class ResultsPlot(QMainWindow):
         super().__init__(main_window)
         self.main_window = main_window
         self.pullback_speed = main_window.metadata.get('pullback_speed', 1)
+        self.pullback_start_frame = main_window.metadata.get('pullback_start_frame', 0)
         self.report_data = report(main_window, suppress_messages=True)
         
         if self.report_data is None:
@@ -32,12 +33,12 @@ class ResultsPlot(QMainWindow):
     def plot_results(self):
         logger.info('Plotting results')
         self.scene.clear()
-        self.scene.setSceneRect(0, 0, 1000, 800)
+        self.scene.setSceneRect(0, 0, 1000, 1000)
 
         df = self.prep_data()
 
-        # Create a matplotlib figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+        # Create a matplotlib figure with two subplots and increased vertical space
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'hspace': 0.4})
 
         # Plot lumen area by phase
         for phase, group in df.groupby('phase'):
@@ -49,6 +50,14 @@ class ResultsPlot(QMainWindow):
         ax1.set_ylabel('Lumen Area (mm²)')
         ax1.set_title('Lumen Area vs Distance by Phase')
         ax1.legend()
+        ax1.invert_xaxis()  # Invert the x-axis to start x=0 on the right side
+
+        # Add a second x-axis for frames
+        ax1_frames = ax1.twiny()
+        ax1_frames.set_xlim(ax1.get_xlim())
+        ax1_frames.set_xticks(group['distance'][::5])  # Keep every 5th frame
+        ax1_frames.set_xticklabels(group['frame'][::5])
+        ax1_frames.set_xlabel('Frames')
 
         # Plot elliptic ratio by phase
         for phase, group in df.groupby('phase'):
@@ -60,6 +69,14 @@ class ResultsPlot(QMainWindow):
         ax2.set_ylabel('Elliptic Ratio')
         ax2.set_title('Elliptic Ratio vs Distance by Phase')
         ax2.legend()
+        ax2.invert_xaxis()  # Invert the x-axis to start x=0 on the right side
+
+        # Add a second x-axis for frames
+        ax2_frames = ax2.twiny()
+        ax2_frames.set_xlim(ax2.get_xlim())
+        ax2_frames.set_xticks(group['distance'][::5])  # Keep every 5th frame
+        ax2_frames.set_xticklabels(group['frame'][::5])
+        ax2_frames.set_xlabel('Frames')
 
         # Save the plot to a QImage
         fig.canvas.draw()
@@ -72,6 +89,8 @@ class ResultsPlot(QMainWindow):
     def prep_data(self):
         # Filter to keep only 'phase' != '-'
         df = self.report_data[self.report_data['phase'] != '-'].copy()  # Use copy to avoid warnings
+        # drop every row with 'frame' < pullback_start_frame
+        df = df[df['frame'] >= self.pullback_start_frame].copy()
 
         df_dia = df[df['phase'] == 'D'].copy()  # Ensure a copy
         df_sys = df[df['phase'] == 'S'].copy()  # Ensure a copy

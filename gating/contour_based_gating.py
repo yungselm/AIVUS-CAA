@@ -265,51 +265,51 @@ class ContourBasedGating:
             self.vector_angle,
             self.vector_length,
         ]
-        s_max_w5, s_max_w5_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-        s_extrema_w5, s_extrema_w5_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+        signal_maxima, signal_maxima_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
+        signal_extrema, signal_extrema_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
 
-        mean_max_values = np.mean(s_max_w5)
-        mean_extrema_values = np.mean(s_extrema_w5)
+        mean_max_values = np.mean(signal_maxima)
+        mean_extrema_values = np.mean(signal_extrema)
 
         factor_diff = mean_max_values / mean_extrema_values
 
         if factor_diff < 1:
-            s_extrema_w5 = s_extrema_w5 * factor_diff
-            s_extrema_w5_nor = s_extrema_w5_nor * factor_diff
+            signal_extrema = signal_extrema * factor_diff
+            signal_extrema_nor = signal_extrema_nor * factor_diff
         else:
-            s_max_w5 = s_max_w5 * factor_diff
-            s_max_w5_nor = s_max_w5_nor * factor_diff
+            signal_maxima = signal_maxima * factor_diff
+            signal_maxima_nor = signal_maxima_nor * factor_diff
 
         # Adjust the scaling in steps of 100 frames
         step_size = 100
-        for i in range(0, len(s_extrema_w5), step_size):
-            end_idx = min(i + step_size, len(s_extrema_w5))
-            range_extrema = np.max(s_extrema_w5[i:end_idx]) - np.min(s_extrema_w5[i:end_idx])
-            range_max = np.max(s_max_w5[i:end_idx]) - np.min(s_max_w5[i:end_idx])
+        for i in range(0, len(signal_extrema), step_size):
+            end_idx = min(i + step_size, len(signal_extrema))
+            range_extrema = np.max(signal_extrema[i:end_idx]) - np.min(signal_extrema[i:end_idx])
+            range_max = np.max(signal_maxima[i:end_idx]) - np.min(signal_maxima[i:end_idx])
             # Scale smaller range to larger range within the step
             if range_extrema < range_max:
-                s_extrema_w5[i:end_idx] = s_extrema_w5[i:end_idx] * (range_max / range_extrema)
+                signal_extrema[i:end_idx] = signal_extrema[i:end_idx] * (range_max / range_extrema)
             else:
-                s_max_w5[i:end_idx] = s_max_w5[i:end_idx] * (range_extrema / range_max)
+                signal_maxima[i:end_idx] = signal_maxima[i:end_idx] * (range_extrema / range_max)
         
-        for i in range(0, len(s_extrema_w5_nor), step_size):
-            end_idx = min(i + step_size, len(s_extrema_w5_nor))
-            range_extrema = np.max(s_extrema_w5_nor[i:end_idx]) - np.min(s_extrema_w5_nor[i:end_idx])
-            range_max = np.max(s_max_w5_nor[i:end_idx]) - np.min(s_max_w5_nor[i:end_idx])
+        for i in range(0, len(signal_extrema_nor), step_size):
+            end_idx = min(i + step_size, len(signal_extrema_nor))
+            range_extrema = np.max(signal_extrema_nor[i:end_idx]) - np.min(signal_extrema_nor[i:end_idx])
+            range_max = np.max(signal_maxima_nor[i:end_idx]) - np.min(signal_maxima_nor[i:end_idx])
             # Scale smaller range to larger range within the step
             if range_extrema < range_max:
-                s_extrema_w5_nor[i:end_idx] = s_extrema_w5_nor[i:end_idx] * (range_max / range_extrema)
+                signal_extrema_nor[i:end_idx] = signal_extrema_nor[i:end_idx] * (range_max / range_extrema)
             else:
-                s_max_w5_nor[i:end_idx] = s_max_w5_nor[i:end_idx] * (range_extrema / range_max)
+                signal_maxima_nor[i:end_idx] = signal_maxima_nor[i:end_idx] * (range_extrema / range_max)
 
         self.fig = self.main_window.gating_display.fig
         self.fig.clear()
         self.ax = self.fig.add_subplot()
 
-        self.ax.plot(self.x, s_max_w5, color='green', label='Image based gating')
-        self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Contour based gating')
-        self.ax.plot(self.x, self.smooth_curve(s_max_w5_nor) - .01, color='green', linestyle='dashed', label='Image based gating (unfiltered)')
-        self.ax.plot(self.x, self.smooth_curve(s_extrema_w5_nor) - .01, color='yellow', linestyle='dashed', label='Contour based gating (unfiltered)')
+        self.ax.plot(self.x, signal_maxima, color='green', label='Image based gating')
+        self.ax.plot(self.x, signal_extrema, color='yellow', label='Contour based gating')
+        self.ax.plot(self.x, self.smooth_curve(signal_maxima_nor) - .01, color='green', linestyle='dashed', label='Image based gating (unfiltered)')
+        self.ax.plot(self.x, self.smooth_curve(signal_extrema_nor) - .01, color='yellow', linestyle='dashed', label='Contour based gating (unfiltered)')
         # self.ax.plot(self.x, signal_list_extrema[0] - 0.001, color='grey', label='_hidden')
         # self.ax.plot(self.x, signal_list_extrema[1] - 0.001, color='grey', label='_hidden')
         # self.ax.plot(self.x, signal_list_extrema[2] - 0.001, color='grey', label='_hidden')
@@ -324,15 +324,18 @@ class ContourBasedGating:
 
         # Draw lines
         if not self.main_window.gated_frames_dia and not self.main_window.gated_frames_sys:
-            self.automatic_gating(s_max_w5, s_extrema_w5)
+            self.automatic_gating(signal_maxima, signal_extrema)
             self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
             self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
         else:
             self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
             self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
-
-        plt.tight_layout()
-        plt.draw()
+        
+        try:
+            plt.tight_layout()
+            plt.draw()
+        except:
+            plt.draw()
 
         return True
 
@@ -341,43 +344,43 @@ class ContourBasedGating:
     #     signal_list_extrema = [self.shortest_distance, self.vector_angle, self.vector_length]
 
     #     # Calculate combined signals with window size 5
-    #     s_max_w5, s_max_w5_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-    #     s_extrema_w5, s_extrema_w5_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+    #     signal_maxima, signal_maxima_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
+    #     signal_extrema, signal_extrema_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
 
     #     # Adjust scaling between max and extrema signals
-    #     mean_max_values = np.mean(s_max_w5)
-    #     mean_extrema_values = np.mean(s_extrema_w5)
+    #     mean_max_values = np.mean(signal_maxima)
+    #     mean_extrema_values = np.mean(signal_extrema)
     #     factor_diff = mean_max_values / mean_extrema_values
-    #     mean_max_values_nor = np.mean(s_max_w5_nor)
-    #     mean_extrema_values_nor = np.mean(s_extrema_w5_nor)
+    #     mean_max_values_nor = np.mean(signal_maxima_nor)
+    #     mean_extrema_values_nor = np.mean(signal_extrema_nor)
     #     factor_diff_nor = mean_max_values_nor / mean_extrema_values_nor
 
     #     if factor_diff < 1:
-    #         s_extrema_w5 *= factor_diff
-    #         s_extrema_w5_nor *= factor_diff_nor
+    #         signal_extrema *= factor_diff
+    #         signal_extrema_nor *= factor_diff_nor
     #     else:
-    #         s_max_w5 *= factor_diff
-    #         s_max_w5_nor *= factor_diff_nor
+    #         signal_maxima *= factor_diff
+    #         signal_maxima_nor *= factor_diff_nor
 
     #     # Step scaling adjustment for smoothing
     #     step_size = 100
-    #     for i in range(0, len(s_extrema_w5), step_size):
-    #         end_idx = min(i + step_size, len(s_extrema_w5))
-    #         range_extrema = np.max(s_extrema_w5[i:end_idx]) - np.min(s_extrema_w5[i:end_idx])
-    #         range_max = np.max(s_max_w5[i:end_idx]) - np.min(s_max_w5[i:end_idx])
+    #     for i in range(0, len(signal_extrema), step_size):
+    #         end_idx = min(i + step_size, len(signal_extrema))
+    #         range_extrema = np.max(signal_extrema[i:end_idx]) - np.min(signal_extrema[i:end_idx])
+    #         range_max = np.max(signal_maxima[i:end_idx]) - np.min(signal_maxima[i:end_idx])
     #         scale_factor = range_max / range_extrema if range_extrema < range_max else range_extrema / range_max
-    #         s_extrema_w5[i:end_idx] *= scale_factor
-    #         s_max_w5[i:end_idx] *= scale_factor
+    #         signal_extrema[i:end_idx] *= scale_factor
+    #         signal_maxima[i:end_idx] *= scale_factor
 
     #     # Plot the signals
     #     self.fig = self.main_window.gating_display.fig
     #     self.fig.clear()
     #     self.ax = self.fig.add_subplot()
 
-    #     self.ax.plot(self.x, s_max_w5, color='green', label='Image based gating')
-    #     self.ax.plot(self.x, s_extrema_w5, color='yellow', label='Contour based gating')
-    #     self.ax.plot(self.x, s_max_w5_nor, color='green', linestyle='dashed', label='Image based gating (unfiltered)')
-    #     self.ax.plot(self.x, s_extrema_w5_nor, color='yellow', linestyle='dashed', label='Contour based gating (unfiltered)')
+    #     self.ax.plot(self.x, signal_maxima, color='green', label='Image based gating')
+    #     self.ax.plot(self.x, signal_extrema, color='yellow', label='Contour based gating')
+    #     self.ax.plot(self.x, signal_maxima_nor, color='green', linestyle='dashed', label='Image based gating (unfiltered)')
+    #     self.ax.plot(self.x, signal_extrema_nor, color='yellow', linestyle='dashed', label='Contour based gating (unfiltered)')
 
     #     # Additional setup for plot
     #     self.ax.set_xlabel('Frame')
@@ -391,7 +394,7 @@ class ContourBasedGating:
         
     #     # Draw lines
     #     if not self.main_window.gated_frames_dia and not self.main_window.gated_frames_sys:
-    #         self.automatic_gating(s_max_w5, s_extrema_w5)
+    #         self.automatic_gating(signal_maxima, signal_extrema)
     #         self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
     #         self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
     #     else:
@@ -433,7 +436,7 @@ class ContourBasedGating:
         else:
             self.main_window.gated_frames_dia = second_half
             self.main_window.gated_frames_sys = first_half
-            
+
         for frame in self.main_window.gated_frames_dia:
             self.main_window.data['phases'][frame] = 'D'
         for frame in self.main_window.gated_frames_sys:

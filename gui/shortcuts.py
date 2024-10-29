@@ -26,7 +26,10 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('Escape'), main_window, partial(stop_all, main_window))
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
-    QShortcut(QKeySequence('Ctrl+P'), main_window, partial(plot_results, main_window))
+    # Gating
+    QShortcut(QKeySequence('Alt+P'), main_window, partial(plot_results, main_window))
+    QShortcut(QKeySequence('Alt+Delete'), main_window, partial(reset_phases, main_window))
+    QShortcut(QKeySequence('Alt+S'), main_window, partial(switch_phases, main_window))
     # Traverse frames
     QShortcut(QKeySequence('W'), main_window, main_window.display_slider.next_gated_frame)
     QShortcut(QKeySequence(Qt.Key_Up), main_window, main_window.display_slider.next_gated_frame)
@@ -125,6 +128,31 @@ def reset_phases(main_window):
         main_window.display.update_display()
 
 
+def switch_phases(main_window):
+    if main_window.image_displayed:
+        dialog = FrameRangeDialog(main_window)
+        if dialog.exec_():
+            main_window.status_bar.showMessage('Switching phases...')
+            lower_limit, upper_limit = dialog.getInputs()
+            for frame in range(lower_limit, upper_limit):
+                if main_window.data['phases'][frame] == 'D':
+                    main_window.data['phases'][frame] = 'S'
+                    main_window.gated_frames_dia.remove(frame)
+                    main_window.gated_frames_sys.append(frame)
+                    main_window.diastolic_frame_box.setChecked(False)
+                    main_window.systolic_frame_box.setChecked(True)
+                elif main_window.data['phases'][frame] == 'S':
+                    main_window.data['phases'][frame] = 'D'
+                    main_window.gated_frames_sys.remove(frame)
+                    main_window.gated_frames_dia.append(frame)
+                    main_window.diastolic_frame_box.setChecked(True)
+                    main_window.systolic_frame_box.setChecked(False)
+            main_window.gated_frames = main_window.gated_frames_dia + main_window.gated_frames_sys
+            main_window.status_bar.showMessage(main_window.waiting_status)
+            main_window.display.update_display()
+    logger.info('Switch phases called')
+
+
 def show_metadata(main_window):
     if main_window.image_displayed:
         metadata_window = MetadataWindow(main_window)
@@ -214,6 +242,7 @@ def toggle_color(main_window):
     if main_window.image_displayed:
         main_window.colormap_enabled = not main_window.colormap_enabled
         main_window.display.display_image(update_image=True)
+
 
 def plot_results(main_window):
     logger.info('Plot results called')
