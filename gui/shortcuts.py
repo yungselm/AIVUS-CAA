@@ -149,14 +149,19 @@ def switch_phases(main_window):
                     main_window.systolic_frame_box.setChecked(False)
 
             main_window.gated_frames = main_window.gated_frames_dia + main_window.gated_frames_sys
-            main_window.status_bar.showMessage(main_window.waiting_status)
-            
-            # Call draw_existing_lines on the ContourBasedGating instance
-            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_dia, main_window.diastole_color_plt)
-            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_sys, main_window.systole_color_plt)
-            
-            main_window.display.update_display()
-    logger.info('Switch phases called')
+        
+        # order all gated frames again, important otherwise slider will jump around
+        main_window.gated_frames.sort()
+        main_window.gated_frames_dia.sort()
+        main_window.gated_frames_sys.sort()
+        main_window.status_bar.showMessage(main_window.waiting_status)
+        
+        # Call draw_existing_lines on the ContourBasedGating instance, but first remove all existing lines to live update plot
+        main_window.contour_based_gating.remove_lines()
+        main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_dia, main_window.diastole_color_plt)
+        main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_sys, main_window.systole_color_plt)
+        
+        main_window.display.update_display()
 
 
 def show_metadata(main_window):
