@@ -12,17 +12,12 @@ from report.report import report
 
 
 class ResultsPlot(QMainWindow):
-    def __init__(self, main_window):
+    def __init__(self, main_window, report_data):
         super().__init__(main_window)
         self.main_window = main_window
+        self.report_data = report_data
         self.pullback_speed = main_window.metadata.get('pullback_speed', 1)
         self.pullback_start_frame = main_window.metadata.get('pullback_start_frame', 0)
-        self.report_data = report(main_window, suppress_messages=True)
-        
-        if self.report_data is None:
-            logger.error('No report data available to plot')
-            self.close()  # Close the window if there's no data
-            return
         
         self.setWindowTitle('Results Plot')
         self.scene = QGraphicsScene()

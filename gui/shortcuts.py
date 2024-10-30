@@ -258,5 +258,9 @@ def toggle_color(main_window):
 def plot_results(main_window):
     logger.info('Plot results called')
     if main_window.image_displayed:
-        results_plot = ResultsPlot(main_window)
+        report_data = report(main_window, suppress_messages=True)
+        if report_data is None:
+            logger.error('No report data available to plot')
+            return
+        results_plot = ResultsPlot(main_window, report_data)
         results_plot.show()
