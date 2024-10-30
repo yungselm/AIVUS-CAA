@@ -92,7 +92,7 @@ In the current state, these cannot be changed by the user (at least not without 
 - Press <kbd>Ctrl</kbd> + <kbd>Q</kbd> to close the program
 - Press <kbd>Alt</kbd> + <kbd>P</kbd> to plot the results for gated frames (difference area systole and diastole, by distance)
 - Press <kbd>Alt</kbd> + <kbd>Delete</kbd> to define a range of frames to remove gating
-- Press <kbd>Alt</kbd> + <kbd>S</kbd> to define a range of frames to switcht systole and diastole in gated frames
+- Press <kbd>Alt</kbd> + <kbd>S</kbd> to define a range of frames to switch systole and diastole in gated frames
 
 ## Acknowledgements
 
