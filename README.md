@@ -1,5 +1,5 @@
 
-# AAOCA Segmentation Tool <!-- omit in toc -->
+# NIVA (Neo-IntraVascular AAOCA assessment) <!-- omit in toc -->
 
 ## Table of contents <!-- omit in toc -->
 
@@ -25,7 +25,7 @@
 
 If you plan on using GPU acceleration for model training and inference, make sure to install the required tools (NVIDIA toolkit, etc.) and the corresponding version of Tensorflow.
 
-### Creating an executable file
+### Creating an executable file (**optional**)
 
 In case you prefer a single executable file instead of running the application from the terminal or an IDE, you can follow these steps to generate an executable for **the OS you are executing the command on**, i.e. if you run this in a Linux environment, you will create an executable for Linux.\
 First, you need to install the application on your system (e.g. with the commands above on Linux) and ensure it is properly set up and can be run.\
