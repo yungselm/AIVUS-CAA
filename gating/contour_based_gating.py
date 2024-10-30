@@ -422,7 +422,7 @@ class ContourBasedGating:
         if self.fig.canvas.cursor().shape() != 0:  # zooming or panning mode
             return
         if event.button is MouseButton.LEFT and self.selected_line:
-            self.selected_line.set_xdata(event.xdata)
+            self.selected_line.set_xdata(np.array([event.xdata]))
             if event.xdata is not None:
                 self.main_window.display_slider.set_value(
                     round(event.xdata - 1), reset_highlights=False
