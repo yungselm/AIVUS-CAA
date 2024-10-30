@@ -52,7 +52,7 @@ class ResultsPlot(QMainWindow):
             ax1.plot(group['distance'], smoothed_area, label=f'Lumen Area - Phase {phase}')
             ax1.scatter(group['distance'], group['lumen_area'], alpha=0.3)
 
-            # Find the minimum lumen area
+            # Find the minimum lumen area across all phases
             phase_min_lumen_area = group['lumen_area'].min()
             if phase_min_lumen_area < min_lumen_area:
                 min_lumen_area = phase_min_lumen_area
@@ -60,17 +60,21 @@ class ResultsPlot(QMainWindow):
                 min_lumen_area_distance = group.loc[group['lumen_area'].idxmin(), 'distance']
                 min_lumen_area_frame = group.loc[group['lumen_area'].idxmin(), 'frame']
 
-            # Highlight the lumen_area at distance 0
+            # Define colors based on phase
+            ostial_color = '#008b8b' if phase == 'D' else '#ff6f00'
+            min_area_color = '#0055ff'
+
+            # Highlight the lumen_area at distance 0 for ostial area
             ostial_lumen_area = group.loc[group['distance'] == 0, 'lumen_area'].values
             if len(ostial_lumen_area) > 0:
-                ax1.scatter(0, ostial_lumen_area[0], color='red', zorder=5)
-                ax1.text(0, ostial_lumen_area[0], f'{ostial_lumen_area[0]:.2f} ({group.loc[group["distance"] == 0, "frame"].values[0]})', color='red')
+                ax1.scatter(0, ostial_lumen_area[0], color=ostial_color, zorder=5)
+                ax1.text(0, ostial_lumen_area[0], f'{ostial_lumen_area[0]:.2f} ({group.loc[group["distance"] == 0, "frame"].values[0]})', color=ostial_color)
 
-        # Highlight the smallest lumen area
+        # Highlight the smallest lumen area with a specific color
         if min_lumen_area_value is not None and min_lumen_area_distance is not None:
-            ax1.scatter(min_lumen_area_distance, min_lumen_area_value, color='blue', zorder=5)
-            ax1.text(min_lumen_area_distance, min_lumen_area_value, f'{min_lumen_area_value:.2f} ({min_lumen_area_frame})', color='blue')
-        
+            ax1.scatter(min_lumen_area_distance, min_lumen_area_value, color=min_area_color, zorder=5)
+            ax1.text(min_lumen_area_distance, min_lumen_area_value, f'{min_lumen_area_value:.2f} ({min_lumen_area_frame})', color=min_area_color)
+            
         ax1.set_xlabel('Distance (mm)')
         ax1.set_ylabel('Lumen Area (mm²)')
         ax1.set_title('Lumen Area vs Distance by Phase')
@@ -90,7 +94,7 @@ class ResultsPlot(QMainWindow):
             smoothed_ratio = gaussian_filter1d(group['elliptic_ratio'], sigma=2)  # Adjust sigma for smoothing
             ax2.plot(group['distance'], smoothed_ratio, label=f'Elliptic Ratio - Phase {phase}')
             ax2.scatter(group['distance'], group['elliptic_ratio'], alpha=0.3)
-        
+            
         ax2.set_xlabel('Distance (mm)')
         ax2.set_ylabel('Elliptic Ratio')
         ax2.set_title('Elliptic Ratio vs Distance by Phase')
