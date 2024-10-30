@@ -73,14 +73,13 @@ class ResultsPlot(QMainWindow):
         ax1.set_xlabel('Distance (mm)')
         ax1.set_ylabel('Lumen Area (mm²)')
         ax1.set_title('Lumen Area vs Distance by Phase')
-        ax1.legend()
         ax1.invert_xaxis()  # Invert the x-axis to start x=0 on the right side
 
         # Add a second x-axis for frames
         ax1_frames = ax1.twiny()
         ax1_frames.set_xlim(ax1.get_xlim())
-        ax1_frames.set_xticks(group['distance'][::5])  # Keep every 5th frame
-        ax1_frames.set_xticklabels(group['frame'][::5])
+        ax1_frames.set_xticks(df['distance'][::5])  # Keep every 5th frame
+        ax1_frames.set_xticklabels(df['frame'][::5])
         ax1_frames.set_xlabel('Frames')
 
         # Plot elliptic ratio by phase
@@ -93,14 +92,13 @@ class ResultsPlot(QMainWindow):
         ax2.set_xlabel('Distance (mm)')
         ax2.set_ylabel('Elliptic Ratio')
         ax2.set_title('Elliptic Ratio vs Distance by Phase')
-        ax2.legend()
         ax2.invert_xaxis()  # Invert the x-axis to start x=0 on the right side
 
         # Add a second x-axis for frames
         ax2_frames = ax2.twiny()
         ax2_frames.set_xlim(ax2.get_xlim())
-        ax2_frames.set_xticks(group['distance'][::5])  # Keep every 5th frame
-        ax2_frames.set_xticklabels(group['frame'][::5])
+        ax2_frames.set_xticks(df['distance'][::5])  # Keep every 5th frame
+        ax2_frames.set_xticklabels(df['frame'][::5])
         ax2_frames.set_xlabel('Frames')
 
         # Save the plot to a QImage
