@@ -3,6 +3,7 @@ name = "AAOCASeg"
 version = "0.3.0"
 description = ""
 authors = ["yungselm", "cardionaut"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "3.10.12"
