@@ -13,14 +13,20 @@ import warnings
 
 
 class ContourBasedGating:
-    def __init__(self, main_window, lowcut=0.6667, highcut=3.0, fs=30.0, order=4):
+    def __init__(self, main_window):
         self.main_window = main_window
         self.intramural_threshold = main_window.config.gating.intramural_threshold
         # Filter parameters
-        self.lowcut = lowcut
-        self.highcut = highcut
-        self.fs = fs
-        self.order = order
+        self.lowcut = main_window.config.gating.lowcut
+        self.highcut = main_window.config.gating.highcut
+        self.order = main_window.config.gating.order
+        # All other parameters
+        self.window_size = main_window.config.gating.window_size
+        self.min_height_percentile = main_window.config.gating.min_height_percentile
+        self.distance = main_window.config.gating.min_distance
+        self.auto_gating_threshold = main_window.config.gating.auto_gating_threshold
+        self.both_extrema = main_window.config.gating.both_extrema
+        # signals
         self.correlation = None
         self.blurring = None
         self.vertical_lines = []
@@ -40,13 +46,13 @@ class ContourBasedGating:
         if not dialog_success:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
+        self.fs = self.main_window.metadata['frame_rate'] # for Butterworth filter
         self.shortest_distance = self.report_data['shortest_distance']
         self.vector_angle = self.report_data['vector_angle']
         self.vector_length = self.report_data['vector_length']
         self.crop_frames(x1=50, x2=450, y1=50, y2=450)
         self.prepare_data()
         self.plot_data()
-        # self.plot_results()
 
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
 
@@ -167,11 +173,11 @@ class ContourBasedGating:
 
         return filtered_signal
 
-    def combined_signal(self, signal_list, window_size=5, maxima_only=False):
+    def combined_signal(self, signal_list, maxima_only=False):
         # smooth_curve for all signals
         smoothed_signals = []
         for signal in signal_list:
-            smoothed_signal = self.smooth_curve(signal, window_size=window_size)
+            smoothed_signal = self.smooth_curve(signal)
             smoothed_signals.append(smoothed_signal)
 
         # find extrema indices for all curves
@@ -221,11 +227,11 @@ class ContourBasedGating:
         signal = np.nan_to_num(signal, nan=0.0, posinf=0.0, neginf=0.0)
 
         # Dynamically calculate prominence based on the signal's characteristics
-        min_height = np.percentile(signal, 50)  # Only pick peaks above the 90th percentile
+        min_height = np.percentile(signal, self.min_height_percentile)  # Only consider peaks above the median
 
         # Find maxima and minima using find_peaks with dynamic prominence
-        maxima_indices, _ = find_peaks(signal, distance=12, height=min_height)
-        minima_indices, _ = find_peaks(-signal, distance=12, height=min_height)
+        maxima_indices, _ = find_peaks(signal, distance=self.distance, height=min_height)
+        minima_indices, _ = find_peaks(-signal, distance=self.distance, height=min_height)
 
         # Combine maxima and minima indices into one array and sort them
         extrema_indices = np.concatenate((maxima_indices, minima_indices))
@@ -233,8 +239,8 @@ class ContourBasedGating:
 
         return extrema_indices, maxima_indices
 
-    def smooth_curve(self, signal, window_size=5):
-        return np.convolve(signal, np.ones(window_size) / window_size, mode='same')
+    def smooth_curve(self, signal):
+        return np.convolve(signal, np.ones(self.window_size) / self.window_size, mode='same')
 
     def plot_data(self):
         signal_list_max = [
@@ -247,8 +253,8 @@ class ContourBasedGating:
             self.vector_angle,
             self.vector_length,
         ]
-        signal_maxima, signal_maxima_nor = self.combined_signal(signal_list_max, window_size=5, maxima_only=True)
-        signal_extrema, signal_extrema_nor = self.combined_signal(signal_list_extrema, window_size=5, maxima_only=False)
+        signal_maxima, signal_maxima_nor = self.combined_signal(signal_list_max, maxima_only=True)
+        signal_extrema, signal_extrema_nor = self.combined_signal(signal_list_extrema, maxima_only=False)
 
         # Calculate scaling factors
         mean_max_values = np.mean(signal_maxima)
@@ -322,16 +328,33 @@ class ContourBasedGating:
 
         return True
 
-    def automatic_gating(self, maxima_signal, extrema_signal, threshold=5):
+    def automatic_gating(self, maxima_signal, extrema_signal):
+        """Automatically gates the frames based on the maxima and extrema signals. 
+        The maxima signal represents the image-based gating and the extrema signal
+        the contour-based gating. Usually maxima should be overlapping with extrema, but
+        this is not always the case. Therefore the option to change in the config.yaml file
+        The gating is based on the following assumptions:
+        - Diastole frames can depict more distal parts of the coronary artery, hence sum of lumen area is higher
+        
+        Parameters:
+        - maxima_signal (numpy.ndarray): The signal containing maxima.
+        - extrema_signal (numpy.ndarray): The signal containing extrema.
+        """
         # Identify local maxima and minima
-        maxima_indices = self.identify_extrema(maxima_signal)[0]
-        extrema_indices = list(self.identify_extrema(extrema_signal)[0])  # Convert to list to allow removals
+        if self.both_extrema:
+            logger.info('Got True')
+            maxima_indices = self.identify_extrema(maxima_signal)[0]
+            extrema_indices = list(self.identify_extrema(extrema_signal)[0])  # Convert to list to allow removals
+        else:
+            logger.info('Got False')
+            maxima_indices = self.identify_extrema(maxima_signal)[1]
+            extrema_indices = list(self.identify_extrema(extrema_signal)[0])
 
         gated_indices = []
 
         # Check for all indices in maxima and extrema if they are not more than 5 frames apart
         for maxima in maxima_indices:
-            close_extrema = [extrema for extrema in extrema_indices if abs(maxima - extrema) <= threshold]
+            close_extrema = [extrema for extrema in extrema_indices if abs(maxima - extrema) <= self.auto_gating_threshold]
 
             if close_extrema:
                 # Select the first valid extrema that is within the threshold distance
