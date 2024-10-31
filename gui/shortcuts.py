@@ -102,6 +102,23 @@ def init_menu(main_window):
     help_menu.addAction('About', partial(open_url, main_window))
 
 
+def is_gating_display_active(main_window):
+    """
+    Checks if an image is displayed in the gating display box.
+
+    Parameters:
+        main_window: The main window containing the gating display.
+
+    Returns:
+        bool: True if the gating display contains an image, False otherwise.
+    """
+    return (
+        main_window.gating_display is not None
+        and main_window.gating_display.fig.axes  # Check if axes exist
+        and any(ax.has_data() for ax in main_window.gating_display.fig.axes)  # Check if any axis has data
+    )
+
+
 def remove_contours(main_window):
     if main_window.image_displayed:
         dialog = FrameRangeDialog(main_window)
@@ -118,17 +135,37 @@ def remove_contours(main_window):
 
 def reset_phases(main_window):
     if main_window.image_displayed:
-        main_window.data['phases'] = ['-'] * main_window.metadata['num_frames']
-        main_window.gated_frames = []
-        main_window.gated_frames_dia = []
-        main_window.gated_frames_sys = []
-        main_window.diastolic_frame_box.setChecked(False)
-        main_window.systolic_frame_box.setChecked(False)
-        main_window.contour_based_gating.remove_lines()
-        main_window.display.update_display()
+        dialog = FrameRangeDialog(main_window)
+        if dialog.exec_():
+            main_window.status_bar.showMessage('Resetting phases...')
+            lower_limit, upper_limit = dialog.getInputs()
+            for frame in range(lower_limit, upper_limit):
+                if main_window.data['phases'][frame] == 'D':
+                    main_window.gated_frames_dia.remove(frame)
+                    main_window.diastolic_frame_box.setChecked(False)
+                elif main_window.data['phases'][frame] == 'S':
+                    main_window.gated_frames_sys.remove(frame)
+                    main_window.systolic_frame_box.setChecked(False)
+                main_window.data['phases'][frame] = '-'
+            main_window.gated_frames = main_window.gated_frames_dia + main_window.gated_frames_sys
+            main_window.gated_frames.sort()
+            main_window.gated_frames_dia.sort()
+            main_window.gated_frames_sys.sort()
+            main_window.status_bar.showMessage(main_window.waiting_status)
+
+            main_window.contour_based_gating.remove_lines()
+            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_dia, main_window.diastole_color_plt)
+            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_sys, main_window.systole_color_plt) # somehow only updates after first user input
+
+            main_window.display.update_display()
 
 
 def switch_phases(main_window):
+    # Check if gating display is active; if not, show a message and return
+    if not is_gating_display_active(main_window):
+        ErrorMessage(main_window, 'Please extract diastolic and systolic frames first.')
+        return
+
     if main_window.image_displayed:
         dialog = FrameRangeDialog(main_window)
         if dialog.exec_():
@@ -256,7 +293,6 @@ def toggle_color(main_window):
 
 
 def plot_results(main_window):
-    logger.info('Plot results called')
     if main_window.image_displayed:
         report_data = report(main_window, suppress_messages=True)
         if report_data is None:
