@@ -55,6 +55,8 @@ def parse_dicom(main_window):
             '0.5',
         )
         pullback_rate = float(pullback_rate)
+    
+    main_window.metadata['pullback_speed'] = pullback_rate
 
     if main_window.dicom.get('FrameTimeVector'):
         frame_time_vector = main_window.dicom.get('FrameTimeVector')
@@ -115,6 +117,7 @@ def parse_dicom(main_window):
         pullback_start_frame = int(pullback_start_frame)
 
     main_window.metadata['pullback_start_frame'] = pullback_start_frame
+    main_window.metadata['frame_rate'] = main_window.dicom.get('Cine Rate', 30)
 
     main_window.metadata_table.setRowCount(9)
     main_window.metadata_table.setColumnCount(2)
