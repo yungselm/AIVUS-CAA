@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from loguru import logger
-from scipy.signal import argrelextrema, find_peaks, butter, filtfilt
+from scipy.signal import find_peaks, butter, filtfilt
 
 from gui.popup_windows.message_boxes import ErrorMessage
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
@@ -10,7 +10,16 @@ from gui.right_half.right_half import toggle_diastolic_frame, toggle_systolic_fr
 from report.report import report
 
 import warnings
+import time
 
+def timing_decorator(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"{func.__name__} took {end_time - start_time:.4f} seconds")
+        return result
+    return wrapper
 
 class ContourBasedGating:
     def __init__(self, main_window):
@@ -110,6 +119,7 @@ class ContourBasedGating:
         """Crops frames to a specific region."""
         self.frames = self.frames[:, x1:x2, y1:y2]
 
+    @timing_decorator
     def prepare_data(self):
         """Prepares data for plotting."""
         # Normalize signals
@@ -129,6 +139,7 @@ class ContourBasedGating:
     def normalize_data(self, data):
         return (data - np.min(data)) / np.sum(data - np.min(data))
 
+    @timing_decorator
     def calculate_correlation(self):
         """Calculates correlation coefficients between consecutive frames."""
         correlations = []
@@ -137,17 +148,21 @@ class ContourBasedGating:
             correlations.append(corr)
         correlations.append(0)  # to match the length of the frames
         return correlations
-
+    
+    @timing_decorator
     def calculate_blurring_fft(self):
-        """Calculates blurring using Fast Fourier Transform. Take average of the 10% highest frequencies."""
+        """Calculates blurring using Fast Fourier Transform. Takes the average of the 10% highest frequencies."""
         blurring_scores = []
         for frame in self.frames:
             fft_data = np.fft.fft2(frame)
             fft_shifted = np.fft.fftshift(fft_data)
             magnitude_spectrum = np.abs(fft_shifted)
-            sorted_magnitude_spectrum = np.sort(magnitude_spectrum.ravel())
-            threshold = int(0.9 * len(sorted_magnitude_spectrum))
-            blurring_score = np.mean(sorted_magnitude_spectrum[threshold:])
+            
+            # Use np.partition to get the 10% highest frequencies
+            n = len(magnitude_spectrum.ravel())
+            threshold_index = int(0.9 * n)
+            highest_frequencies = np.partition(magnitude_spectrum.ravel(), threshold_index)[threshold_index:]
+            blurring_score = np.mean(highest_frequencies)
             blurring_scores.append(blurring_score)
         return blurring_scores
 
@@ -174,6 +189,17 @@ class ContourBasedGating:
         return filtered_signal
 
     def combined_signal(self, signal_list, maxima_only=False):
+        """
+        Combines multiple signals into one by weighting them based on the variability of their extrema.
+        Assumption: The more variable the extrema, the less reliable the signal, since heart rate is regular.
+
+        Parameters:
+        - signal_list (list): A list of signals to combine.
+        - maxima_only (bool): If True, only maxima are considered for variability calculation.
+
+        Returns:
+        - combined_signal (numpy.ndarray): The combined signal.
+        """
         # smooth_curve for all signals
         smoothed_signals = []
         for signal in signal_list:
@@ -342,11 +368,11 @@ class ContourBasedGating:
         """
         # Identify local maxima and minima
         if self.both_extrema:
-            logger.info('Got True')
+            logger.info('Extrema peak detection according to config.yaml')
             maxima_indices = self.identify_extrema(maxima_signal)[0]
             extrema_indices = list(self.identify_extrema(extrema_signal)[0])  # Convert to list to allow removals
         else:
-            logger.info('Got False')
+            logger.info('Maxima peak detection according to config.yaml')
             maxima_indices = self.identify_extrema(maxima_signal)[1]
             extrema_indices = list(self.identify_extrema(extrema_signal)[0])
 
