@@ -12,6 +12,7 @@ from report.report import report
 import warnings
 import time
 
+
 def timing_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -19,7 +20,9 @@ def timing_decorator(func):
         end_time = time.time()
         print(f"{func.__name__} took {end_time - start_time:.4f} seconds")
         return result
+
     return wrapper
+
 
 class ContourBasedGating:
     def __init__(self, main_window):
@@ -55,7 +58,7 @@ class ContourBasedGating:
         if not dialog_success:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
-        self.fs = self.main_window.metadata['frame_rate'] # for Butterworth filter
+        self.fs = self.main_window.metadata['frame_rate']  # for Butterworth filter
         self.shortest_distance = self.report_data['shortest_distance']
         self.vector_angle = self.report_data['vector_angle']
         self.vector_length = self.report_data['vector_length']
@@ -148,7 +151,7 @@ class ContourBasedGating:
             correlations.append(corr)
         correlations.append(0)  # to match the length of the frames
         return correlations
-    
+
     @timing_decorator
     def calculate_blurring_fft(self):
         """Calculates blurring using Fast Fourier Transform. Takes the average of the 10% highest frequencies."""
@@ -157,7 +160,7 @@ class ContourBasedGating:
             fft_data = np.fft.fft2(frame)
             fft_shifted = np.fft.fftshift(fft_data)
             magnitude_spectrum = np.abs(fft_shifted)
-            
+
             # Use np.partition to get the 10% highest frequencies
             n = len(magnitude_spectrum.ravel())
             threshold_index = int(0.9 * n)
@@ -355,13 +358,14 @@ class ContourBasedGating:
         return True
 
     def automatic_gating(self, maxima_signal, extrema_signal):
-        """Automatically gates the frames based on the maxima and extrema signals. 
+        """Automatically gates the frames based on the maxima and extrema signals.
         The maxima signal represents the image-based gating and the extrema signal
         the contour-based gating. Usually maxima should be overlapping with extrema, but
         this is not always the case. Therefore the option to change in the config.yaml file
         The gating is based on the following assumptions:
-        - Diastole frames can depict more distal parts of the coronary artery, hence sum of lumen area is higher
-        
+        - Diastole frames can depict more distal parts of the coronary artery, 
+          hence sum of lumen area is higher
+
         Parameters:
         - maxima_signal (numpy.ndarray): The signal containing maxima.
         - extrema_signal (numpy.ndarray): The signal containing extrema.
@@ -370,7 +374,7 @@ class ContourBasedGating:
         if self.both_extrema:
             logger.info('Extrema peak detection according to config.yaml')
             maxima_indices = self.identify_extrema(maxima_signal)[0]
-            extrema_indices = list(self.identify_extrema(extrema_signal)[0])  # Convert to list to allow removals
+            extrema_indices = list(self.identify_extrema(extrema_signal)[0])
         else:
             logger.info('Maxima peak detection according to config.yaml')
             maxima_indices = self.identify_extrema(maxima_signal)[1]
@@ -378,17 +382,28 @@ class ContourBasedGating:
 
         gated_indices = []
 
+        # Calculate weights for maxima and extrema based on variability or signal quality
+        maxima_weight = len(maxima_indices)  # or a better metric for quality
+        extrema_weight = len(extrema_indices)  # or a better metric for quality
+
         # Check for all indices in maxima and extrema if they are not more than 5 frames apart
         for maxima in maxima_indices:
-            close_extrema = [extrema for extrema in extrema_indices if abs(maxima - extrema) <= self.auto_gating_threshold]
+            close_extrema = [
+                extrema for extrema in extrema_indices if abs(maxima - extrema) <= self.auto_gating_threshold
+            ]
 
             if close_extrema:
-                # Select the first valid extrema that is within the threshold distance
                 closest_extrema = close_extrema[0]
                 gated_indices.append(round((maxima + closest_extrema) / 2))
                 extrema_indices.remove(closest_extrema)  # Remove to avoid duplicate gating
 
-        # Split by every second frame, diastole frames are where lumen_area is greater in sum than the other half
+        # Include additional gating based on weights
+        if extrema_weight > 0:  # If we have extrema to work with
+            for extrema in extrema_indices:
+                if extrema not in gated_indices:  # Ensure we don't duplicate
+                    gated_indices.append(extrema)
+
+        # Split by every second frame; diastole frames are where lumen_area is greater in sum than the other half
         first_half = gated_indices[::2]
         second_half = gated_indices[1::2]
 
