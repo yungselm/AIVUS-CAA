@@ -139,8 +139,21 @@ class ContourBasedGating:
         self.vector_angle = self.bandpass_filter(self.vector_angle_nor)
         self.vector_length = self.bandpass_filter(self.vector_length_nor)
 
-    def normalize_data(self, data):
-        return (data - np.min(data)) / np.sum(data - np.min(data))
+    def normalize_data(self, data, step=100):
+        # z-score normalization either for full set, or defined steps
+        if step == 0:
+            return (data - np.mean(data)) / np.std(data)
+        else: 
+            normalized_data = np.zeros_like(data)
+            
+            for i in range(0, len(data), step):
+                segment = data[i:i + step]
+                
+                segment_normalized = (segment - np.mean(segment)) / np.std(segment)
+                
+                normalized_data[i:i + step] = segment_normalized
+            
+            return normalized_data
 
     @timing_decorator
     def calculate_correlation(self):
@@ -203,15 +216,9 @@ class ContourBasedGating:
         Returns:
         - combined_signal (numpy.ndarray): The combined signal.
         """
-        # smooth_curve for all signals
-        smoothed_signals = []
-        for signal in signal_list:
-            smoothed_signal = self.smooth_curve(signal)
-            smoothed_signals.append(smoothed_signal)
-
         # find extrema indices for all curves
         extrema_indices = []
-        for signal in smoothed_signals:
+        for signal in signal_list:
             if maxima_only:
                 extrema_indices.append(self.identify_extrema(signal)[1])
             else:
@@ -267,10 +274,7 @@ class ContourBasedGating:
         extrema_indices = np.sort(extrema_indices)
 
         return extrema_indices, maxima_indices
-
-    def smooth_curve(self, signal):
-        return np.convolve(signal, np.ones(self.window_size) / self.window_size, mode='same')
-
+    
     def plot_data(self):
         signal_list_max = [
             self.correlation,
@@ -285,28 +289,8 @@ class ContourBasedGating:
         signal_maxima, signal_maxima_nor = self.combined_signal(signal_list_max, maxima_only=True)
         signal_extrema, signal_extrema_nor = self.combined_signal(signal_list_extrema, maxima_only=False)
 
-        # Calculate scaling factors
-        mean_max_values = np.mean(signal_maxima)
-        mean_extrema_values = np.mean(signal_extrema)
-
-        factor_diff = mean_max_values / mean_extrema_values
-
-        # Apply scaling to ensure maxima and extrema curves are in the same range
-        if factor_diff < 1:
-            signal_extrema *= factor_diff
-        else:
-            signal_maxima *= factor_diff
-
         # Scale `_nor` signals to the same range
-        max_signal_range = max(np.max(signal_maxima), np.max(signal_extrema))
         min_signal_range = min(np.min(signal_maxima), np.min(signal_extrema))
-
-        max_signal_nor = max(np.max(signal_maxima_nor), np.max(signal_extrema_nor))
-        min_signal_nor = min(np.min(signal_maxima_nor), np.min(signal_extrema_nor))
-
-        scaling_factor_nor = (max_signal_range - min_signal_range) / (max_signal_nor - min_signal_nor)
-        signal_maxima_nor = (signal_maxima_nor - min_signal_nor) * scaling_factor_nor
-        signal_extrema_nor = (signal_extrema_nor - min_signal_nor) * scaling_factor_nor
 
         # Shift `_nor` signals down so their max aligns with the min of the main signals
         shift_amount = min_signal_range - np.max(signal_maxima_nor)
@@ -356,7 +340,7 @@ class ContourBasedGating:
                 plt.draw()
 
         return True
-
+    
     def automatic_gating(self, maxima_signal, extrema_signal):
         """Automatically gates the frames based on the maxima and extrema signals.
         The maxima signal represents the image-based gating and the extrema signal
@@ -414,12 +398,23 @@ class ContourBasedGating:
             [self.report_data.loc[self.report_data['frame'] == frame, 'lumen_area'].values[0] for frame in second_half]
         )
 
+        # reset all phases
+        self.main_window.data['phases'] == '-'
+        self.main_window.gated_frames_dia = []
+        self.main_window.gated_frames_sys = []
+        self.main_window.diastolic_frame_box.setChecked(False)
+        self.main_window.systolic_frame_box.setChecked(False)
+
         if sum_first_half > sum_second_half:
             self.main_window.gated_frames_dia = first_half
             self.main_window.gated_frames_sys = second_half
+            self.main_window.gated_frames_dia.sort()
+            self.main_window.gated_frames_sys.sort()
         else:
             self.main_window.gated_frames_dia = second_half
             self.main_window.gated_frames_sys = first_half
+            self.main_window.gated_frames_dia.sort()
+            self.main_window.gated_frames_sys.sort()
 
         for frame in self.main_window.gated_frames_dia:
             self.main_window.data['phases'][frame] = 'D'
