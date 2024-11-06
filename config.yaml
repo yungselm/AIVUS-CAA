@@ -20,15 +20,13 @@ display:
   point_radius: 10
 
 gating:
+  normalize_step: 100
   intramural_threshold: 1.5  # elliptic ratio threshold to define intramural part of vessel
   
   # butterworth filter for gating
   lowcut: 0.6667  # lowcut frequency for Butterworth filter
-  highcut: 1.3333  # highcut frequency for Butterworth filter
-  order: 4  # order of Butterworth filter
-
-  # smoothing curve by moving average
-  window_size: 5  # window size for smoothing curve by moving average
+  highcut: 3.0  # highcut frequency for Butterworth filter
+  order: 6  # order of Butterworth filter
 
   # identify extrema
   min_height_percentile: 50  # percentile of how much higher next peak has to be (y-component)
