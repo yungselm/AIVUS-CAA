@@ -44,7 +44,7 @@ class SmallDisplay(QMainWindow):
         correlations = []
         frame_indices = []
         start_frame = max(0, frame - 30)
-        end_frame = max(0, frame - 10)
+        end_frame = max(0, frame - 5)
         
         for i in range(start_frame, end_frame):
             corr = np.corrcoef(self.main_window.images[frame].ravel(), self.main_window.images[i].ravel())[0, 1]

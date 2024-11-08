@@ -34,8 +34,7 @@ gating:
 
   # automatic gating threshold for frame difference of extrema of the two signals
   auto_gating_threshold: 5
-
-  both_extrema: True  # set to True to use both extrema (contour- and image-based) for gating
+  maxima_only: False  # set to True to use both extrema (contour- and image-based) for gating
 
 report:
   plot: False
