@@ -87,6 +87,7 @@ def read_image(main_window):
             main_window.data['measures'] = [[None, None] for _ in range(main_window.metadata['num_frames'])]
             main_window.data['measure_lengths'] = [[np.nan, np.nan] for _ in range(main_window.metadata['num_frames'])]
             main_window.data['reference'] = [None] * main_window.metadata['num_frames']
+            main_window.data['gating_signal'] = {}
             main_window.display.set_data(main_window.data['lumen'], main_window.images)
 
         main_window.image_displayed = True

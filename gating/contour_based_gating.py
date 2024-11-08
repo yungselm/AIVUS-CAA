@@ -15,7 +15,6 @@ from gui.right_half.right_half import toggle_diastolic_frame, toggle_systolic_fr
 from report.report import report
 
 
-
 def timing_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -30,7 +29,6 @@ def timing_decorator(func):
 class ContourBasedGating:
     def __init__(self, main_window):
         self.main_window = main_window
-        self.intramural_threshold = main_window.config.gating.intramural_threshold
         # signals
         self.vertical_lines = []
         self.selected_line = None
@@ -46,10 +44,12 @@ class ContourBasedGating:
         if not dialog_success:
             self.main_window.status_bar.showMessage(self.main_window.waiting_status)
             return
-        image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered = prepare_data(
-            self.main_window, self.frames, self.report_data
+        image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered = (
+            prepare_data(self.main_window, self.frames, self.report_data)
         )
-        self.plot_data(image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered)
+        self.plot_data(
+            image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered
+        )
         self.main_window.status_bar.showMessage(self.main_window.waiting_status)
 
     def define_roi(self):
@@ -78,7 +78,9 @@ class ContourBasedGating:
             return True
         return False
 
-    def plot_data(self, image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered):
+    def plot_data(
+        self, image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered
+    ):
         # Scale `_nor` signals to the same range
         min_signal_range = min(np.min(image_based_gating), np.min(contour_based_gating))
         max_signal_range = max(np.max(image_based_gating), np.max(contour_based_gating))

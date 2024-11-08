@@ -1,17 +1,7 @@
+import time
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backend_bases import MouseButton
 from loguru import logger
 from scipy.signal import find_peaks, butter, filtfilt
-import itertools
-
-from gui.popup_windows.message_boxes import ErrorMessage
-from gui.popup_windows.frame_range_dialog import FrameRangeDialog, StartFramesDialog
-from gui.right_half.right_half import toggle_diastolic_frame, toggle_systolic_frame
-from report.report import report
-
-import warnings
-import time
 
 
 def timing_decorator(func):
@@ -28,6 +18,20 @@ def timing_decorator(func):
 @timing_decorator
 def prepare_data(main_window, frames, report_data, x1=50, x2=450, y1=50, y2=450):
     """Prepares data for plotting."""
+    try:
+        gating_signal = main_window.data['gating_signal']
+        if not gating_signal:  # skip if empty
+            raise KeyError
+        if gating_signal['gating_config'] == main_window.config.gating:
+            return (
+                gating_signal['image_based_gating'],
+                gating_signal['contour_based_gating'],
+                gating_signal['image_based_gating_filtered'],
+                gating_signal['contour_based_gating_filtered'],
+            )
+    except KeyError:
+        pass
+
     # Initialize variables
     step = main_window.config.gating.normalize_step
     maxima_only = main_window.config.gating.maxima_only
@@ -54,6 +58,14 @@ def prepare_data(main_window, frames, report_data, x1=50, x2=450, y1=50, y2=450)
     image_based_gating_filtered = combined_signal(main_window, signal_image_based_filtered, maxima_only=maxima_only)
     contour_based_gating = combined_signal(main_window, [shortest_dist, vector_angle, vector_length], maxima_only=False)
     contour_based_gating_filtered = combined_signal(main_window, signal_contour_based_filtered, maxima_only=False)
+
+    main_window.data['gating_signal'] = {
+        'image_based_gating': list(image_based_gating),
+        'contour_based_gating': list(contour_based_gating),
+        'image_based_gating_filtered': list(image_based_gating_filtered),
+        'contour_based_gating_filtered': list(contour_based_gating_filtered),
+        'gating_config': dict(main_window.config.gating),
+    }
 
     return image_based_gating, contour_based_gating, image_based_gating_filtered, contour_based_gating_filtered
 
@@ -175,8 +187,8 @@ def combined_signal(
 
 
 def identify_extrema(main_window, signal):
-    extrema_y_lim = main_window.config.gating.min_height_percentile
-    extrema_x_lim = main_window.config.gating.min_distance
+    extrema_y_lim = main_window.config.gating.extrema_y_lim
+    extrema_x_lim = main_window.config.gating.extrema_x_lim
 
     # Remove NaN and infinite values from the signal
     signal = np.nan_to_num(signal, nan=0.0, posinf=0.0, neginf=0.0)

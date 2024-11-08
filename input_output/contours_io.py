@@ -26,6 +26,8 @@ def read_contours(main_window, file_name=None):
             main_window.data['measures'] = [[None, None] for _ in range(main_window.metadata['num_frames'])]
         if 'reference' not in main_window.data:  # added in version 0.7.3
             main_window.data['reference'] = [None] * main_window.metadata['num_frames']
+        if 'gating_signal' not in main_window.data:  # added in version 0.7.4
+            main_window.data['gating_signal'] = {}
         success = True
 
     elif xml_files:
