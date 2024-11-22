@@ -32,7 +32,7 @@ class Slider(QSlider):
         self.setValue(value)
         try:  # small display
             next_gated = self.next_gated_frame(set=False)
-            self.main_window.small_display.set_frame(next_gated)
+            self.main_window.small_display.update_frame(next_gated, update_image=True, update_contours=True, update_text=True)
         except AttributeError:
             pass
         try:  # gating display

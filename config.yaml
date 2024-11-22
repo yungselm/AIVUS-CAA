@@ -20,10 +20,18 @@ display:
   point_radius: 10
 
 gating:
-  intramural_threshold: 1.5  # elliptic ratio threshold to define intramural part of vessel
-  min_window_size: 5
-  max_window_size: 15
-  step_size: 0.01
+  normalize_step: 100
+  # butterworth filter for gating
+  lowcut: 0.6667  # lowcut frequency for Butterworth filter
+  highcut: 3.0  # highcut frequency for Butterworth filter
+  order: 6  # order of Butterworth filter
+  # identify extrema
+  extrema_y_lim: 50  # percentile of how much higher next peak has to be (y-component)
+  extrema_x_lim: 12  # minimum distance between peaks (x-component)
+  # automatic gating threshold for frame difference of extrema of the two signals
+  auto_gating_threshold: 5
+  auto_gating_batch_size: 10
+  maxima_only: False  # set to True to use both extrema (contour- and image-based) for gating
 
 report:
   plot: False

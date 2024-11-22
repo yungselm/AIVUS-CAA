@@ -108,6 +108,8 @@ class LeftHalf:
         if self.main_window.image_displayed:
             self.main_window.hide_contours = value
             self.main_window.display.update_display()
+            next_gated = self.main_window.display_slider.next_gated_frame(set=False)
+            self.main_window.small_display.update_frame(next_gated, update_contours=True)  # update small display
             if not value:
                 self.main_window.longitudinal_view.show_lview_contours()
 
