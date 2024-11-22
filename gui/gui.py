@@ -22,6 +22,7 @@ class Master(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        self.file_name = None  # Ensure file_name is initialized
         self.autosave_interval = config.save.autosave_interval
         self.contour_based_gating = ContourBasedGating(self)
         self.predictor = Predict(self)
@@ -52,6 +53,7 @@ class Master(QMainWindow):
     def init_gui(self):
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
+        self.file_name = "default_file_name"  # Initialize file_name with a default value
         init_menu(self)
         self.metadata_table = QTableWidget()
 

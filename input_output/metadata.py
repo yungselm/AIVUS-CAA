@@ -110,7 +110,7 @@ def parse_dicom(main_window):
         pullback_start_frame, _ = QInputDialog.getText(
             main_window,
             'Pullback Start Frame',
-            'No IVUSPullbackStartFrameNumber found, please enter the start frame number',
+            'No pullback start frame found, please enter the start frame number',
             QLineEdit.Normal,
             '0',
         )

@@ -40,6 +40,11 @@ def report(main_window, lower_limit=None, upper_limit=None, suppress_messages=Fa
         save_as_csv=main_window.config.report.save_as_csv,
     )
     if report_data is not None:  # else user cancelled progress bar
+        # Add metadata information as columns to the first row
+        report_data.loc[0, 'pullback_speed'] = main_window.metadata['pullback_speed']
+        report_data.loc[0, 'pullback_start_frame'] = main_window.metadata['pullback_start_frame']
+        report_data.loc[0, 'frame_rate'] = main_window.metadata['frame_rate']
+
         report_data.to_csv(
             os.path.splitext(main_window.file_name)[0] + '_report.txt',
             sep='\t',
@@ -304,8 +309,10 @@ def closest_points(main_window, polygon, frame):
 
     return shortest_distance, closest_point_x, closest_point_y
 
+
 def save_csv_files(main_window, lumen_x, lumen_y, name, frames):
     csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
+    logger.info(f'Saving {name} contours to {csv_out_dir}')
     os.makedirs(csv_out_dir, exist_ok=True)
     with open(os.path.join(csv_out_dir, f'{name}_contours.csv'), 'w', newline='') as contours_file:
         contours_writer = csv.writer(contours_file, delimiter='\t')
@@ -320,11 +327,7 @@ def save_csv_files(main_window, lumen_x, lumen_y, name, frames):
                     [y * main_window.metadata['resolution'] for y in lumen_y[frame]],
                 )  # csv can only write rows, not columns directly
                 for row in rows:
-                    row = (
-                        [frame + 1]
-                        + list(row)
-                        + [main_window.metadata['pullback_length'][frame] - distance_offset]
-                    )
+                    row = [frame + 1] + list(row) + [main_window.metadata['pullback_length'][frame] - distance_offset]
                     contours_writer.writerow(row)
                 if main_window.data['reference'][frame] is not None:
                     reference_writer.writerow(

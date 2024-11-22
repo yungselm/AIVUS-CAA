@@ -15,7 +15,7 @@ from gui.popup_windows.video_player import VideoPlayer
 from gui.utils.contours_gui import new_contour, new_measure
 from input_output.metadata import MetadataWindow
 from input_output.read_image import read_image
-from input_output.contours_io import write_contours
+from input_output.contours_io import write_contours, save_gated_images
 from segmentation.save_as_nifti import save_as_nifti
 from segmentation.segment import segment
 from report.report import report
@@ -59,6 +59,7 @@ def init_menu(main_window):
     save_report = file_menu.addAction('Save Report', partial(report, main_window))
     save_report.setShortcut('Ctrl+R')
     file_menu.addAction('Save Video Pullback', partial(save_video_pullback, main_window))
+    file_menu.addAction('Save Gated Images', partial(save_gated_images, main_window, main_window.file_name))
     file_menu.addSeparator()
     exit_action = file_menu.addAction('Exit', main_window.close)
     exit_action.setShortcut('Ctrl+Q')

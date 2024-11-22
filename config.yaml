@@ -35,7 +35,7 @@ gating:
 
 report:
   plot: False
-  save_as_csv: False
+  save_as_csv: True
 
 save:
   autosave_interval: 10000  # in ms

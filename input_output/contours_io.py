@@ -104,3 +104,27 @@ def map_to_list(contours):
     y = [list(y[i]) for i in range(len(y))]
 
     return (x, y)
+
+
+def save_gated_images(main_window, file_name=None):
+    """Saves diastolic and systolic images as a 3D numpy array"""
+    if not main_window.image_displayed:
+        ErrorMessage(main_window, 'Cannot save gated images before reading the input file.')
+        return
+
+    diastolic_images = []
+    systolic_images = []
+
+    for frame in range(main_window.metadata['num_frames']):
+        if main_window.data['phases'][frame] == 'D':
+            diastolic_images.append(main_window.images[frame])
+        elif main_window.data['phases'][frame] == 'S':
+            systolic_images.append(main_window.images[frame])
+
+    diastolic_images = np.array(diastolic_images)
+    systolic_images = np.array(systolic_images)
+
+    out_path_diastolic = os.path.splitext(main_window.file_name)[0] + '_diastolic.npy'
+    out_path_systolic = os.path.splitext(main_window.file_name)[0] + '_systolic.npy'
+    np.save(out_path_diastolic, diastolic_images)
+    np.save(out_path_systolic, systolic_images)
