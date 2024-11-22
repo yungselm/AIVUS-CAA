@@ -12,6 +12,7 @@ class AutomaticGating:
         self.report_data = report_data
         self.maxima_only = self.main_window.config.gating.maxima_only
         self.auto_gating_threshold = main_window.config.gating.auto_gating_threshold
+        self.batch_size = main_window.config.gating.auto_gating_batch_size
         self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
 
     def automatic_gating(self, image_based_signal, contour_based_signal):
@@ -43,10 +44,6 @@ class AutomaticGating:
                 int(self.estimate_frame_distance(maxima_indices) + self.estimate_frame_distance(extrema_indices)) / 2
             )
 
-            # Initialize lists for diastole and systole frames
-            similarity_dia = []
-            similarity_sys = []
-
             systolic_start, diastolic_start = None, None
             try:
                 # Get the start frames for diastole and systole
@@ -75,86 +72,38 @@ class AutomaticGating:
                 logger.info(f"Systolic start frame: {systolic_start}, Diastolic start frame: {diastolic_start}")
 
             # Find and append diastolic frames based on correlation
-            current_frame = diastolic_start
-            combined_signal_dia = []
-            combined_signal_sys = []
+            propagated_indices_dia = self.propagate_gated_frames(
+                diastolic_start, heart_rate, maxima_indices, extrema_indices
+            )
+            propagated_indices_sys = self.propagate_gated_frames(
+                systolic_start, heart_rate, maxima_indices, extrema_indices
+            )
 
-            while current_frame is not None:
-                similarity_dia.append(current_frame)
-                correlations, frame_indices = self.correlation_automatic(current_frame, heart_rate)
-                current_frame, _, indices_dia, signal_dia = self.find_best_correlation(
-                    current_frame, correlations, frame_indices
-                )
-                combined_signal_dia.append(signal_dia)
+            propagated_indices = np.sort(propagated_indices_dia + propagated_indices_sys)
+            weight_maxima = self.weight_signal(maxima_indices[::2])
+            weight_extrema = self.weight_signal(extrema_indices[::2])
+            weight_propagated = self.weight_signal(propagated_indices[::2])
 
-            # Find and append systolic frames based on correlation
-            current_frame = systolic_start
-            while current_frame is not None:
-                similarity_sys.append(current_frame)
-                correlations, frame_indices = self.correlation_automatic(current_frame, heart_rate)
-                current_frame, _, indices_sys, signal_sys = self.find_best_correlation(
-                    current_frame, correlations, frame_indices
-                )
-                combined_signal_sys.append(signal_sys)
+            # take shortest list shorten other two lists to this length
+            min_length = min(len(maxima_indices), len(extrema_indices), len(propagated_indices))
+            maxima_indices = maxima_indices[len(maxima_indices) - min_length :]
+            extrema_indices = extrema_indices[len(extrema_indices) - min_length :]
+            propagated_indices = propagated_indices[len(propagated_indices) - min_length :]
 
-            combined_signal_dia = np.concatenate(combined_signal_dia)
-            combined_signal_sys = np.concatenate(combined_signal_sys)
+            # Convert lists to numpy arrays for weighted sum calculation
+            maxima_indices = np.array(maxima_indices)
+            extrema_indices = np.array(extrema_indices)
+            propagated_indices = np.array(propagated_indices)
 
-            # add 0 until length of extrema_indices
-            while len(combined_signal_dia) < len(self.x):
-                combined_signal_dia = np.append(combined_signal_dia, 0)
-            while len(combined_signal_sys) < len(self.x):
-                combined_signal_sys = np.append(combined_signal_sys, 0)
-
-            # in combined_signal_dia and combined_signal_sys, replace 0 with the minimal value of the signal
-            combined_signal_dia[combined_signal_dia == 0] = np.min(combined_signal_dia[combined_signal_dia != 0])
-            combined_signal_sys[combined_signal_sys == 0] = np.min(combined_signal_sys[combined_signal_sys != 0])
-
-            similarity_indices = similarity_dia + similarity_sys
-
-            gated_indices = []
-
-            # Calculate weights for maxima and extrema based on variability or signal quality
-            maxima_weight = len(maxima_indices)
-            extrema_weight = len(extrema_indices)
-
-            # Check for all indices in maxima and extrema if they are not more than 5 frames apart
-            for maxima in maxima_indices:
-                # Find up to three closest extrema within the specified range
-                close_extrema = [
-                    extrema for extrema in extrema_indices if abs(maxima - extrema) <= self.auto_gating_threshold
-                ]
-
-                # If there are enough close extrema, proceed with variability check
-                if len(close_extrema) >= 3:
-                    # Generate combinations of three extrema and calculate variability
-                    variability_scores = []
-                    extrema_combinations = itertools.combinations(close_extrema, 3)
-
-                    for combo in extrema_combinations:
-                        # Calculate variability as the standard deviation of lumen areas for this combination
-                        lumen_areas = [
-                            self.report_data.loc[self.report_data['frame'] == frame, 'lumen_area'].values[0]
-                            for frame in combo
-                        ]
-                        variability = np.std(lumen_areas)
-                        variability_scores.append((combo, variability))
-
-                    # Select the combination with the least variability
-                    best_combo = min(variability_scores, key=lambda x: x[1])[0]
-
-                    # Use the middle frame of the best combination as the gated frame
-                    closest_extrema = sorted(best_combo)[1]
-                    gated_indices.append(round((maxima + closest_extrema) / 2))
-
-                    # Remove the selected extrema from further consideration
-                    extrema_indices = [e for e in extrema_indices if e not in best_combo]
-
-                elif close_extrema:
-                    # If fewer than three close extrema, select the closest one
-                    closest_extrema = close_extrema[0]
-                    gated_indices.append(round((maxima + closest_extrema) / 2))
-                    extrema_indices.remove(closest_extrema)  # Remove to avoid duplicate gating
+            # Use weighted sum for each index to determine the final gated frames
+            weighted_sum = (
+                weight_maxima * maxima_indices
+                + weight_extrema * extrema_indices
+                + weight_propagated * propagated_indices
+            )
+            gated_indices = list(
+                np.round(weighted_sum / (weight_maxima + weight_extrema + weight_propagated)).astype(int)
+            )
 
             # Split by every second frame; diastole frames are where lumen_area is greater in sum than the other half
             first_half = gated_indices[::2]
@@ -195,6 +144,29 @@ class AutomaticGating:
                 self.main_window.data['phases'][frame] = 'D'
             for frame in self.main_window.gated_frames_sys:
                 self.main_window.data['phases'][frame] = 'S'
+
+    def propagate_gated_frames(self, starting_frame, heart_rate, maxima_indices, extrema_indices):
+        propagated_indices = []
+        counter = 0
+        frame = starting_frame
+        while frame is not None:
+            propagated_indices.append(frame)
+            correlations, frame_indices = self.correlation_automatic(frame, heart_rate)
+            frame, _, _, _ = self.find_best_correlation(frame, correlations, frame_indices)
+            if counter == self.batch_size:
+                frame = min(
+                    min(extrema_indices, key=lambda x: abs(x - frame)),
+                    min(maxima_indices, key=lambda x: abs(x - frame)),
+                    key=lambda x: abs(x - frame),
+                )  # Reset after each batch
+                counter = 0
+            counter += 1
+
+        return propagated_indices
+
+    def weight_signal(self, indices):
+        pairwise_distances = np.diff(indices)
+        return 1 - np.var(pairwise_distances)
 
     def estimate_frame_distance(self, indices):
         """Estimates the average frame distance based on the gated frames using every second interval.

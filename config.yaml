@@ -30,6 +30,7 @@ gating:
   extrema_x_lim: 12  # minimum distance between peaks (x-component)
   # automatic gating threshold for frame difference of extrema of the two signals
   auto_gating_threshold: 5
+  auto_gating_batch_size: 10
   maxima_only: False  # set to True to use both extrema (contour- and image-based) for gating
 
 report:
