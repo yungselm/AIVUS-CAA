@@ -92,7 +92,10 @@ def open_small_display(main_window):
         main_window.small_display.move(
             main_window.x() + main_window.width() // 2, main_window.y() + main_window.height() // 2
         )
-        main_window.small_display.set_frame(main_window.metadata['num_frames'] - 1)
+        next_gated = main_window.display_slider.next_gated_frame(set=False)
+        main_window.small_display.update_frame(
+            next_gated, update_image=True, update_contours=True, update_text=True
+        )
         main_window.small_display.show()
 
 
@@ -172,6 +175,6 @@ def use_diastolic(main_window):
 
         try:
             next_gated = main_window.display_slider.next_gated_frame(set=False)
-            main_window.small_display.set_frame(next_gated)  # update small display
+            main_window.small_display.update_frame(next_gated, update_image=True, update_contours=True, update_text=True)  # update small display
         except AttributeError:
             pass
