@@ -2,6 +2,7 @@ import time
 import numpy as np
 from loguru import logger
 from scipy.signal import find_peaks, butter, filtfilt
+import cv2
 
 
 def timing_decorator(func):
@@ -22,7 +23,9 @@ def prepare_data(main_window, frames, report_data, x1=50, x2=450, y1=50, y2=450)
         gating_signal = main_window.data['gating_signal']
         if not gating_signal:  # skip if empty
             raise KeyError
-        if gating_signal['gating_config'] == main_window.config.gating:
+        if gating_signal['gating_config'] == main_window.config.gating and len(
+            gating_signal['image_based_gating']
+        ) == len(frames):
             return (
                 gating_signal['image_based_gating'],
                 gating_signal['contour_based_gating'],
@@ -116,6 +119,19 @@ def calculate_blurring_fft(frames):
         blurring_scores.append(blurring_score)
 
     return blurring_scores
+    # blurring_scores = []
+    # for frame in frames:
+    #     # use cv2.Laplacian to calculate the blurring, should return same format as above
+    #     laplacian = cv2.Laplacian(frame, cv2.CV_64F)
+    #     magnitude_spectrum = np.abs(laplacian)
+
+    #     n = len(magnitude_spectrum.ravel())
+    #     threshold_index = int(0.9 * n)
+    #     highest_frequencies = np.partition(laplacian.ravel(), threshold_index)[threshold_index:]
+    #     blurring_score = np.mean(highest_frequencies)
+    #     blurring_scores.append(blurring_score)
+
+    # return blurring_scores
 
 
 def bandpass_filter(main_window, signal):

@@ -95,7 +95,7 @@ class SmallDisplay(QMainWindow):
             )
         )
 
-        if self.main_window.data['lumen'][0][frame]:
+        if self.main_window.data['lumen'][0][frame] and not self.main_window.hide_contours:
             lumen_x = [point * self.scaling_factor for point in self.main_window.data['lumen'][0][frame]]
             lumen_y = [point * self.scaling_factor for point in self.main_window.data['lumen'][1][frame]]
             current_contour = Spline([lumen_x, lumen_y], self.n_points_contour, self.contour_thickness, 'green')

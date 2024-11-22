@@ -1,4 +1,7 @@
+import os
 import time
+import cv2
+import numpy as np
 
 from loguru import logger
 from functools import partial
@@ -7,7 +10,7 @@ from PyQt5.QtWidgets import QShortcut, QApplication
 from PyQt5.QtCore import Qt, QUrl
 
 from gui.popup_windows.frame_range_dialog import FrameRangeDialog
-from gui.popup_windows.message_boxes import ErrorMessage
+from gui.popup_windows.message_boxes import ErrorMessage, SuccessMessage
 from gui.popup_windows.video_player import VideoPlayer
 from gui.utils.contours_gui import new_contour, new_measure
 from input_output.metadata import MetadataWindow
@@ -16,6 +19,7 @@ from input_output.contours_io import write_contours
 from segmentation.save_as_nifti import save_as_nifti
 from segmentation.segment import segment
 from report.report import report
+
 
 from gui.popup_windows.results_plot import ResultsPlot
 
@@ -54,6 +58,7 @@ def init_menu(main_window):
     nifti_menu.addAction('All Frames', partial(save_as_nifti, main_window, mode='all'))
     save_report = file_menu.addAction('Save Report', partial(report, main_window))
     save_report.setShortcut('Ctrl+R')
+    file_menu.addAction('Save Video Pullback', partial(save_video_pullback, main_window))
     file_menu.addSeparator()
     exit_action = file_menu.addAction('Exit', main_window.close)
     exit_action.setShortcut('Ctrl+Q')
@@ -154,8 +159,12 @@ def reset_phases(main_window):
             main_window.status_bar.showMessage(main_window.waiting_status)
 
             main_window.contour_based_gating.remove_lines()
-            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_dia, main_window.diastole_color_plt)
-            main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_sys, main_window.systole_color_plt) # somehow only updates after first user input
+            main_window.contour_based_gating.draw_existing_lines(
+                main_window.gated_frames_dia, main_window.diastole_color_plt
+            )
+            main_window.contour_based_gating.draw_existing_lines(
+                main_window.gated_frames_sys, main_window.systole_color_plt
+            )  # somehow only updates after first user input
 
             main_window.display.update_display()
 
@@ -186,18 +195,22 @@ def switch_phases(main_window):
                     main_window.systolic_frame_box.setChecked(False)
 
             main_window.gated_frames = main_window.gated_frames_dia + main_window.gated_frames_sys
-        
+
         # order all gated frames again, important otherwise slider will jump around
         main_window.gated_frames.sort()
         main_window.gated_frames_dia.sort()
         main_window.gated_frames_sys.sort()
         main_window.status_bar.showMessage(main_window.waiting_status)
-        
+
         # Call draw_existing_lines on the ContourBasedGating instance, but first remove all existing lines to live update plot
         main_window.contour_based_gating.remove_lines()
-        main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_dia, main_window.diastole_color_plt)
-        main_window.contour_based_gating.draw_existing_lines(main_window.gated_frames_sys, main_window.systole_color_plt)
-        
+        main_window.contour_based_gating.draw_existing_lines(
+            main_window.gated_frames_dia, main_window.diastole_color_plt
+        )
+        main_window.contour_based_gating.draw_existing_lines(
+            main_window.gated_frames_sys, main_window.systole_color_plt
+        )
+
         main_window.display.update_display()
 
 
@@ -300,3 +313,21 @@ def plot_results(main_window):
             return
         results_plot = ResultsPlot(main_window, report_data)
         results_plot.show()
+
+
+def save_video_pullback(main_window):
+    if not main_window.image_displayed:
+        ErrorMessage(main_window, 'Cannot save video pullback before reading the image.')
+        return
+    main_window.status_bar.showMessage('Saving video pullback...')
+    image_stack = main_window.images
+    size = (image_stack[0].shape[1], image_stack[0].shape[0])
+    fps = main_window.metadata['frame_rate']
+    duration = len(image_stack) // fps
+    out_path = os.path.splitext(main_window.file_name)[0] + '_pullback.mp4'
+    out = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (size[1], size[0]), False)
+    for frame in range(fps * duration):
+        out.write(image_stack[frame, :, :])
+    out.release()
+    SuccessMessage(main_window, f'Saving video')
+    main_window.status_bar.showMessage(main_window.waiting_status)
