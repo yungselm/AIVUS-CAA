@@ -31,6 +31,8 @@ class Predict:
     def inference(self):
         custom_objects = {'BinaryCrossentropy': tf.keras.losses.BinaryCrossentropy}
         model = tf.keras.models.load_model(self.model_file, custom_objects=custom_objects, compile=False)
+
+        self.check_input_shape(model)
         mask = np.zeros_like(self.images)
 
         if self.conserve_memory:
@@ -43,7 +45,9 @@ class Predict:
                 progress.setMinimumDuration(1000)
                 progress.resize(500, 100)
                 progress.setWindowTitle('Automatic segmentation')
-                progress.setLabelText(f'Please wait, segmenting frames {self.lower_limit + 1} to {self.upper_limit + 1}...')
+                progress.setLabelText(
+                    f'Please wait, segmenting frames {self.lower_limit + 1} to {self.upper_limit + 1}...'
+                )
                 progress.show()
             else:
                 progress = None
@@ -66,3 +70,12 @@ class Predict:
             mask[self.lower_limit : self.upper_limit, :, :] = np.array(prediction)[0, :, :, :, 0]
 
         return mask
+
+    def check_input_shape(self, model):
+        """Check if the input shape of the model matches the shape of the images."""
+        logger.info(f"Input shape: {self.images.shape}")
+        if model.input_shape[1] != self.images.shape[1] or model.input_shape[2] != self.images.shape[2]:
+            logger.warning("Reshaping the images to match the model input shape.")
+            self.images = np.expand_dims(self.images, axis=-1)
+            self.images = tf.image.resize_with_crop_or_pad(self.images, model.input_shape[1], model.input_shape[2])
+            self.images = np.squeeze(self.images, axis=-1)
