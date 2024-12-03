@@ -311,6 +311,10 @@ def closest_points(main_window, polygon, frame):
 
 
 def save_csv_files(main_window, lumen_x, lumen_y, name, frames):
+    if not frames:
+        logger.warning(f'No frames available for {name} contours, skipping CSV saving.')
+        return
+
     csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
     logger.info(f'Saving {name} contours to {csv_out_dir}')
     os.makedirs(csv_out_dir, exist_ok=True)
