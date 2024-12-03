@@ -3,6 +3,7 @@ import tensorflow as tf
 from loguru import logger
 from PyQt5.QtWidgets import QProgressDialog
 from PyQt5.QtCore import Qt
+import gc
 
 
 class Predict:
@@ -71,11 +72,29 @@ class Predict:
 
         return mask
 
-    def check_input_shape(self, model):
+    def check_input_shape(self, model, batch_size=16):
         """Check if the input shape of the model matches the shape of the images."""
         logger.info(f"Input shape: {self.images.shape}")
         if model.input_shape[1] != self.images.shape[1] or model.input_shape[2] != self.images.shape[2]:
             logger.warning("Reshaping the images to match the model input shape.")
-            self.images = np.expand_dims(self.images, axis=-1)
-            self.images = tf.image.resize_with_crop_or_pad(self.images, model.input_shape[1], model.input_shape[2])
-            self.images = np.squeeze(self.images, axis=-1)
+            
+            # Ensure images are in float32 to save memory
+            self.images = self.images.astype(np.float32)
+            
+            # Process images in batches to reduce memory usage
+            num_images = self.images.shape[0]
+            reshaped_images = []
+            
+            for start in range(0, num_images, batch_size):
+                end = min(start + batch_size, num_images)
+                batch = self.images[start:end]
+                batch = np.expand_dims(batch, axis=-1)
+                batch = tf.image.resize_with_crop_or_pad(batch, model.input_shape[1], model.input_shape[2])
+                batch = np.squeeze(batch, axis=-1)
+                reshaped_images.append(batch)
+                
+                # Explicitly call garbage collection
+                gc.collect()
+            
+            self.images = np.concatenate(reshaped_images, axis=0)
+            gc.collect()

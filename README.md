@@ -25,6 +25,19 @@
 
 If you plan on using GPU acceleration for model training and inference, make sure to install the required tools (NVIDIA toolkit, etc.) and the corresponding version of Tensorflow.
 
+The program was tested on Ubuntu 22.04.5 with python 3.10.12. We tested it on differnt hardware, NVIDIA drivers and CUDA tended to cause problems cross-platforms. Make sure to download the corresponding drivers and CUDA toolkit, e.g.:
+```bash
+sudo apt update
+sudo apt upgrade
+sudo apt install build-essential dkms
+sudo ubuntu-drivers autoinstall
+sudo reboot
+# verify the installation of the driver
+nvidia-smi
+sudo apt install nvidia-cuda-toolkit
+```
+Potentially extra steps are needed.
+
 ### Creating an executable file (**optional**)
 
 In case you prefer a single executable file instead of running the application from the terminal or an IDE, you can follow these steps to generate an executable for **the OS you are executing the command on**, i.e. if you run this in a Linux environment, you will create an executable for Linux.\
@@ -49,12 +62,12 @@ This application is designed for IVUS images in DICOM or NIfTi format and offers
 - Inspect IVUS images frame-by-frame and display DICOM metadata
 - Manually **draw lumen contours** with automatic calculation of lumen area, circumference and elliptic ratio
 - **Automatic segmentation** of lumen for all frames (work in progress)
+- **Automatic gating** with extraction of diastolic/systolic frames
 - Manually tag diastolic/systolic frames
 - Ability to measure up to two distances per frame which will be stored in the report
 - **Auto-save** of contours and tags enabled by default with user-definable interval
 - Generation of report file containing detailed metrics for each frame
 - Ability to save images and segmentations as **NIfTi files**, e.g. to train a machine learning model
-- Automatically extract diastolic/systolic frames (work in progress)
 
 ## Configuration
 
