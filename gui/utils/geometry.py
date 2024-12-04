@@ -5,17 +5,18 @@ from loguru import logger
 from scipy.interpolate import splprep, splev
 from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsPathItem
 from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtGui import QPen, QPainterPath
+from PyQt5.QtGui import QPen, QPainterPath, QColor
 
 
 class Point(QGraphicsEllipseItem):
     """Class that describes a spline point"""
 
-    def __init__(self, pos, line_thickness=1, point_radius=10, color=None):
+    def __init__(self, pos, line_thickness=1, point_radius=10, color=None, transparency=255):
         super(Point, self).__init__()
         self.line_thickness = line_thickness
         self.point_radius = point_radius
-        self.default_color = get_qt_pen(color, line_thickness)
+        self.transparency = transparency
+        self.default_color = get_qt_pen(color, line_thickness, transparency)
 
         self.setPen(self.default_color)
         self.setRect(
@@ -44,13 +45,13 @@ class Point(QGraphicsEllipseItem):
 class Spline(QGraphicsPathItem):
     """Class that describes a spline"""
 
-    def __init__(self, points, n_points, line_thickness=1, color=None):
+    def __init__(self, points, n_points, line_thickness=1, color=None, transparency=255):
         super().__init__()
         self.n_points = n_points + 1
         self.knot_points = None
         self.full_contour = None
         self.set_knot_points(points)
-        self.setPen(get_qt_pen(color, line_thickness))
+        self.setPen(get_qt_pen(color, line_thickness, transparency))
 
     def set_knot_points(self, points):
         try:
@@ -127,11 +128,13 @@ class Spline(QGraphicsPathItem):
     def get_unscaled_contour(self, scaling_factor):
         return self.full_contour[0] / scaling_factor, self.full_contour[1] / scaling_factor
 
-
-def get_qt_pen(color, thickness):
+def get_qt_pen(color, thickness, transparency=255):
     try:
         color = getattr(Qt, color)
     except (AttributeError, TypeError):
         color = Qt.blue
 
-    return QPen(color, thickness)
+    pen_color = QColor(color)
+    pen_color.setAlpha(transparency)
+
+    return QPen(pen_color, thickness)
