@@ -121,9 +121,11 @@ def compute_all(main_window, contoured_frames, suppress_messages, plot=True, sav
     report_data['frame'] = [
         frame + 1 for frame in contoured_frames
     ]  # want 1-based indexing for direct comparison with GUI
-    report_data['position'] = [main_window.metadata['pullback_length'][frame] for frame in contoured_frames]
     # since frame_start is not at 0, we must shift position by pullback_start_frame
-    report_data['position'] -= main_window.metadata['pullback_length'][main_window.metadata['pullback_start_frame'] - 1]
+    if main_window.metadata['pullback_start_frame'] <= 0.25 * len(main_window.data):
+        report_data['position'] -= main_window.metadata['pullback_length'][main_window.metadata['pullback_start_frame'] - 1]
+    else:
+        report_data['position'] = [main_window.metadata['pullback_length'][frame] for frame in contoured_frames]
     report_data['position'] = report_data['position'].apply(lambda x: max(x, 0))
     report_data['phase'] = [main_window.data['phases'][frame] for frame in contoured_frames]
     report_data['lumen_area'] = [lumen_area[frame] for frame in contoured_frames]
