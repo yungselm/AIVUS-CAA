@@ -107,6 +107,14 @@ In the current state, these cannot be changed by the user (at least not without 
 - Press <kbd>Alt</kbd> + <kbd>Delete</kbd> to define a range of frames to remove gating
 - Press <kbd>Alt</kbd> + <kbd>S</kbd> to define a range of frames to switch systole and diastole in gated frames
 
+## Tutorial
+Window manipulation:
+![Demo](media/explanation_software_part1.gif)
+Contour manipulation:
+![Demo](media/explanation_software_part2.gif)
+Gating module:
+![Demo](media/explanation_software_part3.gif)
+
 ## Acknowledgements
 
 The starting point of this project was the [DeepIVUS](https://github.com/dmolony3/DeepIVUS) public repository by [David](https://github.com/dmolony3) (cloned on May 22, 2023).

@@ -182,9 +182,9 @@ def combined_signal(
     extrema_indices = []
     for signal in signal_list:
         if maxima_only:
-            extrema_indices.append(identify_extrema(main_window, signal)[1])
+            extrema_indices.append(identify_extrema(main_window, signal)[1][::2])
         else:
-            extrema_indices.append(identify_extrema(main_window, signal)[0])
+            extrema_indices.append(identify_extrema(main_window, signal)[0][::2])
 
     # find variability in extrema indices, based on assumption that heartrate is regular
     variability = []
@@ -192,8 +192,17 @@ def combined_signal(
         variability.append(np.std(np.diff(extrema)))
 
     # calculate sum of all variabilities and then create a combined signal with weights as percent of variability
-    sum_variability = np.sum(variability)
-    weights = [(var / sum_variability) ** -1 for var in variability]
+    # sum_variability = np.sum(variability)
+    # weights = [(var / sum_variability) ** -1 for var in variability]
+    inverse_variability = [(1 / var) for var in variability]
+    weights = [inv_var / sum(inverse_variability) for inv_var in inverse_variability]
+
+
+    # print the chosen weights per variable
+    if len(signal_list) == 3:
+        logger.info(f"Signal weights: Shortest distance: {weights[0]:.2f}, Vector angle: {weights[1]:.2f}, Vector length: {weights[2]:.2f}")
+    elif len(signal_list) == 2:
+        logger.info(f"Signal weights: Correlation: {weights[0]:.2f}, Blurring: {weights[1]:.2f}")
 
     combined_signal = np.zeros(len(signal_list[0]))
     for i, signal in enumerate(signal_list):
