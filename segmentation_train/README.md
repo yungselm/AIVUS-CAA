@@ -47,3 +47,9 @@ python train.py
 
 Two models will be generated at the end, `_last.h5` and `_best.h5`. 
 
+# Inference
+Use the `predict.py` code to predict on your test dataset.
+```commandline
+python predict.py 
+```
+
