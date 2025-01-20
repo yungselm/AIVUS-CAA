@@ -193,13 +193,3 @@ def reg_data_prep(img_list: List[str], mask_list: List[str]) -> Tuple[np.ndarray
     nac_data_set = np.concatenate(nac_datas, axis=0)
     mac_data_set = np.concatenate(mac_datas, axis=0)
     return nac_data_set, mac_data_set
-
-# if __name__ == '__main__':
-#     flist1 = glob(DATA_PATH + '*')
-#     print('Datasets:', flist1)
-#     # os.chdir(CTASC_PATH)
-#     DataNumbers = len(list(glob("*.nii.gz")))
-#     # print('DataNumbers:', DataNumbers)
-#     # flist1 = glob(DATA_PATH + '*')
-#     # Path(postfix).mkdir(parents=True, exist_ok=True)
-#     get_datasets(DATA_PATH, sample=DataNumbers)
