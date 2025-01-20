@@ -45,7 +45,7 @@ The hyper parameters are located in the `configs.py`. After modifying them, run 
 python train.py
 ```
 
-Two models will be generated at the end, `_last.h5` and `_best.h5`. 
+Two models will be generated at the end, `_last.h5` and `_best.h5` inside `SAVE_DIR` directory. 
 
 # Inference
 Use the `predict.py` code to predict on your test dataset.
