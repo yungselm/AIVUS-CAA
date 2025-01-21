@@ -25,7 +25,7 @@ class Predict:
 
     def normalisation(self):
         """Min-max normalisation of the images"""
-        self.images = (self.images - self.images.max(axis=(1, 2), keepdims=True)) / (
+        self.images = (self.images - self.images.min(axis=(1, 2), keepdims=True)) / (
             self.images.max(axis=(1, 2), keepdims=True) - self.images.min(axis=(1, 2), keepdims=True)
         )
 
