@@ -2,14 +2,15 @@ import math
 import random
 from glob import glob
 from typing import Tuple, List, Any, Dict
+from joblib import Parallel, delayed
 
 import albumentations as A
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 import tensorflow as tf
+from joblib import Parallel
 from sklearn.model_selection import train_test_split
-
 
 
 class DataGenerator(tf.keras.utils.Sequence):
@@ -36,10 +37,10 @@ class DataGenerator(tf.keras.utils.Sequence):
                  ):
         # nfile = glob(data_path + '/NAC/*.nii.gz')
         # train_files, val_files = train_test_split(nfile, test_size=val_size, random_state=seed)
-        nac_data, mac_data = reg_data_prep(img_files, mask_files)
-        self.img_paths = np.array(nac_data)
-        self.mask_paths = np.array(mac_data)
-
+        img_data, mask_data = reg_data_prep(img_files, mask_files)
+        self.img_paths = np.array(img_data)
+        self.mask_paths = np.array(mask_data)
+        print(img_data.shape, mask_data.shape)
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.augmentation_p = augmentation_p
@@ -77,8 +78,6 @@ class DataGenerator(tf.keras.utils.Sequence):
         x = np.zeros((self.batch_size, *self.img_size, self.img_channel), dtype=np.float32)
         y = np.zeros((self.batch_size, *self.img_size, self.mask_channel), dtype=np.uint8)
 
-        rnd_p = random.random()
-
         for i, (img, mask) in enumerate(zip(batch_img, batch_mask)):
             # img = cv2.resize(img, self.img_size)
             # mask = cv2.resize(mask, self.img_size, interpolation=cv2.INTER_NEAREST)
@@ -104,92 +103,20 @@ def load_nii_file(fpath):
     return arr
 
 
-def save_float_32(fpath):
-    org_arr = nib.load(fpath)
-    arr = np.asanyarray(org_arr.dataobj)
-    arr_changed = arr.astype(np.float32)
-
-    img = nib.Nifti1Image(arr_changed, affine=org_arr.affine)
-    name = fpath.replace("/", "_")
-    nib.save(img, f"/home/aici/Desktop/{name}")
-
-
-################################################################################
-def show_slices(slices):
-    fig, axes = plt.subplots(1, len(slices))
-    for i, slice in enumerate(slices):
-        axes[i].imshow(slice.T, cmap="jet", origin="lower")
-
-
-def in_notebook():
-    try:
-        from IPython import get_ipython
-        if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
-            return False
-    except:
-        return False
-    return True
-
-
-def make_gen(x):
-    def gen():
-        i = 0
-        while i < len(x):
-            yield next(x)
-            i += 1
-
-    return gen
-
-
-def get_datasets(data_path, val_size: float, seed=1234,
-                 batch_size: int = 32, train_data_gen: Dict[str, Any] = None):
-    from tensorflow.keras.preprocessing.image import ImageDataGenerator
-    train_data_gen = train_data_gen or dict()
-    nfile = glob(data_path + '/NAC/*.nii.gz')
-    train_files, val_files = train_test_split(nfile, test_size=val_size, random_state=seed)
-    nac_train_data, mac_train_data = reg_data_prep(train_files)
-    nac_test_data, mac_test_data = reg_data_prep(val_files)
-    n_data, nd1, nd2, nch = nac_train_data.shape
-    aug1 = ImageDataGenerator(**train_data_gen)
-    aug2 = ImageDataGenerator(**train_data_gen)
-    nac_flow = aug1.flow(nac_train_data, batch_size=batch_size, seed=seed)
-    mac_flow = aug2.flow(mac_train_data, batch_size=batch_size, seed=seed)
-    gen_nac = make_gen(nac_flow)
-    gen_mac = make_gen(mac_flow)
-    train_dataset1 = tf.data.Dataset.from_generator(gen_nac, output_types=tf.float32,
-                                                    output_shapes=(None, nd1, nd2, nch))
-    train_dataset2 = tf.data.Dataset.from_generator(gen_mac, output_types=tf.uint8, output_shapes=(None, nd1, nd2, nch))
-    train_dataset = tf.data.Dataset.zip((train_dataset1, train_dataset2))  # .batch(10)
-
-    test_data_gen_args = {}
-    aug1 = ImageDataGenerator(**test_data_gen_args)
-    aug2 = ImageDataGenerator(**test_data_gen_args)
-
-    nac_flow = aug1.flow(nac_test_data, batch_size=batch_size, seed=seed)
-    mac_flow = aug2.flow(mac_test_data, batch_size=batch_size, seed=seed)
-    gen_nac = make_gen(nac_flow)
-    gen_mac = make_gen(mac_flow)
-    test_dataset1 = tf.data.Dataset.from_generator(gen_nac, output_types=tf.float32,
-                                                   output_shapes=(None, nd1, nd2, nch))
-    test_dataset2 = tf.data.Dataset.from_generator(gen_mac, output_types=tf.uint8, output_shapes=(None, nd1, nd2, nch))
-    test_dataset = tf.data.Dataset.zip((test_dataset1, test_dataset2))  # .batch(10)
-
-    return train_dataset, test_dataset
-
-
-################################################################################
 
 ################################################################################
 def reg_data_prep(img_list: List[str], mask_list: List[str]) -> Tuple[np.ndarray, np.ndarray]:
-    nac_datas, mac_datas = [], []
-    for img_path, mask_path in zip(img_list, mask_list):
-        nac_data = load_nii_file(img_path)
-        mac_data = load_nii_file(mask_path)
+    data = Parallel(n_jobs=1)(
+        delayed(read_data)(img_path, mask_path) for img_path, mask_path in zip(img_list, mask_list))
+    img_data_set, mask_data_set = list(zip(*data))
+    mask_data_set = np.concatenate(mask_data_set, axis=0)
+    img_data_set = np.concatenate(img_data_set, axis=0)
+    return img_data_set, mask_data_set
 
-        mac_data = np.expand_dims(mac_data, axis=3)
-        nac_data = np.expand_dims(nac_data, axis=3)
-        nac_datas.append(nac_data)
-        mac_datas.append(mac_data)
-    nac_data_set = np.concatenate(nac_datas, axis=0)
-    mac_data_set = np.concatenate(mac_datas, axis=0)
-    return nac_data_set, mac_data_set
+
+def read_data(img_path, mask_path):
+    img_data = load_nii_file(img_path)
+    mask_data = load_nii_file(mask_path)
+    mask_data = np.expand_dims(mask_data, axis=3)
+    img_data = np.expand_dims(img_data, axis=3)
+    return img_data, mask_data
