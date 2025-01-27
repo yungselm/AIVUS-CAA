@@ -30,6 +30,8 @@ Installing all the modules
 pip install -r requirements.txt
 ```
 
+Note: For tensorflow 2.10, make sure to install cudnn to run on GPU
+
 # Data Preparation
 In case of dicom images you can convert it to nifti files using:
 ```commandline
