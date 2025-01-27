@@ -7,6 +7,7 @@ from tensorflow.keras import layers
 
 from configs import *
 
+
 def SimpleConv(shape=SHAPE, n_classses=1):
     input_img = keras.Input(shape=shape)
 
@@ -172,6 +173,7 @@ MODELS = dict(
 
 
 def get_model(model_name: str, postfix: Optional[str] = None):
+    print(f"[INFO] Loading model: {model_name}")
     model_weight_name = split_extension(f'{model_name}.h5', suffix=postfix) if postfix else f"{model_name}.h5"
     model = MODELS[model_name]()
     model.summary()
