@@ -106,7 +106,7 @@ def load_nii_file(fpath):
 
 ################################################################################
 def reg_data_prep(img_list: List[str], mask_list: List[str]) -> Tuple[np.ndarray, np.ndarray]:
-    data = Parallel(n_jobs=1)(
+    data = Parallel(n_jobs=5)(
         delayed(read_data)(img_path, mask_path) for img_path, mask_path in zip(img_list, mask_list))
     img_data_set, mask_data_set = list(zip(*data))
     mask_data_set = np.concatenate(mask_data_set, axis=0)
@@ -117,6 +117,6 @@ def reg_data_prep(img_list: List[str], mask_list: List[str]) -> Tuple[np.ndarray
 def read_data(img_path, mask_path):
     img_data = load_nii_file(img_path)
     mask_data = load_nii_file(mask_path)
-    mask_data = np.expand_dims(mask_data, axis=3)
+    mask_data = np.expand_dims(mask_data, axis=3).astype(np.int8)
     img_data = np.expand_dims(img_data, axis=3)
     return img_data, mask_data

@@ -9,6 +9,10 @@ dataset_raw = join(RESULT_PATH, DATASET_NAME)
 
 ds_train_path = join(BASE_DIR, "imagesTr")
 ds_train_seg_path = join(BASE_DIR, "labelsTr")
+ds_test_path = join(BASE_DIR, "imagesTs")
+ds_test_seg_path = join(BASE_DIR, "labelsTs")
+ds_val_path = join(BASE_DIR, "imagesVal")
+ds_val_seg_path = join(BASE_DIR, "labelsVal")
 
 
 
@@ -21,8 +25,7 @@ LR = 0.001
 DECAY_STEP = 500
 DECAY_RATE = 0.95
 SEED = 1234
-# SAMPLES = 300
-EPOCHS = 1000
+EPOCHS = 250
 
 IMG_SIZE = (512, 512)
 N_CHANNELS = 1
