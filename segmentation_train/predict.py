@@ -1,4 +1,3 @@
-
 import pandas as pd
 import os
 from argparse import ArgumentParser
@@ -9,7 +8,7 @@ from deep_utils import DirUtils, NIBUtils
 from tensorflow.keras.models import load_model
 
 from configs import *
-from metrics import dice_score_tf, dice_score_np
+from metrics import dice_score_tf, dice_score_np, specificity_and_sensitivity
 
 
 def load_nii_file(fpath):
@@ -22,7 +21,7 @@ def load_nii_file(fpath):
 
 
 exp_number = 52
-suffix = BEST_SUFFIX #LAST_SUFFIX
+suffix = BEST_SUFFIX  # LAST_SUFFIX
 parser = ArgumentParser()
 
 parser.add_argument("--input_path", default="output/images", help="path to the images")
@@ -34,7 +33,6 @@ parser.add_argument("--model_path", default=f"models/exp_{exp_number}/{TRIAL_IDE
 args = parser.parse_args()
 
 pred_batch_size = 256
-
 
 if __name__ == '__main__':
     model = load_model(args.model_path, custom_objects={"dice_score_tf": dice_score_tf})
@@ -61,7 +59,7 @@ if __name__ == '__main__':
             if prediction_end_index > loadtest.shape[0]:
                 prediction_end_index = loadtest.shape[0]
             data = loadtest[prediction_start_index:prediction_end_index, ...]
-            data = data / 255 # Normalize the inputs
+            data = data / 255  # Normalize the inputs
             pred = model.predict(data)
             pred = np.array(pred)
             pred = pred[0, :, :, :, 0]
@@ -77,15 +75,20 @@ if __name__ == '__main__':
             true_mask_path = join(args.true_masks, file_name.replace('_0000', ''))
             true_mask = NIBUtils.get_array(true_mask_path)
             print("true_mask Array:", true_mask.shape)
-            dice = dice_score_np(true_mask, segmentation_array[...,0])
+            dice = dice_score_np(true_mask, segmentation_array[..., 0])
+            specificity, sensitivity = specificity_and_sensitivity(true_mask, segmentation_array[..., 0])
         else:
             dice = "-"
-        df.append([file_name, dice])
+            specificity = "-"
+            sensitivity = "-"
+        df.append([file_name, dice, specificity, sensitivity])
         print(30 * '___')
         nib.save(new_img, os.path.join(args.output_path, file_name))
-    df = pd.DataFrame(df, columns=['filename', 'dice'])
+    df = pd.DataFrame(df, columns=['filename', 'dice', "specificity", "sensitivity"])
     df.to_csv(args.output_path + ".csv")
     print("Mean Dice", df['dice'].mean())
-
-
-
+    print("STD Dice", df['dice'].std())
+    print("Mean sensitivity", df['sensitivity'].mean())
+    print("STD sensitivity", df['sensitivity'].std())
+    print("Mean specificity", df['specificity'].mean())
+    print("STD specificity", df['specificity'].std())
