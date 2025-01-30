@@ -1,4 +1,4 @@
-from sklearn.metrics import confusion_matrix, recall_score
+from sklearn.metrics import confusion_matrix
 import numpy as np
 import tensorflow.keras.backend as K
 
