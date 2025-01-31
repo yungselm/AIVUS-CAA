@@ -24,8 +24,8 @@ display:
 gating:
   normalize_step: 100
   # butterworth filter for gating
-  lowcut: 0.6667  # lowcut frequency for Butterworth filter
-  highcut: 3.0  # highcut frequency for Butterworth filter
+  lowcut: 1.33  # lowcut frequency for Butterworth filter
+  highcut: 6.0  # highcut frequency for Butterworth filter
   order: 6  # order of Butterworth filter
   # identify extrema
   extrema_y_lim: 50  # percentile of how much higher next peak has to be (y-component)
@@ -47,6 +47,7 @@ save:
   save_niftis: 'none'  # 'contoured', 'all', 'none' (which frames to save as NIfTi)
   save_2d: False
   save_3d: True
+  save_dicom: True
 
 segmentation:
   # model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/models/u2net_2d_MINMAX_512_best.h5'
