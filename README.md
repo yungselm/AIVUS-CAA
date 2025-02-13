@@ -118,3 +118,21 @@ Gating module:
 ## Acknowledgements
 
 The starting point of this project was the [DeepIVUS](https://github.com/dmolony3/DeepIVUS) public repository by [David](https://github.com/dmolony3) (cloned on May 22, 2023).
+
+
+# Citation
+Please kindly cite the following paper if you use this repository.
+
+```
+@article{Stark2025,
+  author = {Anselm W. Stark and Pooya Mohammadi and Sebastian Balzer and Marc Ilic and Manuel Bergamin and Ryota Kakizaki and Andreas Giannopoulos and Andreas Haeberlin and Lorenz Räber and Isaac Shiri and Christoph Gräni},
+  title = {Automated IntraVascular UltraSound Image Processing and Quantification of Coronary Artery Anomalies: The AIVUS-CAA software},
+  journal = {Journal Name},
+  year = {2025},
+  volume = {XX},
+  number = {X},
+  pages = {XX-XX},
+  doi = {XX.XXXX/XXXXXX}
+}
+
+```
