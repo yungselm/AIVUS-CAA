@@ -125,7 +125,8 @@ Please kindly cite the following paper if you use this repository.
 
 ```
 @article{Stark2025,
-  author = {Anselm W. Stark and Pooya Mohammadi and Sebastian Balzer and Marc Ilic and Manuel Bergamin and Ryota Kakizaki and Andreas Giannopoulos and Andreas Haeberlin and Lorenz Räber and Isaac Shiri and Christoph Gräni},
+  author = {Anselm W. Stark and Pooya Mohammadi and Sebastian Balzer and Marc Ilic and Manuel Bergamin and Ryota Kakizaki
+            and Andreas Giannopoulos and Andreas Haeberlin and Lorenz Räber and Isaac Shiri and Christoph Gräni},
   title = {Automated IntraVascular UltraSound Image Processing and Quantification of Coronary Artery Anomalies: The AIVUS-CAA software},
   journal = {Journal Name},
   year = {2025},
