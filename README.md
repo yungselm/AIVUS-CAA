@@ -130,12 +130,14 @@ Please kindly cite the following paper if you use this repository.
             and Isaac Shiri and Christoph Gräni},
   title = {Automated IntraVascular UltraSound Image Processing and Quantification
            of Coronary Artery Anomalies: The AIVUS-CAA software},
-  journal = {Journal Name},
+  journal = {medRxiv},
+  publisher = {Cold Spring Harbor Laboratory Press},
+
   year = {2025},
-  volume = {XX},
-  number = {X},
-  pages = {XX-XX},
-  doi = {XX.XXXX/XXXXXX}
+  doi       = {10.1101/2025.02.18.25322450},
+  url       = {http://medrxiv.org/content/early/2025/02/20/2025.02.18.25322450.abstract},
+  note      = {Preprint}
 }
+
 
 ```
