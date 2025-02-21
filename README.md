@@ -143,7 +143,8 @@ Please kindly cite the following paper if you use this repository.
 
 Stark, A. W., P. Mohammadi Kazaj, S. Balzer, M. Ilic, M. Bergamin, R. Kakizaki,
 A. Giannopoulos, A. Haeberlin, L. Raber, I. Shiri and C. Grani (2025).
-"Automated IntraVascular UltraSound Image Processing and Quantification of Coronary Artery Anomalies:
- The AIVUS-CAA software." medRxiv: 2025.2002.2018.25322450.
+"Automated IntraVascular UltraSound Image Processing and Quantification of
+Coronary Artery Anomalies:
+The AIVUS-CAA software." medRxiv: 2025.2002.2018.25322450.
 
 ```
