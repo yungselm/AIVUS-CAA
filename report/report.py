@@ -319,10 +319,8 @@ def save_csv_files(main_window, lumen_x, lumen_y, name, frames):
     csv_out_dir = os.path.join(main_window.file_name + '_csv_files')
     logger.info(f'Saving {name} contours to {csv_out_dir}')
     os.makedirs(csv_out_dir, exist_ok=True)
-
     # Get the image dimensions in mm needed to mirror over x-axis
     img_dim_mm = main_window.metadata['dimension'] * main_window.metadata['resolution']
-    print("image dimension in mm:", img_dim_mm)
 
     with open(os.path.join(csv_out_dir, f'{name}_contours.csv'), 'w', newline='') as contours_file:
         contours_writer = csv.writer(contours_file, delimiter='\t')

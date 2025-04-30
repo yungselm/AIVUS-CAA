@@ -360,15 +360,18 @@ class IVUSDisplay(QGraphicsView):
     def draw_reference(self):
         if self.main_window.data['reference'][self.frame] is not None:
             reference_point = self.main_window.data['reference'][self.frame]
+            # Convert original coordinates to scaled display coordinates
+            scaled_x = reference_point[0] * self.scaling_factor
+            scaled_y = reference_point[1] * self.scaling_factor
             reference = Point(
-                (reference_point[0], reference_point[1]),
+                (scaled_x, scaled_y),
                 self.point_thickness,
                 self.point_radius,
                 self.main_window.reference_color,
             )
             self.graphics_scene.addItem(reference)
             text = QGraphicsTextItem('Reference')
-            text.setPos(reference_point[0], reference_point[1])
+            text.setPos(scaled_x, scaled_y)  # Position text at scaled coordinates
             self.graphics_scene.addItem(text)
 
     def start_reference(self):
@@ -395,7 +398,11 @@ class IVUSDisplay(QGraphicsView):
             elif self.measure_index is not None:  # drawing measure
                 self.add_measure(pos)
             elif self.reference_mode:
-                self.main_window.data['reference'][self.frame] = [pos.x(), pos.y()]
+                pos = self.mapToScene(event.pos())
+                # Convert scaled coordinates to original image coordinates
+                original_x = pos.x() / self.scaling_factor
+                original_y = pos.y() / self.scaling_factor
+                self.main_window.data['reference'][self.frame] = [original_x, original_y]
                 self.reference_mode = False
                 self.main_window.setCursor(Qt.ArrowCursor)
                 self.display_image(update_contours=True)
