@@ -118,3 +118,30 @@ Gating module:
 ## Acknowledgements
 
 The starting point of this project was the [DeepIVUS](https://github.com/dmolony3/DeepIVUS) public repository by [David](https://github.com/dmolony3) (cloned on May 22, 2023).
+
+
+# Citation
+Please kindly cite the following paper if you use this repository.
+
+```
+@article{Stark2025,
+  author = {Anselm W. Stark and Pooya Mohammadi and Sebastian Balzer and Marc Ilic and Manuel Bergamin
+            and Ryota Kakizaki and Andreas Giannopoulos and Andreas Haeberlin and Lorenz Räber
+            and Isaac Shiri and Christoph Gräni},
+  title = {Automated IntraVascular UltraSound Image Processing and Quantification
+           of Coronary Artery Anomalies: The AIVUS-CAA software},
+  journal = {medRxiv},
+  publisher = {Cold Spring Harbor Laboratory Press},
+  year = {2025},
+  doi       = {10.1101/2025.02.18.25322450},
+  url       = {http://medrxiv.org/content/early/2025/02/20/2025.02.18.25322450.abstract},
+  note      = {Preprint}
+}
+```
+```
+Stark, A. W., P. Mohammadi Kazaj, S. Balzer, M. Ilic, M. Bergamin, R. Kakizaki,
+A. Giannopoulos, A. Haeberlin, L. Raber, I. Shiri and C. Grani (2025).
+"Automated IntraVascular UltraSound Image Processing and Quantification of
+Coronary Artery Anomalies: The AIVUS-CAA software." medRxiv: 2025.2002.2018.25322450.
+
+```
