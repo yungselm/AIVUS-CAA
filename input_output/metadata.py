@@ -94,6 +94,8 @@ def parse_dicom(main_window):
     else:
         rows = main_window.images.shape[1]
 
+    main_window.metadata['dimension'] = rows
+
     if main_window.dicom.get('Manufacturer'):
         manufacturer = main_window.dicom.Manufacturer
     else:
