@@ -30,6 +30,7 @@ gating:
   # identify extrema
   extrema_y_lim: 50  # percentile of how much higher next peak has to be (y-component)
   extrema_x_lim: 6  # minimum distance between peaks (x-component)
+  maxima_only: False
 
 report:
   plot: False

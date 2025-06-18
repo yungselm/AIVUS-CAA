@@ -56,9 +56,6 @@ class AutomaticGating:
     def __init__(self, main_window, report_data) -> None:
         self.main_window = main_window
         self.report_data = report_data
-        self.maxima_only = self.main_window.config.gating.maxima_only
-        self.auto_gating_threshold = main_window.config.gating.auto_gating_threshold
-        self.batch_size = main_window.config.gating.auto_gating_batch_size
         self.x = self.report_data['frame'].values  # want 1-based indexing for GUI
 
     def automatic_gating(self, image_based_signal, contour_based_signal):
