@@ -29,11 +29,7 @@ gating:
   order: 6  # order of Butterworth filter
   # identify extrema
   extrema_y_lim: 50  # percentile of how much higher next peak has to be (y-component)
-  extrema_x_lim: 12  # minimum distance between peaks (x-component)
-  # automatic gating threshold for frame difference of extrema of the two signals
-  auto_gating_threshold: 5
-  auto_gating_batch_size: 30
-  maxima_only: False  # set to True to use both extrema (contour- and image-based) for gating
+  extrema_x_lim: 6  # minimum distance between peaks (x-component)
 
 report:
   plot: False

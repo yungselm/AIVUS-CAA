@@ -116,14 +116,6 @@ class ContourBasedGating:
         plt.connect('motion_notify_event', self.on_motion)
         plt.connect('button_release_event', self.on_release)
 
-        # Automatic gating and line drawing
-        if not self.main_window.gated_frames_dia and not self.main_window.gated_frames_sys:
-            auto_gating = AutomaticGating(self.main_window, self.report_data)
-            auto_gating.automatic_gating(image_based_gating, contour_based_gating)
-        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
-        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
-
-        # Layout and rendering
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
             plt.tight_layout()
@@ -132,6 +124,21 @@ class ContourBasedGating:
                 plt.draw()
             else:
                 plt.draw()
+
+        # Draw any existing lines first
+        self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+        self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+        
+        # Only run automatic gating if no frames are already gated
+        if not self.main_window.gated_frames_dia and not self.main_window.gated_frames_sys:
+            # Show method selection dialog after plot is rendered
+            auto_gating = AutomaticGating(self.main_window, self.report_data)
+            auto_gating.automatic_gating(image_based_gating_filtered, contour_based_gating_filtered)
+            
+            # Redraw lines with new automatic gating results
+            self.draw_existing_lines(self.main_window.gated_frames_dia, self.main_window.diastole_color_plt)
+            self.draw_existing_lines(self.main_window.gated_frames_sys, self.main_window.systole_color_plt)
+            plt.draw()
 
         return True
 
