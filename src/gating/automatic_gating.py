@@ -87,12 +87,14 @@ class AutomaticGating:
                 contour_indices = temp_indices[0]
 
             # Create a list with indices most likely presenting systole/diastole
-            # Start by initializing with common intersection
+            # Take common intersection
             final_indices = np.intersect1d(image_indices, contour_indices)
-
+            
+            # start by initializing every second
             first_half = final_indices[::2].tolist()
             second_half = final_indices[1::2].tolist()
 
+            # systolic contours always have higher elliptic ratio intramural because of compression
             sum_first_half = sum(
                 [
                     self.report_data.loc[self.report_data['frame'] == frame, 'elliptic_ratio'].values[0]
