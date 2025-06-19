@@ -38,23 +38,6 @@ sudo apt install nvidia-cuda-toolkit
 ```
 Potentially extra steps are needed.
 
-### Creating an executable file (**optional**)
-
-In case you prefer a single executable file instead of running the application from the terminal or an IDE, you can follow these steps to generate an executable for **the OS you are executing the command on**, i.e. if you run this in a Linux environment, you will create an executable for Linux.\
-First, you need to install the application on your system (e.g. with the commands above on Linux) and ensure it is properly set up and can be run.\
-Then you can use Pyinstaller to create an executable:
-
-```bash
-pyinstaller -F --hiddenimport=pydicom.encoders.gdcm --hiddenimport=pydicom.encoders.pylibjpeg --hiddenimport=scipy.special._cdflib main.py
-```
-
-You can find the executable **main** in the **dist** folder.
-If you are having trouble launching the application from the executable, try running it in a terminal to see potential errors:
-
-```bash
-./dist/main
-```
-
 ## Functionalities
 
 This application is designed for IVUS images in DICOM or NIfTi format and offers the following functionalities:
@@ -108,6 +91,8 @@ In the current state, these cannot be changed by the user (at least not without 
 - Press <kbd>Alt</kbd> + <kbd>S</kbd> to define a range of frames to switch systole and diastole in gated frames
 
 ## Tutorial
+An example case is provided under "/test_cases/patient_example", allowing to follow along.
+
 ### Window manipulation:
 ![Demo](media/explanation_software_part1.gif)
 ### Contour manipulation:
