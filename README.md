@@ -78,7 +78,7 @@ Make sure to quickly check the **config.yaml** file and configure everything to 
 After the config file is set up properly, you can run the application using:
 
 ```bash
-python3 main.py
+python3 src/main.py
 ```
 
 This will open a graphical user interface (GUI) in which you have access to the above-mentioned functionalities.
@@ -108,11 +108,28 @@ In the current state, these cannot be changed by the user (at least not without 
 - Press <kbd>Alt</kbd> + <kbd>S</kbd> to define a range of frames to switch systole and diastole in gated frames
 
 ## Tutorial
-Window manipulation:
+### Window manipulation:
 ![Demo](media/explanation_software_part1.gif)
-Contour manipulation:
+### Contour manipulation:
 ![Demo](media/explanation_software_part2.gif)
-Gating module:
+### Gating module:
+This module implements gating by analyzing both image-derived metrics (e.g., pixel-wise correlation and blurriness) and vector-based contour measurements (e.g., distance and direction from the image center to each contour centroid). Changes in these metrics are displayed over the sequence of frames during a pullback.
+
+The resting phases of the cardiac cycle—diastole and systole—are characterized by minimal vessel motion for several consecutive frames. We visualize these phases using two curves: the image-based curve (green) represents metrics such as correlation peaks and minimal blurriness, while the contour-based curve (yellow) reflects extrema in the vector measurements (i.e., alternating peaks and valleys corresponding to systolic and diastolic positions).
+
+- **Image-Based Metrics**: Select local maxima corresponding to frames with the highest pixel correlation and lowest blurriness.
+
+- **Contour-Based Metrics**: Select extrema in the distance vector, capturing the transition between diastole and systole.
+
+Movement patterns may vary between datasets; consequently, the final frame selection is left to the user.
+
+**Peak Assignment**: Detected peaks in each curve are matched by intersecting their frame indices. We apply a Butterworth filter (passband: 45–180 bpm) to smooth each curve; the unfiltered signal is displayed as a dotted line beneath the filtered curve.
+
+**Interactive Gating Interface**:
+- Range Selection: Specify the frame interval for gating.
+- Zoom & Pan: Zoom into the plot and drag lines to adjust gating thresholds or remove unwanted markers by dragging them downward.
+- Compare Frames: Click "Compare Frames" to open the nearest proximal frame for the selected phase (systole or diastole).
+
 ![Demo](media/explanation_software_part3.gif)
 
 ## Acknowledgements
