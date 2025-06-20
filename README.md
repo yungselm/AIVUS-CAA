@@ -1,11 +1,10 @@
 
-# NIVA (Neo-IntraVascular AAOCA assessment) <!-- omit in toc -->
+# AIVUS-CAA (Automated IntraVascular UltraSound Image Processing and Quantification of Coronary Artery Anomalis) <!-- omit in toc -->
 
 ## Table of contents <!-- omit in toc -->
 
 - [Installation](#installation)
   - [Basic](#basic)
-  - [Creating an executable file](#creating-an-executable-file)
 - [Functionalities](#functionalities)
 - [Configuration](#configuration)
 - [Usage](#usage)
@@ -56,6 +55,22 @@ This application is designed for IVUS images in DICOM or NIfTi format and offers
 
 Make sure to quickly check the **config.yaml** file and configure everything to your needs.
 
+**Display**:
+- image_size: In Pixel creates quadratic box displaying the IVUS images. Default 800x800 px.
+- gating_display_stretch: input parameter for .setStretchFactor in class RightHalf
+- lview_display_stretch: input parameter for .setStretchFactor in class RightHalf
+- windowing_sensitivity: Defines how much windowing changes with <kbd>RMB<kbd> draging
+- n_interactive_points: The dragable points on the contour, default 10 equally spaced points, however new one can also be added interactively by clicking on the contour
+- alpha_contour: Used as input parameter for .setAlpha in class IVUSDisplay. Default 128 for 50% transparency, higher values more opaque.
+
+**Gating**:
+- normalize_step: If step=0 compute one global z-score over the entire data. If step > 0 split data into non-overlapping windows of length normalize_step and apply z-score to each window seperately.
+- lowcut: lower frequency for Butterworth filter. Default 1.33Hz which is ~80bpm (since detecting systole and diastole this is equivalent to 40bpm).
+- highcut: higher frequency for Butterworth filter. Default is 6.0Hz which is 360bpm (since detecting systole and diastole this is equivalent to 180bpm).
+- order: Order for the Butterworth filter. Default 6 based on experiments with our data.
+- extrema_y_lim: Setting for finding local extrema, next extrema most be >50th percentile of previous as default
+- extrema_x_lim: Distance in frames for next local extrema. Default set to 6 frames.
+
 ## Usage
 
 After the config file is set up properly, you can run the application using:
@@ -98,6 +113,7 @@ An example case is provided under "/test_cases/patient_example", allowing to fol
 ### Contour manipulation:
 ![Demo](media/explanation_software_part2.gif)
 ### Gating module:
+
 This module implements gating by analyzing both image-derived metrics (e.g., pixel-wise correlation and blurriness) and vector-based contour measurements (e.g., distance and direction from the image center to each contour centroid). Changes in these metrics are displayed over the sequence of frames during a pullback.
 
 The resting phases of the cardiac cycle—diastole and systole—are characterized by minimal vessel motion for several consecutive frames. We visualize these phases using two curves: the image-based curve (green) represents metrics such as correlation peaks and minimal blurriness, while the contour-based curve (yellow) reflects extrema in the vector measurements (i.e., alternating peaks and valleys corresponding to systolic and diastolic positions).
