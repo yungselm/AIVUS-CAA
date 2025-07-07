@@ -2,25 +2,21 @@
 name = "AAOCASeg"
 version = "0.1.1"
 description = ""
-authors = ["yungselm", "cardionaut"]
+authors = ["yungselm", "cardionaut", "Pooya Mohammadi Kazaj"]
 package-mode = false
 
 [tool.poetry.dependencies]
 python = "3.10.12"
 loguru = "*"
-tqdm = "*"
 openpyxl = "*"
 matplotlib = "*"
 seaborn = "*"
 pylint = "*"
 hydra-core = "*"
 omegaconf = "*"
-numpy = "1.24.3"
 tensorflow = "2.15.0"
 protobuf = ">=3.20.3"
-#nvidia-cudnn-cu11 = "*"
 monai = "*"
-pytorch-lightning = "*"
 scikit-image = "*"
 pydicom = "*"
 customtkinter = "*"
@@ -28,10 +24,16 @@ pylibjpeg = "*"
 pylibjpeg-libjpeg = "*"
 pyqt5 = "5.15.2"
 pyqtdarktheme = "2.1.0"
-#urllib3 = "1.26.15"
 shapely = "*"
 SimpleITK = "*"
-opencv-python-headless = "*"
+opencv-python-headless = "^4.9.0.80"
+nnunetv2 = {git = "https://github.com/AI-in-Cardiovascular-Medicine/nnUZoo"}
+tqdm = "^4.67.1"
+torch = "2.4.0"
+torchvision = "0.19.0"
+pillow = "^11.3.0"
+numpy = "^1.26.4"
+# opencv-python = "4.8.0.76"
 
 [tool.poetry.group.dev.dependencies]
 autohooks = "^23.1.0"
@@ -55,3 +57,9 @@ skip-string-normalization = true
 
 [tool.isort]
 profile = "black"
+
+
+[[tool.poetry.source]]
+name = "pytorch_cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"

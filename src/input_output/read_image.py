@@ -25,7 +25,6 @@ def read_image(main_window):
     file_name, _ = QFileDialog.getOpenFileName(
         main_window, 'QFileDialog.getOpenFileName()', '..', 'All files (*)', options=options
     )
-
     if file_name:
         main_window.gating_display.fig.clear()
         plt.draw()
@@ -37,8 +36,10 @@ def read_image(main_window):
             parse_dicom(main_window)
         except AttributeError:
             try:  # NIfTi
-                main_window.images = sitk.GetArrayFromImage(sitk.ReadImage(file_name))
+                img = sitk.ReadImage(file_name)
+                main_window.images = sitk.GetArrayFromImage(img)
                 main_window.file_name = main_window.file_name.split('_')[0]  # remove _img.nii suffix
+                # TODO: Do the same as parse_dicom here
             except:
                 ErrorMessage(
                     main_window, 'File is not a valid IVUS file and could not be loaded (DICOM or NIfTi supported)'

@@ -40,7 +40,7 @@ save:
   autosave_interval: 10000  # in ms
   use_xml_files: False  # set True to use .xml files instead of .json to save contours, etc.
   # nifti_dir: '/home/sebalzer/Documents/Projects/AAOCASeg/niftis'
-  nifti_dir: '/home/yungselm/Documents/niftis'
+  nifti_dir: '/media/aicvi/11111bdb-a0c7-4342-9791-36af7eb70fc0/DATA/Anselm-train-nnunzoo/app_niftis'
   save_niftis: 'none'  # 'contoured', 'all', 'none' (which frames to save as NIfTi)
   save_2d: False
   save_3d: True
@@ -48,7 +48,11 @@ save:
 
 segmentation:
   # model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/models/u2net_2d_MINMAX_512_best.h5'
-  model_file: '/home/yungselm/Documents/IVUS_models/u2net_2d_MINMAX_512_best.h5'
+  model_name: 'nnunet' # 'u2net_tf', 'u2net', 'u2net_small', 'swin_uneter'
+  model_file: '/media/aicvi/11111bdb-a0c7-4342-9791-36af7eb70fc0/NNUNET_OUTPUT/nnunet_results/Dataset007_Ivus/nnUNetTrainer__nnUNetResEncUNetLPlans__2d'
+  model_fold: 0
+  normalize: False
+#  model_file: '/media/aicvi/11111bdb-a0c7-4342-9791-36af7eb70fc0/DATA/Anselm-train-nnunzoo/model/u2net_2d_MINMAX_512_best.h5'
   input_dir: /home/sebalzer/Documents/Projects/AAOCASeg/IVUSimages  # only needed for segment_files.py
   batch_size: 16
   conserve_memory: True  # set to True for devices with less than 32 GB RAM (increases inference times)
