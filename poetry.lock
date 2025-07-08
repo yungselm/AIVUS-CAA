@@ -2249,7 +2249,7 @@ dev = ["black", "pre-commit", "ruff"]
 type = "git"
 url = "https://github.com/AI-in-Cardiovascular-Medicine/nnUZoo"
 reference = "main"
-resolved_reference = "4c5de91cff69bdfbb2065143b8ba3fd5f77c98af"
+resolved_reference = "a2d496c91b71043a766fc7f02d0cebd74ea697f2"
 
 [[package]]
 name = "numba"
