@@ -657,25 +657,6 @@ torch-transformers = ["torch (>=1.8.0,<1.12.0)", "torchaudio (>=1.10.0)", "torch
 torchvision = ["opencv-python (>=4.5.5.58)", "torch (>=1.8.0,<1.12.0)", "torchvision (>=0.10.0)"]
 
 [[package]]
-name = "dicom2nifti"
-version = "2.6.0"
-description = "package for converting dicom files to nifti"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "dicom2nifti-2.6.0-py3-none-any.whl", hash = "sha256:1e7a5d259cc73b8467c80c804f752a97cf5d6aad6346df3ba841e167ea6fda15"},
-    {file = "dicom2nifti-2.6.0.tar.gz", hash = "sha256:8bb72839ba9cf75382696c92bd5a8f1c9bd9f02ddb876d69c56c07285a367dd8"},
-]
-
-[package.dependencies]
-nibabel = "*"
-numpy = "*"
-pydicom = ">=2.2.0"
-python-gdcm = "*"
-scipy = "*"
-
-[[package]]
 name = "dill"
 version = "0.4.0"
 description = "serialize all of Python"
@@ -1527,6 +1508,7 @@ optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
+    {file = "libclang-18.1.1-1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:0b2e143f0fac830156feb56f9231ff8338c20aecfe72b4ffe96f19e5a1dbb69a"},
     {file = "libclang-18.1.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:6f14c3f194704e5d09769108f03185fce7acaf1d1ae4bbb2f30a72c2400cb7c5"},
     {file = "libclang-18.1.1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:83ce5045d101b669ac38e6da8e58765f12da2d3aafb3b9b98d88b286a60964d8"},
     {file = "libclang-18.1.1-py2.py3-none-manylinux2010_x86_64.whl", hash = "sha256:c533091d8a3bbf7460a00cb6c1a71da93bffe148f172c7d03b1c31fbf8aa2a0b"},
@@ -2224,7 +2206,7 @@ zstd = ["pyzstd (>=0.14.3)"]
 
 [[package]]
 name = "nnunetv2"
-version = "1.0.0"
+version = "1.0.1"
 description = "nnUZoo is based on famus nnU-Net and it's a framework for out-of-the box image segmentation, translation, regression, etc with various models ranging from CNN, transformers, and Mamba."
 optional = false
 python-versions = ">=3.10"
@@ -2238,7 +2220,6 @@ batchgenerators = ">=0.25"
 batchgeneratorsv2 = ">=0.2"
 blosc2 = ">=3.5.1,<4.0.0"
 deep_utils = "*"
-dicom2nifti = "*"
 dynamic-network-architectures = ">=0.3.1,<0.4"
 einops = "*"
 graphviz = "*"
@@ -2267,8 +2248,8 @@ dev = ["black", "pre-commit", "ruff"]
 [package.source]
 type = "git"
 url = "https://github.com/AI-in-Cardiovascular-Medicine/nnUZoo"
-reference = "HEAD"
-resolved_reference = "554b82fbb00b690e11e22c0fe45c701b560c420e"
+reference = "main"
+resolved_reference = "4c5de91cff69bdfbb2065143b8ba3fd5f77c98af"
 
 [[package]]
 name = "numba"
@@ -2599,19 +2580,19 @@ PyYAML = ">=5.1.0"
 
 [[package]]
 name = "opencv-python-headless"
-version = "4.11.0.86"
+version = "4.9.0.80"
 description = "Wrapper package for OpenCV python bindings."
 optional = false
 python-versions = ">=3.6"
 groups = ["main"]
 files = [
-    {file = "opencv-python-headless-4.11.0.86.tar.gz", hash = "sha256:996eb282ca4b43ec6a3972414de0e2331f5d9cda2b41091a49739c19fb843798"},
-    {file = "opencv_python_headless-4.11.0.86-cp37-abi3-macosx_13_0_arm64.whl", hash = "sha256:48128188ade4a7e517237c8e1e11a9cdf5c282761473383e77beb875bb1e61ca"},
-    {file = "opencv_python_headless-4.11.0.86-cp37-abi3-macosx_13_0_x86_64.whl", hash = "sha256:a66c1b286a9de872c343ee7c3553b084244299714ebb50fbdcd76f07ebbe6c81"},
-    {file = "opencv_python_headless-4.11.0.86-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6efabcaa9df731f29e5ea9051776715b1bdd1845d7c9530065c7951d2a2899eb"},
-    {file = "opencv_python_headless-4.11.0.86-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0e0a27c19dd1f40ddff94976cfe43066fbbe9dfbb2ec1907d66c19caef42a57b"},
-    {file = "opencv_python_headless-4.11.0.86-cp37-abi3-win32.whl", hash = "sha256:f447d8acbb0b6f2808da71fddd29c1cdd448d2bc98f72d9bb78a7a898fc9621b"},
-    {file = "opencv_python_headless-4.11.0.86-cp37-abi3-win_amd64.whl", hash = "sha256:6c304df9caa7a6a5710b91709dd4786bf20a74d57672b3c31f7033cc638174ca"},
+    {file = "opencv-python-headless-4.9.0.80.tar.gz", hash = "sha256:71a4cd8cf7c37122901d8e81295db7fb188730e33a0e40039a4e59c1030b0958"},
+    {file = "opencv_python_headless-4.9.0.80-cp37-abi3-macosx_10_16_x86_64.whl", hash = "sha256:2ea8a2edc4db87841991b2fbab55fc07b97ecb602e0f47d5d485bd75cee17c1a"},
+    {file = "opencv_python_headless-4.9.0.80-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:e0ee54e27be493e8f7850847edae3128e18b540dac1d7b2e4001b8944e11e1c6"},
+    {file = "opencv_python_headless-4.9.0.80-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:57ce2865e8fec431c6f97a81e9faaf23fa5be61011d0a75ccf47a3c0d65fa73d"},
+    {file = "opencv_python_headless-4.9.0.80-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:976656362d68d9f40a5c66f83901430538002465f7db59142784f3893918f3df"},
+    {file = "opencv_python_headless-4.9.0.80-cp37-abi3-win32.whl", hash = "sha256:11e3849d83e6651d4e7699aadda9ec7ed7c38957cbbcb99db074f2a2d2de9670"},
+    {file = "opencv_python_headless-4.9.0.80-cp37-abi3-win_amd64.whl", hash = "sha256:a8056c2cb37cd65dfcdf4153ca16f7362afcf3a50d600d6bb69c660fc61ee29c"},
 ]
 
 [package.dependencies]
@@ -3234,59 +3215,6 @@ files = [
 
 [package.dependencies]
 six = ">=1.5"
-
-[[package]]
-name = "python-gdcm"
-version = "3.0.25"
-description = "Grassroots DICOM runtime libraries"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-files = [
-    {file = "python_gdcm-3.0.25-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5af2abc033015c30cb422818e9208755f643d1d1642de34200ec9363c48f2220"},
-    {file = "python_gdcm-3.0.25-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:dad7fc21219723bd2197cca1ba7b674b34905f70a1e5f2febed2e4d47e2c4e32"},
-    {file = "python_gdcm-3.0.25-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:016ee3b925017b9ec57947ce7d29b176b7c26478ad2232baa0d9717af8323518"},
-    {file = "python_gdcm-3.0.25-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:631aa02d3b95a83620305c504b4aaf78ad5a9977363d6cfafd1fbf99049e3775"},
-    {file = "python_gdcm-3.0.25-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:16f86e01bae4f4cb082442e24a64a68f79c159f29c786015f6660a119b07761d"},
-    {file = "python_gdcm-3.0.25-cp310-cp310-win32.whl", hash = "sha256:b988d28e726ea7e5fc585cfce6b734dfad3f464a8a8bfea193908e2030291ba8"},
-    {file = "python_gdcm-3.0.25-cp310-cp310-win_amd64.whl", hash = "sha256:fcc2cbf89ae8ff211b4faf1f9612a25d0b5cdc1da8b22e5ba6c6460b6a57a4ee"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:694ce7c933c4f645052e79b2440e9169a706b3aad6b871fdfc2ec2e33c545e42"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:50eb9946aeaa1609461cd54a14e34de85a0993af1a5726fcb15830a2e9438044"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1e7fa3dfd217b0f5c78f26a9a3d91e1742839aec8665cc4e5eea611222c80b5e"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:22e3d3bf3d85797fa48648258ddb4001751b9f5d7c7e28d998abc9674de01225"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:11d6df08d7e081facd0a09de77155efb2b5759f80102f40d13b716b036427a38"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-win32.whl", hash = "sha256:9e3422ad565868249740c6cc12aa37c5490d029829884e4c19266a907fab0270"},
-    {file = "python_gdcm-3.0.25-cp311-cp311-win_amd64.whl", hash = "sha256:eeb6de0387fb27f4d27f2b6fb838e5fb40463aaf287f1f1904ba38579bf7ee86"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:207f4b04a41a1a0daad77b710fe48d893545a3cdff9221506c57a3ecc715a7aa"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:757d1f792370cb196655f5f6c4154d447a22345265a4f3a1acc0b9e5717100df"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a738242f22d93fc4d52606341454de2ffbc1c76f9e55e03d5a63e6542cf3355b"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:39465f63b8f3a23c8ce568efb1b97d4f4418e37602686e66d7c8da620e2b4760"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8a291ee8173bb296439d020722f2e809ec5d8aaaa299e0d4b25e15b61c84f887"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-win32.whl", hash = "sha256:da8bc433fef4b0370292998cd8a01ba52e12a7749621e191e2b095bb06fb2949"},
-    {file = "python_gdcm-3.0.25-cp312-cp312-win_amd64.whl", hash = "sha256:04ec0cb4a1ba25fc33428b5799a26e4f08695c35edc78c4ee328424dc5eec4b8"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:9735e63d8809663e87d499bdb5c20ad8a63d86f95fd61ec433ab57cae5781542"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:8b7c62d1c834ae88802455227190f3d425b7d78eee4264d596a70950155c3858"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7a83b5f184b376ddd9f41d2e25b593433f4748e55e54d9a556b493ab52ff1630"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c78d85b18bd700d08aacfd4b1c984d4351b846ebe55afc4e3f28c8061cd28cfa"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8f2ba36839c94e6e4f31a8bc307d94175c000042a2de1c47cbd9129035057c5d"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-win32.whl", hash = "sha256:5cdd66cf6db703c74e9bdba2449c3d5e8ce17f382daad96135e6eedacb09e12d"},
-    {file = "python_gdcm-3.0.25-cp313-cp313-win_amd64.whl", hash = "sha256:89eb99bdb6344c0bc65f91453a793f16436a632a419839f927ec1bc81f7ee947"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:bfb50a90c90ca7ca1768c95cba5bc92c314fac34c1e0fa3b7f7f2fd4e7008350"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:ddf3fb49c898e6051df5e8e07547aebdbd2f3ed92b874f13afde9374ef107d67"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0fd30513a164f06175769f75dca7067a6d5e4078a21ef6f37ea10f0850e94942"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9fd06d6fe9b5e6c671fc5f43d1dd8687e6f0740fda57280af7e6fb2bd29c8f4e"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a95c0ed6d881adac74a7c963977ca33f1af6c2d09c23555325bdd34887f70da4"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-win32.whl", hash = "sha256:b8ba09c3738d0d13b0437345ed0506606a83d7be8bfb040f7e33f367f0c70f95"},
-    {file = "python_gdcm-3.0.25-cp38-cp38-win_amd64.whl", hash = "sha256:fc0cbc0c0267c3630dd561326a97e557defa2f693ba751dc42d2bd61d78e8f17"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:afec76d66216414eca596b35efce26a13904324e61a8290247b1e21d7cbb348c"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:23a8a6413d120f085311d63013065aeed7a18c0d490d730aa252bee3659bf32c"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:065b75800b4de2665148f556b1f50f8e71a6241d0a64dc49a2faa6ef6cdc9fc2"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7594527acf140094bc4c18f8a7a6540f5d56792b9eee62904f500c7185c3a862"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dd5c1a27964fa91d91e44692ecfea2488cda3e9e8562eead27d8c738ac36123c"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-win32.whl", hash = "sha256:32551e12df6c3e394182da6aaf44e2bbe6b71fac1b997efbc8e61cee8cc4dcd0"},
-    {file = "python_gdcm-3.0.25-cp39-cp39-win_amd64.whl", hash = "sha256:05eb23a12fe47144f3875bb7410d2fe4553cf7537f0d8941a0e38b6a59426262"},
-    {file = "python_gdcm-3.0.25.tar.gz", hash = "sha256:6e1a047b07c96ae92361ec854d29ceaaa17ccd55044add66db2fb02cb21d568c"},
-]
 
 [[package]]
 name = "pytz"
@@ -4418,4 +4346,4 @@ PyYAML = "*"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.10.12"
-content-hash = "3f7a7c7fd65f366999336b6e65cb26b49fc7e019bc96dd67df1dd79ec1256330"
+content-hash = "99e9dbdafb4ec58404e9740764f54bc7ea09f5a3578737b8e10e9e9eec5e17cc"
