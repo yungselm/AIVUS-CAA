@@ -48,8 +48,7 @@ save:
 
 segmentation:
   # model_file: '/home/sebalzer/Documents/Projects/AAOCASeg/models/u2net_2d_MINMAX_512_best.h5'
-  model_name: 'nnunet' # 'u2net_tf', 'u2net', 'u2net_small', 'swin_uneter'
-  model_file: '/media/aicvi/11111bdb-a0c7-4342-9791-36af7eb70fc0/NNUNET_OUTPUT/nnunet_results/Dataset007_Ivus/nnUNetTrainer__nnUNetResEncUNetLPlans__2d'
+  model_file: '/media/aicvi/11111bdb-a0c7-4342-9791-36af7eb70fc0/NNUNET_OUTPUT/nnunet_results/Dataset007_Ivus/nnUNetTrainerU2NetP__nnUNetResEncUNetLPlans__2d'
   model_fold: 0
   normalize: False # When working with tensorflow models set this to True
 #  model_file: '/media/aicvi/11111bdb-a0c7-4342-9791-36af7eb70fc0/DATA/Anselm-train-nnunzoo/model/u2net_2d_MINMAX_512_best.h5'
