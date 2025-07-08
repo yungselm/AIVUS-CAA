@@ -89,7 +89,14 @@ class AutomaticGating:
             # Create a list with indices most likely presenting systole/diastole
             # Take common intersection
             final_indices = np.intersect1d(image_indices, contour_indices)
-            
+            # print(f"Image based indices: {image_indices}")
+            # print(f"Contour based indices: {contour_indices}")
+            # print(f"Combined indices: {final_indices}")
+            # write_csv_signals(image_based_signal, 
+            #                   contour_based_signal, 
+            #                   image_indices, 
+            #                   contour_indices, 
+            #                   final_indices)
             # start by initializing every second
             first_half = final_indices[::2].tolist()
             second_half = final_indices[1::2].tolist()
@@ -130,3 +137,19 @@ class AutomaticGating:
                 self.main_window.data['phases'][frame] = 'D'
             for frame in self.main_window.gated_frames_sys:
                 self.main_window.data['phases'][frame] = 'S'
+
+def write_csv_signals(image_signal, contour_signal, image_indices, contour_indices, combined_indices):
+    import pandas as pd
+    df = pd.DataFrame({
+        'frame': np.arange(len(image_signal)),
+        'image_signal': image_signal,
+        'contour_signal': contour_signal,
+        'image_indices': np.zeros(len(image_signal)),
+        'contour_indices': np.zeros(len(image_signal)),
+        'combined_indices': np.zeros(len(image_signal)),
+    })
+    # replace the 0 with ones if frame is in image_indices, contour_indices, combined_indices
+    df.loc[df['frame'].isin(image_indices), 'image_indices'] = 1
+    df.loc[df['frame'].isin(contour_indices), 'contour_indices'] = 1
+    df.loc[df['frame'].isin(combined_indices), 'combined_indices'] = 1
+    df.to_csv('/home/yungselm/Documents/AAOCASeg/stats_data/signals.csv')

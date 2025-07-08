@@ -44,9 +44,18 @@ def prepare_data(main_window, frames, report_data, x1=50, x2=450, y1=50, y2=450)
     # Normalize signals
     correlation = normalize_data(calculate_correlation(frames), step)
     blurring = normalize_data(calculate_blurring_fft(frames), step)
-    shortest_dist = normalize_data(report_data['shortest_distance'], step)
-    vector_angle = normalize_data(report_data['vector_angle'], step)
-    vector_length = normalize_data(report_data['vector_length'], step)
+    # shortest_dist = normalize_data(report_data['shortest_distance'], step)
+    # vector_angle = normalize_data(report_data['vector_angle'], step)
+    # vector_length = normalize_data(report_data['vector_length'], step)
+    # Shift contour signals to align with current frame
+    shortest_dist = normalize_data(np.roll(report_data['shortest_distance'], 1), step)
+    vector_angle = normalize_data(np.roll(report_data['vector_angle'], 1), step)
+    vector_length = normalize_data(np.roll(report_data['vector_length'], 1), step)
+    
+    # Set first frame to 0 (no previous frame)
+    shortest_dist[0] = 0
+    vector_angle[0] = 0
+    vector_length[0] = 0
 
     signal_image_based_filtered = [
         bandpass_filter(main_window, correlation),
@@ -217,13 +226,13 @@ def identify_extrema(main_window, signal):
 
     # Remove NaN and infinite values from the signal
     signal = np.nan_to_num(signal, nan=0.0, posinf=0.0, neginf=0.0)
-
+    
     # Dynamically calculate prominence based on the signal's characteristics
     min_height = np.percentile(signal, extrema_y_lim)  # Only consider peaks above the median
 
     # Find maxima and minima using find_peaks with dynamic prominence
     maxima_indices, _ = find_peaks(signal, distance=extrema_x_lim, height=min_height)
-    minima_indices, _ = find_peaks(-signal, distance=extrema_x_lim, height=min_height)
+    minima_indices, _ = find_peaks(-signal, distance=extrema_x_lim, height=-min_height)
 
     # Combine maxima and minima indices into one array and sort them
     extrema_indices = np.concatenate((maxima_indices, minima_indices))
