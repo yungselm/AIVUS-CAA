@@ -14,7 +14,6 @@ class Predict:
         config = main_window.config if config is None else config
         self.model_file = config.segmentation.model_file
         self.model_fold = config.segmentation.model_fold
-        self.model_name = config.segmentation.model_name
         self.normalize = config.segmentation.normalize
         self.batch_size = config.segmentation.batch_size
         self.conserve_memory = config.segmentation.conserve_memory
@@ -109,63 +108,6 @@ class Predict:
             print(f"mask shape: {mask.shape}")
         return mask
 
-    @staticmethod
-    def resize_with_crop_or_pad_cv2(img: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
-        """
-        Resize an image (NumPy array H×W or H×W×C) with cropping or padding to maintain aspect ratio,
-        using OpenCV and NumPy only.
-        """
-        # ensure we have H×W×C
-        if img.ndim == 2:
-            img = img[:, :, None]
-
-        original_height, original_width = img.shape[:2]
-        target_ratio = target_width / target_height
-        original_ratio   = original_width / original_height
-
-        # first, scale so that one dimension matches
-        if original_ratio > target_ratio:
-            scale = target_height / original_height
-        else:
-            scale = target_width / original_width
-
-        new_width = int(original_width * scale)
-        new_height = int(original_height * scale)
-        resized = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-
-        # now either crop or pad to get exactly target WxH
-        top = bottom = left = right = 0
-
-        # horizontal adjustment
-        if new_width > target_width:
-            # crop width
-            left = (new_width - target_width) // 2
-            right = left + target_width
-            cropped = resized[:, left:right, :]
-        else:
-            # pad width
-            pad = target_width - new_width
-            left = pad // 2
-            right = pad - left
-            cropped = cv2.copyMakeBorder(resized, 0, 0, left, right,
-                                         borderType=cv2.BORDER_CONSTANT, value=0)
-
-        # vertical adjustment
-        if cropped.shape[0] > target_height:
-            top = (cropped.shape[0] - target_height) // 2
-            cropped = cropped[top:top+target_height, :, :]
-        else:
-            pad = target_height - cropped.shape[0]
-            top = pad // 2
-            bottom = pad - top
-            cropped = cv2.copyMakeBorder(cropped, top, bottom, 0, 0,
-                                         borderType=cv2.BORDER_CONSTANT, value=0)
-
-        # if originally single‐channel, squeeze back
-        if cropped.shape[2] == 1:
-            cropped = cropped[:, :, 0]
-
-        return cropped
 
     def check_input_shape(self, input_shape, batch_size=16):
         """
@@ -173,6 +115,7 @@ class Predict:
         model.input_shape
 
         """
+        import tensorflow as tf
         logger.info(f"Input shape: {self.images.shape}")
         if input_shape[1] != self.images.shape[1] or input_shape[2] != self.images.shape[2]:
             logger.warning("Reshaping the images to match the model input shape.")
@@ -188,7 +131,7 @@ class Predict:
                 end = min(start + batch_size, num_images)
                 batch = self.images[start:end]
                 batch = np.expand_dims(batch, axis=-1)
-                batch = [self.resize_with_crop_or_pad_pil(img, input_shape[1], input_shape[2]) for img in batch]
+                batch = tf.image.resize_with_crop_or_pad(batch, input_shape[1], input_shape[2])
                 # batch = resize_with_crop_or_pad(batch, model.input_shape[1], model.input_shape[2])
                 batch = np.squeeze(batch, axis=-1)
                 reshaped_images.append(batch)
