@@ -1,4 +1,4 @@
-from PIL import Image, ImageOps
+import cv2
 import numpy as np
 from loguru import logger
 from PyQt5.QtWidgets import QProgressDialog
@@ -110,62 +110,62 @@ class Predict:
         return mask
 
     @staticmethod
-    def resize_with_crop_or_pad_pil(img, target_height, target_width):
+    def resize_with_crop_or_pad_cv2(img: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
         """
-        Resize an image with cropping or padding to maintain aspect ratio.
-
-        Args:
-            img: PIL Image object
-            target_height: Target height in pixels
-            target_width: Target width in pixels
-
-        Returns:
-            PIL Image object with target dimensions
+        Resize an image (NumPy array H×W or H×W×C) with cropping or padding to maintain aspect ratio,
+        using OpenCV and NumPy only.
         """
-        # Get original dimensions
-        if isinstance(img, np.ndarray):
-            img = Image.fromarray(img)
-        original_width, original_height = img.size
+        # ensure we have H×W×C
+        if img.ndim == 2:
+            img = img[:, :, None]
+
+        original_height, original_width = img.shape[:2]
         target_ratio = target_width / target_height
-        original_ratio = original_width / original_height
+        original_ratio   = original_width / original_height
 
-        # Determine if we need to crop or pad
+        # first, scale so that one dimension matches
         if original_ratio > target_ratio:
-            # Image is wider than target - crop horizontally or pad vertically
-            # First resize to make height match target height
-            new_height = target_height
-            new_width = int(original_width * (new_height / original_height))
-            img = img.resize((new_width, new_height), Image.BILINEAR)
-
-            # Then crop or pad width
-            if new_width > target_width:
-                # Crop horizontally
-                left = (new_width - target_width) // 2
-                right = left + target_width
-                img = img.crop((left, 0, right, target_height))
-            else:
-                # Pad horizontally
-                padding = (target_width - new_width) // 2
-                img = ImageOps.expand(img, (padding, 0, target_width - new_width - padding, 0), fill=0)
+            scale = target_height / original_height
         else:
-            # Image is taller than target - crop vertically or pad horizontally
-            # First resize to make width match target width
-            new_width = target_width
-            new_height = int(original_height * (new_width / original_width))
-            img = img.resize((new_width, new_height), Image.BILINEAR)
+            scale = target_width / original_width
 
-            # Then crop or pad height
-            if new_height > target_height:
-                # Crop vertically
-                top = (new_height - target_height) // 2
-                bottom = top + target_height
-                img = img.crop((0, top, target_width, bottom))
-            else:
-                # Pad vertically
-                padding = (target_height - new_height) // 2
-                img = ImageOps.expand(img, (0, padding, 0, target_height - new_height - padding), fill=0)
+        new_width = int(original_width * scale)
+        new_height = int(original_height * scale)
+        resized = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
 
-        return img
+        # now either crop or pad to get exactly target WxH
+        top = bottom = left = right = 0
+
+        # horizontal adjustment
+        if new_width > target_width:
+            # crop width
+            left = (new_width - target_width) // 2
+            right = left + target_width
+            cropped = resized[:, left:right, :]
+        else:
+            # pad width
+            pad = target_width - new_width
+            left = pad // 2
+            right = pad - left
+            cropped = cv2.copyMakeBorder(resized, 0, 0, left, right,
+                                         borderType=cv2.BORDER_CONSTANT, value=0)
+
+        # vertical adjustment
+        if cropped.shape[0] > target_height:
+            top = (cropped.shape[0] - target_height) // 2
+            cropped = cropped[top:top+target_height, :, :]
+        else:
+            pad = target_height - cropped.shape[0]
+            top = pad // 2
+            bottom = pad - top
+            cropped = cv2.copyMakeBorder(cropped, top, bottom, 0, 0,
+                                         borderType=cv2.BORDER_CONSTANT, value=0)
+
+        # if originally single‐channel, squeeze back
+        if cropped.shape[2] == 1:
+            cropped = cropped[:, :, 0]
+
+        return cropped
 
     def check_input_shape(self, input_shape, batch_size=16):
         """
