@@ -1,12 +1,17 @@
-.. AIVUS-CAA documentation master file, created by sphinx-quickstart.
+.. AIVUS-CAA documentation master file, created by
+   sphinx-quickstart on Tue Sep 9 10:57:43 2025.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-===============================================================
+========================
+AIVUS-CAA documentation
+========================
 
 *AIVUS-CAA: Automated IntraVascular UltraSound image processing and coronary artery analysis.* 
 
 AIVUS-CAA is a Python application for intravascular ultrasound (IVUS) image processing:contentReference[oaicite:4]{index=4}. It enables frame-by-frame inspection of IVUS sequences and quantitative analysis of lumen contours. Users can manually draw contours or use automatic tools to measure lumen area and other metrics. 
 
-.. warning:: 
+.. warning::
    This software is provided *as is*, for research use only. Users should independently verify all results.
 
 .. include:: contents/key_features.rst
@@ -16,15 +21,15 @@ Documentation Structure
 -----------------------
 .. toctree::
    :titlesonly:
+
    contents/key_features
    contents/installation
    contents/usage
    contents/tutorial
-   contents/api_reference
-   ../contributing.md
+   contents/api_references
+   CONTRIBUTING.md
    contents/related_projects
-   Github
-
+   Github <https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA>
 
 License
 -------
