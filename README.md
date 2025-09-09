@@ -1,5 +1,6 @@
 
 # AIVUS-CAA (Automated IntraVascular UltraSound Image Processing and Quantification of Coronary Artery Anomalis) <!-- omit in toc -->
+[![Docs](https://img.shields.io/readthedocs/aivus-caa)](https://aivus-caa.readthedocs.io)
 
 ## Table of contents <!-- omit in toc -->
 

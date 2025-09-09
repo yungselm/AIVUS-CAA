@@ -1,4 +1,4 @@
-# docs/contents/installation.rst
+.. docs/contents/installation.rst
 
 Installation
 ============

@@ -9,7 +9,7 @@ AIVUS-CAA documentation
 
 *AIVUS-CAA: Automated IntraVascular UltraSound image processing and coronary artery analysis.* 
 
-AIVUS-CAA is a Python application for intravascular ultrasound (IVUS) image processing:contentReference[oaicite:4]{index=4}. It enables frame-by-frame inspection of IVUS sequences and quantitative analysis of lumen contours. Users can manually draw contours or use automatic tools to measure lumen area and other metrics. 
+AIVUS-CAA is a Python application for intravascular ultrasound (IVUS) image processing. It enables frame-by-frame inspection of IVUS sequences and quantitative analysis of lumen contours. Users can manually draw contours or use automatic tools to measure lumen area and other metrics. 
 
 .. warning::
    This software is provided *as is*, for research use only. Users should independently verify all results.

@@ -1,11 +1,11 @@
-# docs/contents/key_features.rst
+.. docs/contents/key_features.rst
 
 Key Features
 ============
 
 The main functionalities of AIVUS-CAA are:
 
-- **IVUS Image Inspection:** Frame-by-frame visualization of DICOM or NIfTI IVUS images, with display of associated metadata:contentReference[oaicite:5]{index=5}.
+- **IVUS Image Inspection:** Frame-by-frame visualization of DICOM or NIfTI IVUS images, with display of associated metadata.
 - **Manual Contouring:** Draw or adjust lumen contours on each frame, with automatic calculation of lumen area, circumference, and ellipticity.
 - **Automatic Segmentation (WIP):** Experimental tools for automatic lumen segmentation across all frames.
 - **Cardiac Gating:** Identify systolic and diastolic frames via signal processing, and tag them interactively.
