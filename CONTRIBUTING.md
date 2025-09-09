@@ -23,13 +23,13 @@ By participating, you agree to respect everyone in this community.
 1. Fork the repo and clone your fork
 ```bash
 git clone https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA.git
-cd multimoda-rs
+cd aivus-caa
 ```
 2. Create a new branch
 ```bash
 git checkout -b feature/new-feature
 ```
-3. install dependencies and run tests
+3. install dependencies and run tests (test not yet implemented!)
 ```bash
 pip install -e
 pytest
@@ -55,5 +55,9 @@ If you find a bug, please help us fix it by opening a [a new issue](https://gith
     - `AIVUS-CAA` version
     - Python version
     - OS and architecture
+
+## Don't know where to start?
+- We currently need help improving the documentation and writing test for the existing funcitonality.
+- If you feel up for a challenge, we want to implement the possibility of additional contours for e.g. EEM.
 
 ------------------------------------------------------------------------------------
