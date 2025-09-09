@@ -4,7 +4,7 @@
 ## Table of contents <!-- omit in toc -->
 
 - [Installation](#installation)
-  - [Basic](#basic)
+- [Basic](#basic)
 - [Functionalities](#functionalities)
 - [Configuration](#configuration)
 - [Usage](#usage)

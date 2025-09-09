@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "AAOCASeg"
+name = "AIVUS-CAA"
 version = "0.1.1"
 description = ""
 authors = ["yungselm", "cardionaut", "Pooya Mohammadi Kazaj"]
-package-mode = false
+# package-mode = false
 
 [tool.poetry.dependencies]
-python = "3.10.12"
+python = "3.10"
 loguru = "*"
 tqdm = "*"
 openpyxl = "*"
