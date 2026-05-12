@@ -14,9 +14,6 @@ AIVUS-CAA is a Python application for intravascular ultrasound (IVUS) image proc
 .. warning::
    This software is provided *as is*, for research use only. Users should independently verify all results.
 
-.. include:: contents/key_features.rst
-.. include:: contents/related_projects.rst
-
 .. toctree::
    :caption: Getting Started
    :titlesonly:
