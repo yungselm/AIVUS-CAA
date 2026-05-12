@@ -10,7 +10,7 @@ contour drawing, gating, and report generation.
 
    <div style="text-align: center; margin: 1.5em 0;">
      <video width="900" controls>
-       <source src="../media/tutorial_video.mp4" type="video/mp4">
+       <source src="../tutorial_video.mp4" type="video/mp4">
        Your browser does not support the video tag.
      </video>
    </div>
