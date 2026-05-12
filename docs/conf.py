@@ -39,6 +39,20 @@ html_theme_options = {
     'collapse_navigation': False,
 }
 
+autodoc_mock_imports = [
+    "PyQt6",
+    "pyqtdarktheme",
+    "torch",
+    "torchvision",
+    "tensorflow",
+    "SimpleITK",
+    "cv2",
+    "skimage",
+    "pydicom",
+    "pylibjpeg",
+    "shapely",
+]
+
 autodoc_default_options = {
     'members': True,
     'undoc-members': True,
