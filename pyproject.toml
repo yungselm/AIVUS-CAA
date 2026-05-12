@@ -5,7 +5,7 @@ description = "AIVUS: AIVUS-CAA (coronary artery anomalies) AIVUS-OCT (optical c
 authors = ["yungselm", "cardionaut", "Pooya Mohammadi Kazaj"]
 
 [tool.poetry.dependencies]
-python = ">=3.10, <3.12"
+python = ">=3.10, <3.13"
 loguru = "*"
 tqdm = "*"
 matplotlib = "*"
