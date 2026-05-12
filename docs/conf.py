@@ -61,3 +61,4 @@ autodoc_default_options = {
 }
 autodoc_typehints = 'description'
 numfig = True
+
