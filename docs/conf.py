@@ -19,10 +19,6 @@ release = get_version()
 version = '.'.join(release.split('.')[:2])
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinx_autodoc_typehints',
     'myst_parser',
 ]
 
