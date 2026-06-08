@@ -1,48 +1,50 @@
-Architecture Overview
-=====================
+# docs/contents/api_reference.rst
 
-AIVUS-OCT is a desktop application built with PyQt6. The source code lives in ``src/`` and is organised into five packages around clear responsibilities.
+Application Structure & API Reference
+======================================
 
-Entry Point
------------
+Source layout
+-------------
 
-``main.py`` initialises logging, applies the dark theme, and launches the ``Master`` window via Hydra configuration.
+All application code lives under ``src/``::
 
-GUI (``gui/``)
---------------
+    src/
+    ├── domain/              data classes — RuntimeData, FrameData, CctaRuntimeData
+    ├── gating/              cardiac gating — ContourBasedGating, AutomaticGating, signal processing
+    ├── gui/                 app-level wiring — Master window, keyboard shortcuts, menu bar
+    ├── input_output/
+    │   ├── input/           readers — DICOM series, NIfTI (IVUS/OCT/CCTA), metadata parsers
+    │   └── output/          writers — report CSV, NIfTI export, JSON contour save/load
+    ├── pages/
+    │   ├── ccta/            CCTA page — tri-plane viewer, VTK 3D renderer, mask panel
+    │   └── intravascular/
+    │       ├── left_half/   image display, spline contour editor, drawing tools
+    │       ├── popup_windows/ dialogs — frame range, message boxes, settings
+    │       ├── right_half/  gating plot, longitudinal view, phase controls
+    │       └── utils/       helpers shared across the intravascular page
+    ├── segmentation/        automatic segmentation — nnUZoo wrapper, mask-to-contour conversion
+    └── tools/               shared Qt-independent tools — BrushGeometry, BrushCursor
 
-The ``Master`` class in ``gui.py`` is the central coordinator. It owns all application state — loaded images, contours, gating data, metadata — and wires together every other module. Sub-packages handle distinct regions of the interface:
-
-- **left_half/** — frame-by-frame image display and manual contouring canvas
-- **right_half/** — longitudinal view and gating signal display
-- **popup_windows/** — results plots, small previews, video player, and dialogs
-- **utils/** — shared GUI helpers: geometry math, contour rendering, metrics, custom slider widget
-
-Input / Output (``input_output/``)
------------------------------------
-
-- ``read_image.py`` — loads DICOM and NIfTI files, normalises pixel data, and populates the display
-- ``metadata.py`` — parses DICOM tags (patient info, imaging parameters) and renders them in a table; handles IVUS and OCT modality differences
-- ``contours_io.py`` — defines ``Contour``, ``FrameData``, and ``Measurements`` data structures; serialises and deserialises contour sessions to disk
-
-Gating (``gating/``)
+Key design principles
 ---------------------
 
-Cardiac gating extracts diastolic/systolic frames from an image sequence.
+- ``domain/`` is the single source of truth for runtime state; pages read and write through ``RuntimeData`` / ``CctaRuntimeData`` rather than storing data locally.
+- ``pages/`` contains all page-specific UI code. Each page (``IntravascularPage``, ``CctaPage``) is a self-contained ``QWidget`` instantiated by ``Master`` via ``reload_intravascular`` / ``reload_ccta``; tearing down a page and reinstantiating it is the reset strategy.
+- ``tools/`` holds logic that is reusable across pages with no Qt widget dependency (pure geometry and pixmap helpers only).
+- ``input_output/`` has no GUI imports; it can be exercised headlessly in tests or CLI scripts.
 
-- ``automatic_gating.py`` — dialog for selecting the gating method (maxima or extrema)
-- ``contour_based_gating.py`` — derives a gating signal from contour area measurements over time
-- ``signal_processing.py`` — shared signal processing utilities used by both gating methods
+Entry point
+-----------
 
-Segmentation (``segmentation/``)
-----------------------------------
+.. code-block:: bash
 
-- ``segment.py`` — runs the neural network predictor on IVUS frames and converts output masks to contours with measurements
-- ``predict.py`` — model loading and inference
-- ``segment_files.py`` — batch segmentation of files outside the GUI
-- ``save_as_nifti.py`` — exports segmentation masks as NIfTI volumes
+    python3 src/main.py
 
-Reporting (``report/``)
-------------------------
+``main.py`` creates the ``QApplication``, instantiates ``Master`` (the top-level ``QMainWindow``), and starts the event loop.
 
-``report.py`` aggregates per-frame lumen measurements into a summary report, generates result plots, and exports data as CSV files.
+Auto-generated API
+------------------
+
+Detailed per-module docs can be generated with ``sphinx.ext.autodoc``::
+
+    cd docs && make html
