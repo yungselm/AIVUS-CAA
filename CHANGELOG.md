@@ -3,6 +3,69 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] - 2026-06-26
+
+Gating module rewrite, 3D crosshair and lasso erase for the CCTA viewer, and longitudinal view phase markers.
+
+### Added
+- Automatic heart-rate detection via FFT peak of the image signal; bandpass filter centered on detected `f_heart`
+- Frequency sweep window: heatmap of the image signal at sweeping BPM cutoffs; click a row to apply that cutoff interactively
+- Lumen area incorporated as a second gating signal when contours are available
+- CCTA 3D crosshair: clicking in the 3D render propagates the voxel position to the 2D views and vice versa
+- CCTA lasso erase tool: draw a screen-space polygon to zero mask voxels inside it for the selected label
+- Longitudinal view phase markers: dotted cosmetic-pen lines at diastolic and systolic frame positions in their respective phase colors
+
+### Changed
+- Peak detection replaced: `scipy.find_peaks` replaced by `walk_extrema` (hysteresis direction-change walker) and `filter_by_period` (drops peaks outside the expected cardiac period by more than 40%)
+- Gating frames now selected at image-signal valleys (minimum NCC = stable end-phases) instead of peaks
+- Area-signal classification corrected for aortic IVUS: area maximum = systole, area minimum = diastole
+- Module renamed from `signal_processing` to `gating_pipeline` and from `contour_based_gating` to `gating_plot`; classes and attributes updated accordingly
+- STL export defaults to ASCII format
+- 3D viewer click handling moved from VTK observer to Qt eventFilter
+
+### Fixed
+- Gating plot freeze on re-run when line artists from a cleared figure could not be removed
+- Frequency sweep opened a non-interactive Agg figure; now wrapped in FigureCanvasQTAgg and QMainWindow
+- DICOM modality aliases US and OPT added so standard IVUS and OCT files are no longer rejected at load
+- DICOM private tag values in the metadata inspector truncated to prevent overflow
+- Camera position no longer shifts after lasso erase in the CCTA 3D viewer
+- Hidden labels preserved in _actors after lasso erase so they can be re-shown without a full re-render
+- Lasso execute is a no-op when no mask is loaded
+- RuntimeError from a Qt-deleted Marker object handled when removing the longitudinal view frame marker
+
+## [1.7.0] - 2026-06-09
+
+Aortic root STL extraction with cut-plane workflow and QoL improvements for the CCTA module.
+
+### Added
+- Cut-line overlays rendered as dashed grey lines on the 2D CCTA views after a cut plane is drawn
+- Progress bars for NIfTI and STL export; file dialog now opens before computation starts so the UI is responsive
+- Escape key on CCTA page returns to neutral state: deactivates brush and cancels any active line draw
+- Versioned mask auto-loaded on volume open if a matching `_ccta_seg_*.nii.gz` file exists next to the source; falls back to the manual load dialog if none is found
+
+### Changed
+- Binary STL write vectorised using a numpy structured dtype (50 bytes per triangle in one `tobytes()` call)
+
+### Fixed
+- STL export vertex coordinates now replicate the VTK display coordinate system (Y-flip only), correcting coronary LR orientation and aortic root upright alignment
+- STL face winding flipped to produce outward-facing normals (skimage marching cubes emits inward normals by default)
+
+## [1.6.3] - 2026-06-09
+
+### Added
+- Autosave functionality for CCTA images (same naming convention as for JSON but as nifti mask)
+- Both intravascular and CCTA do saving on thread that copied data, ensuring no interruption of main thread
+
+## [1.6.2] - 2026-06-08
+
+### Added
+- Second toolbar row on the intravascular page: contour-type dropdown (Lumen / EEM / Calcium / Branch / Lipid / Macrophage), **New Contour** button, and **+ Add Contour** button
+- Drawing-tool buttons (Closed Spline, Open Spline, Brush) are automatically greyed out for tools not permitted by the selected contour type (`ALLOWED_TOOLS`)
+- Keyboard shortcuts (E, Q, 7-0, Ctrl+7-0) now also sync the contour-type dropdown
+- NIfTI files are now saved next to the opened input file (in a `contoured_frames/`, `gated_frames/`, or `all_frames/` subdirectory) instead of the `nifti_dir` path from `config.yaml`
+- `QWidgetWindow must be a top level window` Qt warning on page reload suppressed by calling `hide()` before `removeWidget`
+- `RuntimeError: wrapped C/C++ object of type QCheckBox has been deleted` on page reload suppressed with `sip.isdeleted()` guard in `change_value`
+
 ## [1.6.1] - 2026-06-08
 
 ### Changed
@@ -170,7 +233,7 @@ Now runs on PyQt6
 
 ### Changed
 - Completely refactored the Display module for maintainability and correctness: enforces type safety, proper error handling, and single-responsibility design throughout.
-- Separated spline object logic into two distinct classes — one for geometric calculations and one for the PyQt representation.
+- Separated spline object logic into two distinct classes - one for geometric calculations and one for the PyQt representation.
 
 ## [1.1.1] - 2025-10-19
 ### Changed
@@ -193,6 +256,8 @@ Now runs on PyQt6
 - Declared first stable release (after paper publication).
 - Updated citation from medRxiv to *Computer Methods and Programs in Biomedicine*.
 
+[1.8.0]: https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA/compare/v1.6.3...v1.7.0
 [1.6.0]: https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA/compare/v1.4.0...v1.5.0
 [1.3.1]: https://github.com/AI-in-Cardiovascular-Medicine/AIVUS-CAA/compare/v1.3.0...v1.3.1

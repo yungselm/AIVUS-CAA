@@ -73,7 +73,7 @@ class Master(QMainWindow):
 
         self.active_page = ActivePage.INTRAVASCULAR
         self.stack = QStackedWidget()
-        self.ccta_page = CctaPage(self.status_bar)
+        self.ccta_page = CctaPage(config, self.status_bar)
         self.intravascular_page = IntravascularPage(config, self.menu_bar, self.status_bar)
         self.stack.addWidget(self.intravascular_page)
         self.stack.addWidget(self.ccta_page)
@@ -118,6 +118,7 @@ class Master(QMainWindow):
 
     def reload_intravascular(self) -> None:
         old = self.intravascular_page
+        old.hide()
         self.stack.removeWidget(old)
         old.deleteLater()
 
@@ -133,10 +134,11 @@ class Master(QMainWindow):
     def reload_ccta(self) -> None:
         old = self.ccta_page
         old.shutdown()  # release VTK OpenGL context before HWND is invalidated
+        old.hide()
         self.stack.removeWidget(old)
         old.deleteLater()
 
-        new_page = CctaPage(self.status_bar)
+        new_page = CctaPage(self.config, self.status_bar)
         self.stack.insertWidget(ActivePage.CCTA.value, new_page)
         self.ccta_page = new_page
         self.stack.setCurrentIndex(ActivePage.CCTA.value)

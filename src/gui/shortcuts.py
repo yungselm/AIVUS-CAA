@@ -25,9 +25,26 @@ from pages.intravascular.popup_windows.results_plot import ResultsPlot
 from domain.all_types import ContourType, SegmentationTool
 
 
+def _sync_contour_combo(main_window, contour_type):
+    lh = getattr(main_window, 'left_half', None)
+    if lh is not None:
+        lh.set_active_contour_type_ui(contour_type)
+
+
+def _new_contour_synced(main_window, contour_type):
+    new_contour(main_window, contour_type)
+    _sync_contour_combo(main_window, contour_type)
+
+
+def _new_contour_append_synced(main_window, contour_type):
+    new_contour_append(main_window, contour_type)
+    _sync_contour_combo(main_window, contour_type)
+
+
 def init_ccta_shortcuts(ccta_page):
     _widget_children_shortcut('R', ccta_page, ccta_page.reset_windowing)
     _widget_children_shortcut('F', ccta_page, ccta_page.reset_zoom)
+    _widget_children_shortcut('Escape', ccta_page, ccta_page.reset_to_neutral)
 
 
 def _widget_children_shortcut(key, parent, slot):
@@ -46,6 +63,10 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence('Escape'), main_window, partial(stop_all, main_window))
     QShortcut(QKeySequence('Delete'), main_window, partial(delete_contour, main_window))
     QShortcut(QKeySequence('Ctrl+Z'), main_window, partial(undo_delete, main_window))
+    QShortcut(QKeySequence('Shift+A'), main_window, partial(copy_contour_from_left, main_window))
+    QShortcut(QKeySequence('Shift+D'), main_window, partial(copy_contour_from_right, main_window))
+    QShortcut(QKeySequence('Shift+W'), main_window, partial(copy_contour_from_next_gated, main_window))
+    QShortcut(QKeySequence('Shift+S'), main_window, partial(copy_contour_from_prev_gated, main_window))
     # Gating
     QShortcut(QKeySequence('Alt+P'), main_window, partial(plot_results, main_window))
     QShortcut(QKeySequence('Alt+Delete'), main_window, partial(reset_phases, main_window))
@@ -61,6 +82,16 @@ def init_shortcuts(main_window):
     QShortcut(QKeySequence(Qt.Key.Key_Right), main_window, lambda: main_window.display_slider.next_frame())
 
 
+def _save_current_page(main_window, ccta_page) -> None:
+    from gui.active_page import ActivePage
+
+    master = main_window.window()
+    if hasattr(master, 'active_page') and master.active_page == ActivePage.CCTA:
+        ccta_page.save_mask()
+    else:
+        write_contours(main_window)
+
+
 def init_menu(main_window, ccta_page):
     file_menu = main_window.menu_bar.addMenu('File')
     open_action = file_menu.addAction('Open Intravascular File', partial(read_image, main_window))
@@ -71,7 +102,7 @@ def init_menu(main_window, ccta_page):
     open_folder_action.setShortcut('Ctrl+Shift+O')
     file_menu.addAction('Open CCTA Mask', ccta_page.open_mask)
     file_menu.addSeparator()
-    save_contours = file_menu.addAction('Save Contours', partial(write_contours, main_window))
+    save_contours = file_menu.addAction('Save', partial(_save_current_page, main_window, ccta_page))
     save_contours.setShortcut('Ctrl+S')
     nifti_menu = file_menu.addMenu('Save NIfTis')
     nifti_menu.addAction('Contoured Frames', partial(save_as_nifti, main_window, mode='contoured'))
@@ -87,42 +118,46 @@ def init_menu(main_window, ccta_page):
 
     edit_menu = main_window.menu_bar.addMenu('Edit')
     manual_lumen_contour = edit_menu.addAction(
-        'Manual Lumen Contour', partial(new_contour, main_window, ContourType.LUMEN)
+        'Manual Lumen Contour', partial(_new_contour_synced, main_window, ContourType.LUMEN)
     )
     manual_lumen_contour.setShortcut('E')
-    manual_eem_contour = edit_menu.addAction('Manual EEM Contour', partial(new_contour, main_window, ContourType.EEM))
+    manual_eem_contour = edit_menu.addAction(
+        'Manual EEM Contour', partial(_new_contour_synced, main_window, ContourType.EEM)
+    )
     manual_eem_contour.setShortcut('Q')
+    spawn_eem_action = edit_menu.addAction('Spawn EEM from Lumen', partial(spawn_eem_from_lumen, main_window))
+    spawn_eem_action.setShortcut('Shift+Q')
     manual_calc_contour = edit_menu.addAction(
-        'Manual Calcium Contour', partial(new_contour, main_window, ContourType.CALCIUM)
+        'Manual Calcium Contour', partial(_new_contour_synced, main_window, ContourType.CALCIUM)
     )
     manual_calc_contour.setShortcut('7')
     manual_branch_contour = edit_menu.addAction(
-        'Manual Branch Contour', partial(new_contour, main_window, ContourType.BRANCH)
+        'Manual Branch Contour', partial(_new_contour_synced, main_window, ContourType.BRANCH)
     )
     manual_branch_contour.setShortcut('8')
     manual_lipid_contour = edit_menu.addAction(
-        'Manual Lipid Contour', partial(new_contour, main_window, ContourType.LIPID)
+        'Manual Lipid Contour', partial(_new_contour_synced, main_window, ContourType.LIPID)
     )
     manual_lipid_contour.setShortcut('9')
     manual_macroph_contour = edit_menu.addAction(
-        'Manual Macrophage Contour', partial(new_contour, main_window, ContourType.MACROPHAGE)
+        'Manual Macrophage Contour', partial(_new_contour_synced, main_window, ContourType.MACROPHAGE)
     )
     manual_macroph_contour.setShortcut('0')
     edit_menu.addSeparator()
     add_calc_contour = edit_menu.addAction(
-        'Add Calcium Contour', partial(new_contour_append, main_window, ContourType.CALCIUM)
+        'Add Calcium Contour', partial(_new_contour_append_synced, main_window, ContourType.CALCIUM)
     )
     add_calc_contour.setShortcut('Ctrl+7')
     add_branch_contour = edit_menu.addAction(
-        'Add Branch Contour', partial(new_contour_append, main_window, ContourType.BRANCH)
+        'Add Branch Contour', partial(_new_contour_append_synced, main_window, ContourType.BRANCH)
     )
     add_branch_contour.setShortcut('Ctrl+8')
     add_lipid_contour = edit_menu.addAction(
-        'Add Lipid Contour', partial(new_contour_append, main_window, ContourType.LIPID)
+        'Add Lipid Contour', partial(_new_contour_append_synced, main_window, ContourType.LIPID)
     )
     add_lipid_contour.setShortcut('Ctrl+9')
     add_macroph_contour = edit_menu.addAction(
-        'Add Macrophage Contour', partial(new_contour_append, main_window, ContourType.MACROPHAGE)
+        'Add Macrophage Contour', partial(_new_contour_append_synced, main_window, ContourType.MACROPHAGE)
     )
     add_macroph_contour.setShortcut('Ctrl+0')
     edit_menu.addAction('Remove Contours', partial(remove_contours, main_window))
@@ -155,7 +190,7 @@ def init_menu(main_window, ccta_page):
     view_menu.addSeparator()
 
     run_menu = main_window.menu_bar.addMenu('Run')
-    run_menu.addAction('Extract Diastolic and Systolic Frames', main_window.contour_based_gating)
+    run_menu.addAction('Extract Diastolic and Systolic Frames', main_window.gating_plot)
     # run_menu.addAction('Automatic Segmentation', partial(segment, main_window))
 
     metadata_menu = main_window.menu_bar.addMenu('Metadata')
@@ -169,6 +204,142 @@ def init_menu(main_window, ccta_page):
     help_menu.addAction('Request a Feature', partial(open_url, main_window, description='feature'))
     help_menu.addSeparator()
     help_menu.addAction('About', partial(open_url, main_window))
+
+
+def _copy_contour_from_frame(main_window, source_frame: int) -> None:
+    """Replace the active contour on the current frame with a copy from source_frame."""
+    display = main_window.display
+    current_frame = display.frame
+    key = display.contour_key()
+    ci = display.active_contour_index
+
+    fd_src = main_window.runtime_data.frame_data_dct.get(source_frame)
+    fd_dst = main_window.runtime_data.frame_data_dct.get(current_frame)
+    if fd_src is None or fd_dst is None:
+        return
+
+    src_obj = getattr(fd_src, key, None)
+    dst_obj = getattr(fd_dst, key, None)
+    if src_obj is None or dst_obj is None:
+        return
+    if not hasattr(src_obj, 'contours') or not src_obj.contours or ci >= len(src_obj.contours):
+        return
+
+    src_contour = src_obj.contours[ci]
+    xs = list(src_contour[0]) if src_contour else []
+    ys = list(src_contour[1]) if len(src_contour) > 1 else []
+    src_start = list(src_obj.start_coords[ci]) if ci < len(src_obj.start_coords) else []
+    src_end = list(src_obj.end_coords[ci]) if ci < len(src_obj.end_coords) else []
+    src_closed = src_obj.closed[ci] if ci < len(src_obj.closed) else True
+
+    while len(dst_obj.contours) <= ci:
+        dst_obj.contours.append([[], []])
+    while len(dst_obj.start_coords) <= ci:
+        dst_obj.start_coords.append([])
+    while len(dst_obj.end_coords) <= ci:
+        dst_obj.end_coords.append([])
+    while len(dst_obj.closed) <= ci:
+        dst_obj.closed.append(True)
+
+    dst_obj.contours[ci] = [xs, ys]
+    dst_obj.start_coords[ci] = src_start
+    dst_obj.end_coords[ci] = src_end
+    dst_obj.closed[ci] = src_closed
+
+    display.update_display()
+    try:
+        main_window.longitudinal_view.plot_areas()
+    except Exception as e:
+        logger.debug(f"Could not update longitudinal view after contour copy: {e}")
+
+
+def copy_contour_from_left(main_window):
+    if not main_window.image_displayed:
+        return
+    frame = main_window.display.frame
+    if frame <= 0:
+        return
+    _copy_contour_from_frame(main_window, frame - 1)
+
+
+def copy_contour_from_right(main_window):
+    if not main_window.image_displayed:
+        return
+    display = main_window.display
+    frame = display.frame
+    n_frames = display.images.shape[0] if display.images is not None else 0
+    if frame >= n_frames - 1:
+        return
+    _copy_contour_from_frame(main_window, frame + 1)
+
+
+def copy_contour_from_next_gated(main_window):
+    if not main_window.image_displayed:
+        return
+    frame = main_window.display.frame
+    gated = sorted(main_window.runtime_data.gated_frames)
+    if frame not in gated:
+        return
+    later = [f for f in gated if f > frame]
+    if not later:
+        return
+    _copy_contour_from_frame(main_window, later[0])
+
+
+def copy_contour_from_prev_gated(main_window):
+    if not main_window.image_displayed:
+        return
+    frame = main_window.display.frame
+    gated = sorted(main_window.runtime_data.gated_frames)
+    if frame not in gated:
+        return
+    earlier = [f for f in gated if f < frame]
+    if not earlier:
+        return
+    _copy_contour_from_frame(main_window, earlier[-1])
+
+
+def spawn_eem_from_lumen(main_window):
+    """Ctrl+E: create an EEM contour by expanding the lumen knot points 20% radially from their centroid."""
+    if not main_window.image_displayed:
+        return
+    frame = main_window.display.frame
+    fd = main_window.runtime_data.frame_data_dct.get(frame)
+    if fd is None:
+        return
+
+    eem_obj = getattr(fd, ContourType.EEM.value, None)
+    if eem_obj is None:
+        return
+    if eem_obj.contours and eem_obj.contours[0] and eem_obj.contours[0][0]:
+        return  # EEM already exists on this frame
+
+    lumen_obj = getattr(fd, ContourType.LUMEN.value, None)
+    if lumen_obj is None or not lumen_obj.contours or not lumen_obj.contours[0] or not lumen_obj.contours[0][0]:
+        return
+
+    xs = list(lumen_obj.contours[0][0])
+    ys = list(lumen_obj.contours[0][1]) if len(lumen_obj.contours[0]) > 1 else []
+    if len(xs) < 2 or len(xs) != len(ys):
+        return
+
+    cx = sum(xs) / len(xs)
+    cy = sum(ys) / len(ys)
+    scale = 1.1
+
+    eem_obj.contours = [[[cx + (x - cx) * scale for x in xs], [cy + (y - cy) * scale for y in ys]]]
+    eem_obj.closed = [True]
+    eem_obj.start_coords = [[]]
+    eem_obj.end_coords = [[]]
+
+    main_window.display.active_contour_type = ContourType.EEM
+    main_window.display.active_contour_index = 0
+    _sync_contour_combo(main_window, ContourType.EEM)
+    main_window.display.update_display()
+    try:
+        main_window.longitudinal_view.plot_areas()
+    except Exception as e:
+        logger.debug(f"Could not update longitudinal view after EEM spawn: {e}")
 
 
 def remove_contours(main_window):
@@ -229,7 +400,7 @@ def _redraw_phase_views(main_window):
     """Refresh display, longitudinal view and gating plot after any phase change."""
     main_window.display.update_display()
     main_window.longitudinal_view.plot_areas()
-    main_window.contour_based_gating.redraw_phase_lines(
+    main_window.gating_plot.redraw_phase_lines(
         main_window.runtime_data.gated_frames_dia,
         main_window.diastole_color_plt,
         main_window.runtime_data.gated_frames_sys,
